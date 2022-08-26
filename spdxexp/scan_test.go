@@ -343,24 +343,30 @@ func TestReadLicenseRef(t *testing.T) {
 	}
 }
 
-func TestReadIdentifier(t *testing.T) {
+func TestReadLicense(t *testing.T) {
 	tests := []struct {
-		name     string
-		exp      *expressionStream
-		license  *token
-		newIndex int
-		err      error
+		name          string
+		exp           *expressionStream
+		license       *token
+		newExpression string
+		newIndex      int
+		err           error
 	}{
-		{"active license", getExpressionStream("MIT", 0), &token{role: LICENSE_TOKEN, value: "MIT"}, 3, nil},
-		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: LICENSE_TOKEN, value: "LGPL-2.1"}, 8, nil},
-		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: EXCEPTION_TOKEN, value: "GPL-CC-1.0"}, 10, nil},
-		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, 0, nil}, // TODO: should this return an error?
+		{"active license", getExpressionStream("MIT", 0), &token{role: LICENSE_TOKEN, value: "MIT"}, "MIT", 3, nil},
+		{"active -or-later", getExpressionStream("AGPL-1.0-or-later", 0), &token{role: LICENSE_TOKEN, value: "AGPL-1.0-or-later"}, "AGPL-1.0-or-later", 17, nil},
+		{"active -or-later using +", getExpressionStream("AGPL-1.0+", 0), &token{role: LICENSE_TOKEN, value: "AGPL-1.0-or-later"}, "AGPL-1.0+", 9, nil}, // no valid example for this; all that include -or-later have the base as a deprecated license
+		{"active -or-later not in list", getExpressionStream("Apache-1.0-or-later", 0), &token{role: LICENSE_TOKEN, value: "Apache-1.0"}, "Apache-1.0+", 10, nil},
+		{"active -only", getExpressionStream("GPL-2.0-only", 0), &token{role: LICENSE_TOKEN, value: "GPL-2.0-only"}, "GPL-2.0-only", 12, nil},
+		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), &token{role: LICENSE_TOKEN, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
+		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: LICENSE_TOKEN, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
+		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: EXCEPTION_TOKEN, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
+		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, "NON-EXISTENT-LICENSE", 0, nil}, // TODO: should this return an error?
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			license := test.exp.readIdentifier()
+			license := test.exp.readLicense()
 			assert.Equal(t, test.newIndex, test.exp.index)
 
 			require.Equal(t, test.err, test.exp.err)
@@ -373,6 +379,7 @@ func TestReadIdentifier(t *testing.T) {
 
 			// license found, check license value
 			assert.Equal(t, test.license, license)
+			assert.Equal(t, test.newExpression, test.exp.expression)
 		})
 	}
 }

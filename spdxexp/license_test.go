@@ -63,24 +63,26 @@ func TestExceptionLicense(t *testing.T) {
 	}
 }
 
-func TestLicenseRange(t *testing.T) {
+func TestGetLicenseRange(t *testing.T) {
 	tests := []struct {
-		name   string
-		id     string
-		result []string
+		name         string
+		id           string
+		licenseRange *LicenseRange
 	}{
-		{"single range", "Apache-2.0",
-			[]string{"Apache-1.0", "Apache-1.1", "Apache-2.0"}},
-		{"multiple ranges", "GFDL-1.2-only",
-			[]string{"GFDL-1.2", "GFDL-1.2-only"}},
-		{"no range", "Bison-exception-2.2",
-			[]string{"Bison-exception-2.2"}}, // TODO: should this return empty array?
+		{"no multi-element ranges", "Apache-2.0", &LicenseRange{
+			Licenses: []string{"Apache-2.0"},
+			Location: map[uint8]int{LICENSE_GROUP: 2, VERSION_GROUP: 2, LICENSE_INDEX: 0}}},
+		{"multi-element ranges", "GFDL-1.2-only", &LicenseRange{
+			Licenses: []string{"GFDL-1.2", "GFDL-1.2-only"},
+			Location: map[uint8]int{LICENSE_GROUP: 18, VERSION_GROUP: 1, LICENSE_INDEX: 1}}},
+		{"no range", "Bison-exception-2.2", nil},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.result, LicenseRange(test.id))
+			licenseRange := GetLicenseRange(test.id)
+			assert.Equal(t, test.licenseRange, licenseRange)
 		})
 	}
 }

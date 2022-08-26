@@ -238,6 +238,11 @@ func (t *tokenStream) parseLicense() *Node {
 		hasException: false,
 		exception:    ""}
 
+	// for licenses that specifically support -or-later, a `+` operator token isn't expected to be present
+	if strings.HasSuffix(token.value, "-or-later") {
+		lic.hasPlus = true
+	}
+
 	if t.hasMore() {
 		// use new var idx to avoid creating a new var index
 		operator := t.parseOperator("+")
@@ -245,14 +250,16 @@ func (t *tokenStream) parseLicense() *Node {
 			lic.hasPlus = true
 		}
 
-		exception := t.parseWith()
-		if t.err != nil {
-			return nil
-		}
-		if exception != nil {
-			lic.hasException = true
-			lic.exception = *exception
-			t.next()
+		if t.hasMore() {
+			exception := t.parseWith()
+			if t.err != nil {
+				return nil
+			}
+			if exception != nil {
+				lic.hasException = true
+				lic.exception = *exception
+				t.next()
+			}
 		}
 	}
 

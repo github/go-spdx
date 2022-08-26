@@ -20,7 +20,7 @@ type token struct {
 	value string
 }
 
-type tokenrole int64
+type tokenrole uint8
 
 const (
 	OPERATOR_TOKEN tokenrole = iota
@@ -91,7 +91,7 @@ func (exp *expressionStream) parseToken() *token {
 		return lref
 	}
 
-	identifier := exp.readIdentifier()
+	identifier := exp.readLicense()
 	if exp.err != nil {
 		return nil
 	}
@@ -202,22 +202,92 @@ func (exp *expressionStream) readLicenseRef() *token {
 }
 
 // Read a LICENSE/EXCEPTION in expression starting at index if it exists. Raise error if found and id doesn't follow.
-func (exp *expressionStream) readIdentifier() *token {
+func (exp *expressionStream) readLicense() *token {
 	// because readID matches broadly, save the index so it can be reset if an actual license is not found
 	index := exp.index
 
-	id := exp.readID()
+	license := exp.readID()
 	if exp.err != nil {
 		return nil
 	}
 
-	if ActiveLicense(id) || DeprecatedLicense(id) {
-		return &token{role: LICENSE_TOKEN, value: id}
-	} else if ExceptionLicense(id) {
-		return &token{role: EXCEPTION_TOKEN, value: id}
+	if token := exp.normalizeLicense(license); token != nil {
+		return token
 	}
 
-	// license not found in indices
+	// license not found in indices, need to reset index since readID advanced it
 	exp.index = index
+	return nil
+}
+
+// Generate a token using the normalized form of the license name.
+//
+// License name can be in the form:
+// * a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
+//   examples, but any base license form can have the suffixes described.
+// * a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
+// * a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
+// * a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
+func (exp *expressionStream) normalizeLicense(license string) *token {
+	if token := licenseLookup(license); token != nil {
+		// checks active and exception license lists
+		// deprecated list is checked at the end to avoid a deprecated license being used for +
+		// (example: GPL-1.0 is on the depcated list, but GPL-1.0+ should become GPL-1.0-or-later)
+		return token
+	}
+
+	len_license := len(license)
+	if strings.HasSuffix(license, "-only") {
+		adjusted_license := license[0 : len_license-5]
+		if token := licenseLookup(adjusted_license); token != nil {
+			// no need to remove the -only from the expression stream; it is ignored
+			return token
+		}
+	}
+	if exp.hasMore() && exp.expression[exp.index:exp.index+1] == "+" {
+		adjusted_license := license[0:len_license] + "-or-later"
+		if token := licenseLookup(adjusted_license); token != nil {
+			// need to consume the + to avoid a + operator token being added
+			exp.index += 1
+			return token
+		}
+	}
+	if strings.HasSuffix(license, "-or-later") {
+		adjusted_license := license[0 : len_license-9]
+		if token := licenseLookup(adjusted_license); token != nil {
+			// replace `-or-later` with `+`
+			new_expression := exp.expression[0:exp.index-len("-or-later")] + "+"
+			if exp.hasMore() {
+				new_expression += exp.expression[exp.index+1:]
+			}
+			exp.expression = new_expression
+			// update index to remove `-or-later`; now pointing at the `+` operator
+			exp.index -= len("-or-later")
+
+			return token
+		}
+	}
+	if token := deprecatedLicenseLookup(license); token != nil {
+		return token
+	}
+	return nil
+}
+
+// Lookup license identifier in active and exception lists to determine if it is a supported SPDX id
+func licenseLookup(license string) *token {
+	if ActiveLicense(license) {
+		return &token{role: LICENSE_TOKEN, value: license}
+	}
+	if ExceptionLicense(license) {
+		return &token{role: EXCEPTION_TOKEN, value: license}
+	}
+	return nil
+}
+
+// Lookup license identifier in deprecated list to determine if it is a supported SPDX id
+func deprecatedLicenseLookup(license string) *token {
+	if DeprecatedLicense(license) {
+		return &token{role: LICENSE_TOKEN, value: license}
+	}
 	return nil
 }

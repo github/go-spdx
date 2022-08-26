@@ -1,6 +1,6 @@
 package spdxexp
 
-func getLicenseNode(license string) *Node {
+func getLicenseNode(license string, hasPlus bool) *Node {
 	return &Node{
 		role: LICENSE_NODE,
 		exp:  nil,

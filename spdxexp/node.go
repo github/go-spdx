@@ -1,11 +1,11 @@
 package spdxexp
 
-type nodeRole int64
-
 type NodePair struct {
 	firstNode  *Node
 	secondNode *Node
 }
+
+type nodeRole uint8
 
 const (
 	EXPRESSION_NODE nodeRole = iota
@@ -126,7 +126,7 @@ func (node *Node) HasDocumentRef() bool {
 // ---------------------- Comparator Methods ----------------------
 
 // Return true if two licenses are compatible; otherwise, false.
-func (nodes *NodePair) licensesAreCompatible() bool {
+func (nodes *NodePair) LicensesAreCompatible() bool {
 	if !nodes.firstNode.IsLicense() || !nodes.secondNode.IsLicense() {
 		return false
 	}
@@ -150,10 +150,6 @@ func (nodes *NodePair) licensesAreCompatible() bool {
 	}
 }
 
-func (nodes *NodePair) licensesExactlyEqual() bool {
-	return *nodes.firstNode.License() == *nodes.secondNode.License()
-}
-
 // Return true if two licenses are compatible in the context of their ranges; otherwise, false.
 func (nodes *NodePair) rangesAreCompatible() bool {
 	if nodes.licensesExactlyEqual() {
@@ -161,28 +157,14 @@ func (nodes *NodePair) rangesAreCompatible() bool {
 		return true
 	}
 
-	firstLicenseRange := LicenseRange(*nodes.firstNode.License())
-	secondLicenseRange := LicenseRange(*nodes.secondNode.License())
+	firstLicense := *nodes.firstNode.License()
+	secondLicense := *nodes.secondNode.License()
 
-	return licenseInRange(*nodes.firstNode.License(), secondLicenseRange) &&
-		licenseInRange(*nodes.secondNode.License(), firstLicenseRange)
-}
+	firstLicenseRange := GetLicenseRange(firstLicense)
+	secondLicenseRange := GetLicenseRange(secondLicense)
 
-// Return true if the (first) simple license is in range of the (second) ranged license; otherwise, false.
-func (nodes *NodePair) identifierInRange() bool {
-	if nodes.licensesExactlyEqual() {
-		// licenses specify ranges exactly the same
-		return true
-	}
-
-	// STUBBED
-	return false
-
-	// simpleLicense := nodes.firstNode.License()
-	// plusLicense := nodes.secondNode.License()
-
-	// return CompareGT(simpleLicense, plusLicense) ||
-	// 	CompareEQ(simpleLicense, plusLicense)
+	return licenseInRange(firstLicense, secondLicenseRange.Licenses) &&
+		licenseInRange(secondLicense, firstLicenseRange.Licenses)
 }
 
 // Return true if license is found in licenseRange; otherwise, false
@@ -193,4 +175,18 @@ func licenseInRange(simpleLicense string, licenseRange []string) bool {
 		}
 	}
 	return false
+}
+
+// Return true if the (first) simple license is in range of the (second) ranged license; otherwise, false.
+func (nodes *NodePair) identifierInRange() bool {
+	simpleLicense := nodes.firstNode
+	plusLicense := nodes.secondNode
+
+	return compareGT(simpleLicense, plusLicense) ||
+		compareEQ(simpleLicense, plusLicense)
+}
+
+// Return true if the licenses are the same; otherwise, false
+func (nodes *NodePair) licensesExactlyEqual() bool {
+	return *nodes.firstNode.License() == *nodes.secondNode.License()
 }

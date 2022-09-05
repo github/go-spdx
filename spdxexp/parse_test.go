@@ -27,35 +27,8 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"MIT", nil},
-		{"two licenses using AND",
-			"MIT AND Apache-2.0",
-			&Node{
-				role: EXPRESSION_NODE,
-				exp: &expressionNodePartial{
-					left: &Node{
-						role: LICENSE_NODE,
-						exp:  nil,
-						lic: &licenseNodePartial{
-							license: "MIT", hasPlus: false,
-							hasException: false, exception: ""},
-						ref: nil,
-					},
-					conjunction: "and",
-					right: &Node{
-						role: LICENSE_NODE,
-						exp:  nil,
-						lic: &licenseNodePartial{
-							license: "Apache-2.0", hasPlus: false,
-							hasException: false, exception: ""},
-						ref: nil,
-					},
-				},
-				lic: nil,
-				ref: nil,
-			},
-			"{ LEFT: MIT and RIGHT: Apache-2.0 }", nil},
-		{"two licenses using OR",
-			"MIT OR Apache-2.0",
+
+		{"OR Expression", "MIT OR Apache-2.0",
 			&Node{
 				role: EXPRESSION_NODE,
 				exp: &expressionNodePartial{
@@ -81,6 +54,773 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
+		{"AND Expression", "MIT AND Apache-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "and",
+					right: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "Apache-2.0", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT and RIGHT: Apache-2.0 }", nil},
+		{"OR-AND Expression", "MIT OR Apache-2.0 AND GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
+		{"OR(AND) Expression", "MIT OR (Apache-2.0 AND GPL-2.0)",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
+		{"AND-OR Expression", "MIT AND Apache-2.0 OR GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "MIT",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "GPL-2.0", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: { LEFT: MIT and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 }", nil},
+		{"AND(OR) Expression", "MIT AND (Apache-2.0 OR GPL-2.0)",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "and",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
+		{"OR-AND-OR Expression", "MIT OR ISC AND Apache-2.0 OR GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: EXPRESSION_NODE,
+								exp: &expressionNodePartial{
+									left: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "ISC",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+									conjunction: "and",
+									right: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "Apache-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+								},
+								lic: nil,
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
+		{"(OR)AND(OR) Expression", "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "MIT",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "ISC",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+					conjunction: "and",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: { LEFT: MIT or RIGHT: ISC } and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
+		{"OR(AND)OR Expression", "MIT OR (ISC AND Apache-2.0) OR GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: EXPRESSION_NODE,
+								exp: &expressionNodePartial{
+									left: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "ISC",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+									conjunction: "and",
+									right: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "Apache-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+								},
+								lic: nil,
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
+		{"OR-OR-OR Expression", "MIT OR ISC OR Apache-2.0 OR GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "ISC",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "or",
+							right: &Node{
+								exp: &expressionNodePartial{
+									left: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "Apache-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+									conjunction: "or",
+									right: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "GPL-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+								},
+								lic: nil,
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: { LEFT: ISC or RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } } }", nil},
+		{"AND-OR-AND Expression", "MIT AND ISC OR Apache-2.0 AND GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "MIT",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "ISC",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
+		{"(AND)OR(AND) Expression", "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "MIT",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "ISC",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &Node{
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
+		{"AND(OR)AND Expression", "MIT AND (ISC OR Apache-2.0) AND GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "and",
+					right: &Node{
+						role: EXPRESSION_NODE,
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: EXPRESSION_NODE,
+								exp: &expressionNodePartial{
+									left: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "ISC",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+									conjunction: "or",
+									right: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "Apache-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+								},
+								lic: nil,
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT and RIGHT: { LEFT: { LEFT: ISC or RIGHT: Apache-2.0 } and RIGHT: GPL-2.0 } }", nil},
+		{"AND-AND-AND Expression", "MIT AND ISC AND Apache-2.0 AND GPL-2.0",
+			&Node{
+				role: EXPRESSION_NODE,
+				exp: &expressionNodePartial{
+					left: &Node{
+						role: LICENSE_NODE,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "MIT",
+							hasPlus:      false,
+							hasException: false,
+							exception:    "",
+						},
+						ref: nil,
+					},
+					conjunction: "and",
+					right: &Node{
+						role: EXPRESSION_NODE,
+						exp: &expressionNodePartial{
+							left: &Node{
+								role: LICENSE_NODE,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "ISC",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &Node{
+								role: EXPRESSION_NODE,
+								exp: &expressionNodePartial{
+									left: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "Apache-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+									conjunction: "and",
+									right: &Node{
+										role: LICENSE_NODE,
+										exp:  nil,
+										lic: &licenseNodePartial{
+											license:      "GPL-2.0",
+											hasPlus:      false,
+											hasException: false,
+											exception:    "",
+										},
+										ref: nil,
+									},
+								},
+								lic: nil,
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT and RIGHT: { LEFT: ISC and RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } } }", nil},
 		{"kitchen sink",
 			"   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
 			&Node{

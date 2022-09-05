@@ -59,6 +59,20 @@ func (node *Node) Conjunction() *string {
 	return &(node.exp.conjunction)
 }
 
+func (node *Node) IsOrExpression() bool {
+	if !node.IsExpression() {
+		return false
+	}
+	return node.exp.conjunction == "or"
+}
+
+func (node *Node) IsAndExpression() bool {
+	if !node.IsExpression() {
+		return false
+	}
+	return node.exp.conjunction == "and"
+}
+
 func (node *Node) Right() *Node {
 	if !node.IsExpression() {
 		return nil

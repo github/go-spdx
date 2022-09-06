@@ -2,7 +2,69 @@ package spdxexp
 
 import (
 	"fmt"
+	"sort"
 )
+
+// Determine if first expression satisfies second expression.
+//
+// Examples:
+//   "MIT" satisfies "MIT" is true
+//
+//   "MIT" satisfies "MIT OR Apache-2.0" is true
+//   "MIT OR Apache-2.0" satisfies "MIT" is true
+//   "GPL" satisfies "MIT OR Apache-2.0" is false
+//   "MIT OR Apache-2.0" satisfies "GPL" is false
+//
+//   "Apache-2.0 AND MIT" satisfies "MIT AND Apache-2.0" is true
+//   "MIT AND Apache-2.0" satisfies "MIT AND Apache-2.0" is true
+//   "MIT" satisfies "MIT AND Apache-2.0" is false
+//   "MIT AND Apache-2.0" satisfies "MIT" is false
+//   "GPL" satisfies "MIT AND Apache-2.0" is false
+//
+//   "MIT AND Apache-2.0" satisfies "MIT AND (Apache-1.0 OR Apache-2.0)"
+//
+//   "Apache-1.0" satisfies "Apache-2.0+" is false
+//   "Apache-2.0" satisfies "Apache-2.0+" is true
+//   "Apache-3.0" satisfies "Apache-2.0+" is true
+//
+//   "Apache-1.0" satisfies "Apache-2.0-or-later" is false
+//   "Apache-2.0" satisfies "Apache-2.0-or-later" is true
+//   "Apache-3.0" satisfies "Apache-2.0-or-later" is true
+//
+//   "Apache-1.0" satisfies "Apache-2.0-only" is false
+//   "Apache-2.0" satisfies "Apache-2.0-only" is true
+//   "Apache-3.0" satisfies "Apache-2.0-only" is false
+//
+func Satisfies(firstExp string, secondExp string) (bool, error) {
+	firstTree, err := Parse(firstExp)
+	if err != nil {
+		return false, err
+	}
+
+	secondTree, err := Parse(secondExp)
+	if err != nil {
+		return false, err
+	}
+
+	nodes := &NodePair{firstNode: firstTree, secondNode: secondTree}
+	if firstTree.IsLicense() && secondTree.IsLicense() {
+		return nodes.LicensesAreCompatible(), nil
+	}
+
+	firstExpanded := firstTree.expand(true)
+	fmt.Println("firstExpanded: ", firstExpanded)
+	secondFlattened := secondTree.flatten()
+	fmt.Println("secondFlattened: ", secondFlattened)
+
+	// satisfactionFunc := func(o string) bool { return isAndCompatible(o, secondFlattened) }
+	// satisfaction := some(firstExpanded, satisfactionFunc)
+
+	// return one.some(satisfactionFunc)
+	// return satisfaction
+
+	// TODO: Stubbed
+	return false, nil
+}
 
 // Return the string representation of the license or license ref.
 // TODO: Original had "NOASSERTION".  Does that still apply?
@@ -27,14 +89,36 @@ func (node *Node) licenseString() *string {
 	return nil
 }
 
-// // Flatten the given expression into an array of all licenses mentioned in the expression.
-// func flatten (expression) {
-//   const expanded = Array.from(expandInner(expression))
-//   const flattened = expanded.reduce(func (result, clause) {
-//     return Object.assign(result, clause)
-//   }, {})
-//   return sort([flattened])[0]
-// }
+// Flatten the given expression into an array of all licenses mentioned in the expression.
+//
+// Example:
+//   License Node: "MIT" becomes ["MIT"]
+//   OR Expression: "MIT OR Apache-2.0" becomes ["Apache-2.0", "MIT"]
+//   AND Expression: "MIT AND Apache-2.0" becomes ["Apache-2.0", "MIT"]
+//   OR-AND Expression: "MIT OR Apache-2.0 AND GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
+//   OR(AND) Expression: "MIT OR (Apache-2.0 AND GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
+//   AND-OR Expression: "MIT AND Apache-2.0 OR GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
+//   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
+//   OR-AND-OR Expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+//   (OR)AND(OR) Expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+//   OR(AND)OR Expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+//   AND-OR-AND Expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+//   (AND)OR(AND) Expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+//   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
+//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
+func (node *Node) flatten() []string {
+	var flattened []string
+	expanded := node.expand(false)
+	for _, licenses := range expanded {
+		flattened = append(flattened, licenses...)
+	}
+	return sortAndDedup(flattened)
+}
 
 // Expand the given expression into an equivalent array representing ANDed licenses
 // grouped in an array and ORed licenses each in a separate array.
@@ -59,18 +143,24 @@ func (node *Node) licenseString() *string {
 //       [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
 //   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
 //       [["GPL-2.0", "ISC", "MIT"], ["Apache-2.0", "GPL-2.0", "MIT"]]
-func (node *Node) expand() [][]string {
+func (node *Node) expand(withDeepSort bool) [][]string {
 	if node.IsLicense() || node.IsLicenseRef() {
 		var result [][]string
 		license := []string{*node.licenseString()}
 		return append(result, license)
 	}
 
-	// TODO: Need to deep-sort results
+	var expanded [][]string
 	if node.IsOrExpression() {
-		return node.expandOr()
+		expanded = node.expandOr()
+	} else {
+		expanded = node.expandAnd()
 	}
-	return node.expandAnd()
+
+	if withDeepSort {
+		expanded = deepSort(expanded)
+	}
+	return expanded
 }
 
 // Expand the given expression into an equivalent array representing ORed licenses each in a separate array.
@@ -196,62 +286,58 @@ func mergeLeftRight(left, right [][]string) [][]string {
 // //   })
 // // }
 
-// Determine if first expression satisfies second expression.
-//
-// Examples:
-//   "MIT" satisfies "MIT" is true
-//
-//   "MIT" satisfies "MIT OR Apache-2.0" is true
-//   "MIT OR Apache-2.0" satisfies "MIT" is true
-//   "GPL" satisfies "MIT OR Apache-2.0" is false
-//   "MIT OR Apache-2.0" satisfies "GPL" is false
-//
-//   "Apache-2.0 AND MIT" satisfies "MIT AND Apache-2.0" is true
-//   "MIT AND Apache-2.0" satisfies "MIT AND Apache-2.0" is true
-//   "MIT" satisfies "MIT AND Apache-2.0" is false
-//   "MIT AND Apache-2.0" satisfies "MIT" is false
-//   "GPL" satisfies "MIT AND Apache-2.0" is false
-//
-//   "MIT AND Apache-2.0" satisfies "MIT AND (Apache-1.0 OR Apache-2.0)"
-//
-//   "Apache-1.0" satisfies "Apache-2.0+" is false
-//   "Apache-2.0" satisfies "Apache-2.0+" is true
-//   "Apache-3.0" satisfies "Apache-2.0+" is true
-//
-//   "Apache-1.0" satisfies "Apache-2.0-or-later" is false
-//   "Apache-2.0" satisfies "Apache-2.0-or-later" is true
-//   "Apache-3.0" satisfies "Apache-2.0-or-later" is true
-//
-//   "Apache-1.0" satisfies "Apache-2.0-only" is false
-//   "Apache-2.0" satisfies "Apache-2.0-only" is true
-//   "Apache-3.0" satisfies "Apache-2.0-only" is false
-//
-func satisfies(firstExp string, secondExp string) (bool, error) {
-	firstTree, err := Parse(firstExp)
-	if err != nil {
-		return false, err
+// Sort and dedup an array of strings.
+func sortAndDedup(s []string) []string {
+	if len(s) <= 1 {
+		return s
 	}
 
-	secondTree, err := Parse(secondExp)
-	if err != nil {
-		return false, err
+	sort.Strings(s)
+	prev := 1
+	for curr := 1; curr < len(s); curr++ {
+		if s[curr-1] != s[curr] {
+			s[prev] = s[curr]
+			prev++
+		}
 	}
 
-	nodes := &NodePair{firstNode: firstTree, secondNode: secondTree}
-	if firstTree.IsLicense() && secondTree.IsLicense() {
-		return nodes.LicensesAreCompatible(), nil
+	return s[:prev]
+}
+
+func deepSort(s2d [][]string) [][]string {
+	if len(s2d) == 0 || len(s2d) == 1 && len(s2d[0]) <= 1 {
+		return s2d
 	}
 
-	firstExpanded := firstTree.expand()
-	fmt.Println("firstExpanded: ", firstExpanded)
-	// secondFlattened := flatten(secondNormalized)
+	// sort each array internally
+	// Example:
+	//   BEFORE {{"MIT", "GPL-2.0"}, {"ISC", "Apache-2.0"}}
+	//   AFTER  {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
+	for _, s := range s2d {
+		if len(s) > 1 {
+			sort.Strings(s)
+		}
+	}
 
-	// satisfactionFunc := func(o string) bool { return isAndCompatible(o, secondFlattened) }
-	// satisfaction := some(firstExpanded, satisfactionFunc)
+	// sort arrays relative to each other
+	// Example:
+	//   BEFORE {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
+	//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
+	sort.Slice(s2d, func(i, j int) bool {
+		for k, _ := range s2d[j] {
+			if k >= len(s2d[i]) {
+				// if the first k elements are equal and the second array is
+				// longer than the first, the first is considered less than
+				return true
+			}
+			if s2d[i][k] != s2d[j][k] {
+				// when elements are not equal, return true if first is less than
+				return s2d[i][k] < s2d[j][k]
+			}
+		}
+		// all elements are equal, return false to avoid a swap
+		return false
+	})
 
-	// return one.some(satisfactionFunc)
-	// return satisfaction
-
-	// TODO: Stubbed
-	return false, nil
+	return s2d
 }

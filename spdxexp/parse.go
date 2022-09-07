@@ -57,7 +57,7 @@ func (t *tokenStream) next() {
 		t.err = errors.New("read past end of tokens")
 		return
 	}
-	t.index += 1
+	t.index++
 }
 
 func (t *tokenStream) parseParenthesizedExpression() *Node {
@@ -139,7 +139,7 @@ func (t *tokenStream) parseExpression() *Node {
 	}
 
 	return &(Node{
-		role: EXPRESSION_NODE,
+		role: ExpressionNode,
 		exp: &(expressionNodePartial{
 			left:        left,
 			conjunction: op,
@@ -181,7 +181,7 @@ func (t *tokenStream) parseAnd() *Node {
 	exp := expressionNodePartial{left: left, conjunction: "and", right: right}
 
 	return &(Node{
-		role: EXPRESSION_NODE,
+		role: ExpressionNode,
 		exp:  &exp,
 	})
 }
@@ -192,13 +192,12 @@ func (t *tokenStream) parseLicenseRef() *Node {
 	ref := referenceNodePartial{documentRef: "", hasDocumentRef: false, licenseRef: ""}
 
 	token := t.peek()
-	if token.role == DOCUMENTREF_TOKEN {
+	if token.role == DocumentRefToken {
 		ref.documentRef = token.value
 		ref.hasDocumentRef = true
 		t.next()
 
-		var operator *string
-		operator = t.parseOperator(":")
+		operator := t.parseOperator(":")
 		if operator == nil {
 			t.err = errors.New("expected ':' after 'DocumentRef-...'")
 			return nil
@@ -206,10 +205,10 @@ func (t *tokenStream) parseLicenseRef() *Node {
 	}
 
 	token = t.peek()
-	if token.role != LICENSEREF_TOKEN && ref.hasDocumentRef {
+	if token.role != LicenseRefToken && ref.hasDocumentRef {
 		t.err = errors.New("expected 'LicenseRef-...' after 'DocumentRef-...'")
 		return nil
-	} else if token.role != LICENSEREF_TOKEN {
+	} else if token.role != LicenseRefToken {
 		// not found is not an error as long as DocumentRef and : weren't the previous tokens
 		return nil
 	}
@@ -218,7 +217,7 @@ func (t *tokenStream) parseLicenseRef() *Node {
 	t.next()
 
 	return &(Node{
-		role: LICENSEREF_NODE,
+		role: LicenseRefNode,
 		ref:  &ref,
 	})
 }
@@ -227,7 +226,7 @@ func (t *tokenStream) parseLicenseRef() *Node {
 // an error is returned.  Advances the index if a valid license is found.
 func (t *tokenStream) parseLicense() *Node {
 	token := t.peek()
-	if token.role != LICENSE_TOKEN {
+	if token.role != LicenseToken {
 		return nil
 	}
 	t.next()
@@ -264,7 +263,7 @@ func (t *tokenStream) parseLicense() *Node {
 	}
 
 	return &(Node{
-		role: LICENSE_NODE,
+		role: LicenseNode,
 		lic:  &lic,
 	})
 }
@@ -273,7 +272,7 @@ func (t *tokenStream) parseLicense() *Node {
 // Advances the index if the operator is found.
 func (t *tokenStream) parseOperator(operator string) *string {
 	token := t.peek()
-	if token.role == OPERATOR_TOKEN && token.value == operator {
+	if token.role == OperatorToken && token.value == operator {
 		t.next()
 		return &(token.value)
 	}
@@ -292,7 +291,7 @@ func (t *tokenStream) parseWith() *string {
 	}
 
 	token := t.peek()
-	if token.role != EXCEPTION_TOKEN {
+	if token.role != ExceptionToken {
 		t.err = errors.New("expected exception after 'WITH'")
 		return nil
 	}
@@ -303,11 +302,11 @@ func (t *tokenStream) parseWith() *string {
 // Returns a human readable representation of the node tree.
 func (n *Node) String() string {
 	switch n.role {
-	case EXPRESSION_NODE:
+	case ExpressionNode:
 		return expressionString(*n.exp)
-	case LICENSE_NODE:
+	case LicenseNode:
 		return licenseString(*n.lic)
-	case LICENSEREF_NODE:
+	case LicenseRefNode:
 		return referenceString(*n.ref)
 	}
 	return ""
@@ -315,8 +314,8 @@ func (n *Node) String() string {
 
 func expressionString(exp expressionNodePartial) string {
 	s := "{ LEFT: " + exp.left.String() + " "
-	s = s + exp.conjunction
-	s = s + " RIGHT: " + exp.right.String() + " }"
+	s += exp.conjunction
+	s += " RIGHT: " + exp.right.String() + " }"
 	return s
 }
 
@@ -336,6 +335,6 @@ func referenceString(ref referenceNodePartial) string {
 	if ref.hasDocumentRef {
 		s = "DocumentRef-" + ref.documentRef + ":"
 	}
-	s = s + "LicenseRef-" + ref.licenseRef
+	s += "LicenseRef-" + ref.licenseRef
 	return s
 }

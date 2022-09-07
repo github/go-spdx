@@ -14,7 +14,7 @@ func TestLicenseString(t *testing.T) {
 	}{
 		{"License node - simple",
 			&Node{
-				role: LICENSE_NODE,
+				role: LicenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "MIT", hasPlus: false,
@@ -23,7 +23,7 @@ func TestLicenseString(t *testing.T) {
 			}, "MIT"},
 		{"License node - plus",
 			&Node{
-				role: LICENSE_NODE,
+				role: LicenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "Apache-1.0", hasPlus: true,
@@ -32,7 +32,7 @@ func TestLicenseString(t *testing.T) {
 			}, "Apache-1.0+"},
 		{"License node - exception",
 			&Node{
-				role: LICENSE_NODE,
+				role: LicenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "GPL-2.0", hasPlus: false,
@@ -41,7 +41,7 @@ func TestLicenseString(t *testing.T) {
 			}, "GPL-2.0 WITH Bison-exception-2.2"},
 		{"LicenseRef node - simple",
 			&Node{
-				role: LICENSEREF_NODE,
+				role: LicenseRefNode,
 				exp:  nil,
 				lic:  nil,
 				ref: &referenceNodePartial{
@@ -52,7 +52,7 @@ func TestLicenseString(t *testing.T) {
 			}, "LicenseRef-MIT-Style-2"},
 		{"LicenseRef node - with DocumentRef",
 			&Node{
-				role: LICENSEREF_NODE,
+				role: LicenseRefNode,
 				exp:  nil,
 				lic:  nil,
 				ref: &referenceNodePartial{

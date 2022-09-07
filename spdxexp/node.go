@@ -10,9 +10,9 @@ type NodePair struct {
 type nodeRole uint8
 
 const (
-	EXPRESSION_NODE nodeRole = iota
-	LICENSEREF_NODE
-	LICENSE_NODE
+	ExpressionNode nodeRole = iota
+	LicenseRefNode
+	LicenseNode
 )
 
 type Node struct {
@@ -44,7 +44,7 @@ type referenceNodePartial struct {
 // ---------------------- Helper Methods ----------------------
 
 func (node *Node) IsExpression() bool {
-	return node.role == EXPRESSION_NODE
+	return node.role == ExpressionNode
 }
 
 func (node *Node) Left() *Node {
@@ -83,7 +83,7 @@ func (node *Node) Right() *Node {
 }
 
 func (node *Node) IsLicense() bool {
-	return node.role == LICENSE_NODE
+	return node.role == LicenseNode
 }
 
 // Return the value of the license field.
@@ -117,7 +117,7 @@ func (node *Node) HasException() bool {
 }
 
 func (node *Node) IsLicenseRef() bool {
-	return node.role == LICENSEREF_NODE
+	return node.role == LicenseRefNode
 }
 
 func (node *Node) LicenseRef() *string {
@@ -145,7 +145,7 @@ func (node *Node) HasDocumentRef() bool {
 // TODO: Original had "NOASSERTION".  Does that still apply?
 func (node *Node) LicenseString() *string {
 	switch node.role {
-	case LICENSE_NODE:
+	case LicenseNode:
 		license := *node.License()
 		if node.HasPlus() {
 			license += "+"
@@ -154,7 +154,7 @@ func (node *Node) LicenseString() *string {
 			license += " WITH " + *node.Exception()
 		}
 		return &license
-	case LICENSEREF_NODE:
+	case LicenseRefNode:
 		license := "LicenseRef-" + *node.LicenseRef()
 		if node.HasDocumentRef() {
 			license = "DocumentRef-" + *node.DocumentRef() + ":" + license
@@ -199,8 +199,8 @@ func (nodes *NodePair) LicensesAreCompatible() bool {
 	} else {
 		if nodes.firstNode.HasPlus() {
 			// first+, second
-			rev_nodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
-			return rev_nodes.identifierInRange()
+			revNodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
+			return revNodes.identifierInRange()
 		} else {
 			// first, second
 			return nodes.licensesExactlyEqual()

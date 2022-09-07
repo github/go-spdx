@@ -7,7 +7,7 @@ func compareGT(first *Node, second *Node) bool {
 	if !sameLicenseGroup(firstRange, secondRange) {
 		return false
 	}
-	return firstRange.Location[VERSION_GROUP] > secondRange.Location[VERSION_GROUP]
+	return firstRange.Location[VersionGroup] > secondRange.Location[VersionGroup]
 }
 
 func compareLT(first *Node, second *Node) bool {
@@ -17,7 +17,7 @@ func compareLT(first *Node, second *Node) bool {
 	if !sameLicenseGroup(firstRange, secondRange) {
 		return false
 	}
-	return firstRange.Location[VERSION_GROUP] < secondRange.Location[VERSION_GROUP]
+	return firstRange.Location[VersionGroup] < secondRange.Location[VersionGroup]
 }
 
 func compareEQ(first *Node, second *Node) bool {
@@ -27,11 +27,11 @@ func compareEQ(first *Node, second *Node) bool {
 	if !sameLicenseGroup(firstRange, secondRange) {
 		return false
 	}
-	return firstRange.Location[VERSION_GROUP] == secondRange.Location[VERSION_GROUP]
+	return firstRange.Location[VersionGroup] == secondRange.Location[VersionGroup]
 }
 
 func sameLicenseGroup(firstRange *LicenseRange, secondRange *LicenseRange) bool {
-	if firstRange == nil || secondRange == nil || firstRange.Location[LICENSE_GROUP] != secondRange.Location[LICENSE_GROUP] {
+	if firstRange == nil || secondRange == nil || firstRange.Location[LicenseGroup] != secondRange.Location[LicenseGroup] {
 		return false
 	}
 	return true

@@ -322,10 +322,10 @@ func expressionString(exp expressionNodePartial) string {
 func licenseString(lic licenseNodePartial) string {
 	s := lic.license
 	if lic.hasPlus {
-		s = s + "+"
+		s += "+"
 	}
 	if lic.hasException {
-		s = s + " with " + lic.exception
+		s += " with " + lic.exception
 	}
 	return s
 }

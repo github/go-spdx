@@ -71,10 +71,10 @@ func TestGetLicenseRange(t *testing.T) {
 	}{
 		{"no multi-element ranges", "Apache-2.0", &LicenseRange{
 			Licenses: []string{"Apache-2.0"},
-			Location: map[uint8]int{LICENSE_GROUP: 2, VERSION_GROUP: 2, LICENSE_INDEX: 0}}},
+			Location: map[uint8]int{LicenseGroup: 2, VersionGroup: 2, LicenseIndex: 0}}},
 		{"multi-element ranges", "GFDL-1.2-only", &LicenseRange{
 			Licenses: []string{"GFDL-1.2", "GFDL-1.2-only"},
-			Location: map[uint8]int{LICENSE_GROUP: 18, VERSION_GROUP: 1, LICENSE_INDEX: 1}}},
+			Location: map[uint8]int{LicenseGroup: 18, VersionGroup: 1, LicenseIndex: 1}}},
 		{"no range", "Bison-exception-2.2", nil},
 	}
 

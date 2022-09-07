@@ -228,7 +228,8 @@ func appendTerms(left, right [][]*Node) [][]*Node {
 	var result [][]*Node
 	for _, r := range right {
 		for _, l := range left {
-			tmp := append(l, r...)
+			tmp := l
+			tmp = append(tmp, r...)
 			result = append(result, tmp)
 		}
 	}
@@ -297,7 +298,7 @@ func deepSort(nodes2d [][]*Node) [][]*Node {
 	//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
 	sort.Slice(nodes2d, func(i, j int) bool {
 		// TODO: Consider refactor to map nodes to LicenseString before processing.
-		for k, _ := range nodes2d[j] {
+		for k := range nodes2d[j] {
 			if k >= len(nodes2d[i]) {
 				// if the first k elements are equal and the second array is
 				// longer than the first, the first is considered less than

@@ -118,17 +118,17 @@ func TestFlatten(t *testing.T) {
 		{singleLicense().name, singleLicense().node, singleLicense().flattened},
 		{orExpression().name, orExpression().node, orExpression().flattened},
 		{orAndExpression().name, orAndExpression().node, orAndExpression().flattened},
-		{or_And_Expression().name, or_And_Expression().node, or_And_Expression().flattened},
+		{orOPAndCPExpression().name, orOPAndCPExpression().node, orOPAndCPExpression().flattened},
 		{andOrExpression().name, andOrExpression().node, andOrExpression().flattened},
 		{orAndOrExpression().name, orAndOrExpression().node, orAndOrExpression().flattened},
-		{or_And_OrExpression().name, or_And_OrExpression().node, or_And_OrExpression().flattened},
+		{orOPAndCPOrExpression().name, orOPAndCPOrExpression().node, orOPAndCPOrExpression().flattened},
 		{orOrOrExpression().name, orOrOrExpression().node, orOrOrExpression().flattened},
 		{andOrAndExpression().name, andOrAndExpression().node, andOrAndExpression().flattened},
-		{_and_Or_And_Expression().name, _and_Or_And_Expression().node, _and_Or_And_Expression().flattened},
+		{oPAndCPOrOPAndCPExpression().name, oPAndCPOrOPAndCPExpression().node, oPAndCPOrOPAndCPExpression().flattened},
 		{andExpression().name, andExpression().node, andExpression().flattened},
-		{and_Or_Expression().name, and_Or_Expression().node, and_Or_Expression().flattened},
-		{_or_And_Or_Expression().name, _or_And_Or_Expression().node, _or_And_Or_Expression().flattened},
-		{and_Or_AndExpression().name, and_Or_AndExpression().node, and_Or_AndExpression().flattened},
+		{andOPOrCPExpression().name, andOPOrCPExpression().node, andOPOrCPExpression().flattened},
+		{oPOrCPAndOPOrCPExpression().name, oPOrCPAndOPOrCPExpression().node, oPOrCPAndOPOrCPExpression().flattened},
+		{andOPOrCPAndExpression().name, andOPOrCPAndExpression().node, andOPOrCPAndExpression().flattened},
 		{andAndAndExpression().name, andAndAndExpression().node, andAndAndExpression().flattened},
 	}
 
@@ -152,17 +152,17 @@ func TestExpand(t *testing.T) {
 		{singleLicense().name, singleLicense().node, singleLicense().sorted},
 		{orExpression().name, orExpression().node, orExpression().sorted},
 		{orAndExpression().name, orAndExpression().node, orAndExpression().sorted},
-		{or_And_Expression().name, or_And_Expression().node, or_And_Expression().sorted},
+		{orOPAndCPExpression().name, orOPAndCPExpression().node, orOPAndCPExpression().sorted},
 		{andOrExpression().name, andOrExpression().node, andOrExpression().sorted},
 		{orAndOrExpression().name, orAndOrExpression().node, orAndOrExpression().sorted},
-		{or_And_OrExpression().name, or_And_OrExpression().node, or_And_OrExpression().sorted},
+		{orOPAndCPOrExpression().name, orOPAndCPOrExpression().node, orOPAndCPOrExpression().sorted},
 		{orOrOrExpression().name, orOrOrExpression().node, orOrOrExpression().sorted},
 		{andOrAndExpression().name, andOrAndExpression().node, andOrAndExpression().sorted},
-		{_and_Or_And_Expression().name, _and_Or_And_Expression().node, _and_Or_And_Expression().sorted},
+		{oPAndCPOrOPAndCPExpression().name, oPAndCPOrOPAndCPExpression().node, oPAndCPOrOPAndCPExpression().sorted},
 		{andExpression().name, andExpression().node, andExpression().sorted},
-		{and_Or_Expression().name, and_Or_Expression().node, and_Or_Expression().sorted},
-		{_or_And_Or_Expression().name, _or_And_Or_Expression().node, _or_And_Or_Expression().sorted},
-		{and_Or_AndExpression().name, and_Or_AndExpression().node, and_Or_AndExpression().sorted},
+		{andOPOrCPExpression().name, andOPOrCPExpression().node, andOPOrCPExpression().sorted},
+		{oPOrCPAndOPOrCPExpression().name, oPOrCPAndOPOrCPExpression().node, oPOrCPAndOPOrCPExpression().sorted},
+		{andOPOrCPAndExpression().name, andOPOrCPAndExpression().node, andOPOrCPAndExpression().sorted},
 		{andAndAndExpression().name, andAndAndExpression().node, andAndAndExpression().sorted},
 	}
 
@@ -183,13 +183,13 @@ func TestExpandOr(t *testing.T) {
 	}{
 		{orExpression().name, orExpression().node, orExpression().expanded},
 		{orAndExpression().name, orAndExpression().node, orAndExpression().expanded},
-		{or_And_Expression().name, or_And_Expression().node, or_And_Expression().expanded},
+		{orOPAndCPExpression().name, orOPAndCPExpression().node, orOPAndCPExpression().expanded},
 		{andOrExpression().name, andOrExpression().node, andOrExpression().expanded},
 		{orAndOrExpression().name, orAndOrExpression().node, orAndOrExpression().expanded},
-		{or_And_OrExpression().name, or_And_OrExpression().node, or_And_OrExpression().expanded},
+		{orOPAndCPOrExpression().name, orOPAndCPOrExpression().node, orOPAndCPOrExpression().expanded},
 		{orOrOrExpression().name, orOrOrExpression().node, orOrOrExpression().expanded},
 		{andOrAndExpression().name, andOrAndExpression().node, andOrAndExpression().expanded},
-		{_and_Or_And_Expression().name, _and_Or_And_Expression().node, _and_Or_And_Expression().expanded},
+		{oPAndCPOrOPAndCPExpression().name, oPAndCPOrOPAndCPExpression().node, oPAndCPOrOPAndCPExpression().expanded},
 
 		// TODO: Uncomment kitchen sink test when license plus, exception, license ref, and document ref are supported.
 		// {"kitchen sink",
@@ -280,9 +280,9 @@ func TestExpandAnd(t *testing.T) {
 		expanded [][]*Node
 	}{
 		{andExpression().name, andExpression().node, andExpression().expanded},
-		{and_Or_Expression().name, and_Or_Expression().node, and_Or_Expression().expanded},
-		{_or_And_Or_Expression().name, _or_And_Or_Expression().node, _or_And_Or_Expression().expanded},
-		{and_Or_AndExpression().name, and_Or_AndExpression().node, and_Or_AndExpression().expanded},
+		{andOPOrCPExpression().name, andOPOrCPExpression().node, andOPOrCPExpression().expanded},
+		{oPOrCPAndOPOrCPExpression().name, oPOrCPAndOPOrCPExpression().node, oPOrCPAndOPOrCPExpression().expanded},
+		{andOPOrCPAndExpression().name, andOPOrCPAndExpression().node, andOPOrCPAndExpression().expanded},
 		{andAndAndExpression().name, andAndAndExpression().node, andAndAndExpression().expanded},
 	}
 
@@ -583,7 +583,7 @@ func orAndExpression() testCaseData {
 	}
 }
 
-func or_And_Expression() testCaseData {
+func orOPAndCPExpression() testCaseData {
 	return testCaseData{
 		name:       "OR(AND) Expression",
 		expression: "MIT OR (Apache-2.0 AND GPL-2.0)",
@@ -1047,7 +1047,7 @@ func orAndOrExpression() testCaseData {
 	}
 }
 
-func or_And_OrExpression() testCaseData {
+func orOPAndCPOrExpression() testCaseData {
 	return testCaseData{
 		name:       "OR(AND)OR Expression",
 		expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0",
@@ -1603,7 +1603,7 @@ func andOrAndExpression() testCaseData {
 	}
 }
 
-func _and_Or_And_Expression() testCaseData {
+func oPAndCPOrOPAndCPExpression() testCaseData {
 	return testCaseData{
 		name:       "(AND)OR(AND) Expression",
 		expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)",
@@ -1871,7 +1871,7 @@ func andExpression() testCaseData {
 	}
 }
 
-func and_Or_Expression() testCaseData {
+func andOPOrCPExpression() testCaseData {
 	return testCaseData{
 		name:       "AND(OR) Expression",
 		expression: "MIT AND (Apache-2.0 OR GPL-2.0)",
@@ -2026,7 +2026,7 @@ func and_Or_Expression() testCaseData {
 	}
 }
 
-func _or_And_Or_Expression() testCaseData {
+func oPOrCPAndOPOrCPExpression() testCaseData {
 	return testCaseData{
 		name:       "(OR)AND(OR) Expression",
 		expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)",
@@ -2279,7 +2279,7 @@ func _or_And_Or_Expression() testCaseData {
 	}
 }
 
-func and_Or_AndExpression() testCaseData {
+func andOPOrCPAndExpression() testCaseData {
 	return testCaseData{
 		name:       "AND(OR)AND Expression",
 		expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0",

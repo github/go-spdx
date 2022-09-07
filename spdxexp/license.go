@@ -27,9 +27,9 @@ func inLicenseList(licenses []string, id string) bool {
 }
 
 const (
-	LICENSE_GROUP uint8 = iota
-	VERSION_GROUP
-	LICENSE_INDEX
+	LicenseGroup uint8 = iota
+	VersionGroup
+	LicenseIndex
 )
 
 type LicenseRange struct {
@@ -44,9 +44,9 @@ func GetLicenseRange(id string) *LicenseRange {
 			for li, license := range versionGroup {
 				if id == license {
 					location := map[uint8]int{
-						LICENSE_GROUP: lg,
-						VERSION_GROUP: vg,
-						LICENSE_INDEX: li,
+						LicenseGroup: lg,
+						VersionGroup: vg,
+						LicenseIndex: li,
 					}
 					return &LicenseRange{
 						Licenses: versionGroup,

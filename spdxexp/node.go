@@ -192,20 +192,18 @@ func (nodes *NodePair) LicensesAreCompatible() bool {
 		if nodes.firstNode.HasPlus() {
 			// first+, second+
 			return nodes.rangesAreCompatible()
-		} else {
-			// first, second+
-			return nodes.identifierInRange()
 		}
-	} else {
-		if nodes.firstNode.HasPlus() {
-			// first+, second
-			revNodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
-			return revNodes.identifierInRange()
-		} else {
-			// first, second
-			return nodes.licensesExactlyEqual()
-		}
+		// first, second+
+		return nodes.identifierInRange()
 	}
+	// else secondNode does not have plus
+	if nodes.firstNode.HasPlus() {
+		// first+, second
+		revNodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
+		return revNodes.identifierInRange()
+	}
+	// first, second
+	return nodes.licensesExactlyEqual()
 }
 
 // Return true if two licenses are compatible in the context of their ranges; otherwise, false.

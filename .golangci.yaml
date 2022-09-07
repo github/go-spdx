@@ -1,0 +1,46 @@
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 5m
+
+  skip-files:
+    - .peg\.go
+    - .*\.pb\.go
+  skip-dirs:
+    - vendor
+
+linters:
+  enable:
+    - deadcode
+    - depguard
+    - errcheck
+    - exportloopref
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - unused
+    - varcheck
+  disable:
+    - gochecknoglobals # we allow global variables in packages
+    - gochecknoinits # we allow inits in packages
+    - goconst # we allow repeated values to go un-const'd
+    - lll # we allow any line length
+    - unparam # we allow function calls to name unused parameters
+
+issues:
+  exclude-rules:
+    # Probably some broken linter for generics?
+    - linters: [ revive ]
+      text: 'receiver-naming: receiver name \S+ should be consistent with previous receiver name \S+ for invalid-type'

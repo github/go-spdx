@@ -1,7 +1,6 @@
 package spdxexp
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -52,9 +51,7 @@ func Satisfies(firstExp string, secondExp string) (bool, error) {
 	}
 
 	firstExpanded := firstTree.expand(true)
-	fmt.Println("firstExpanded: ", firstExpanded)
 	secondFlattened := secondTree.flatten()
-	fmt.Println("secondFlattened: ", secondFlattened)
 
 	for _, s1d := range firstExpanded {
 		if isANDCompatible(s1d, secondFlattened) {
@@ -161,26 +158,22 @@ func (node *Node) expand(withDeepSort bool) [][]*Node {
 //   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
 func (node *Node) expandOr() [][]*Node {
 	var result [][]*Node
-	if node.Left().IsLicense() {
-		result = append(result, []*Node{node.Left()})
-	} else if node.Left().IsExpression() {
-		if node.Left().IsOrExpression() {
-			left := node.Left().expandOr()
+	result = expandOrTerm(node.Left(), result)
+	result = expandOrTerm(node.Right(), result)
+	return result
+}
+
+// Expands the terms of an OR expression.
+func expandOrTerm(term *Node, result [][]*Node) [][]*Node {
+	if term.IsLicense() {
+		result = append(result, []*Node{term})
+	} else if term.IsExpression() {
+		if term.IsOrExpression() {
+			left := term.expandOr()
 			result = append(result, left...)
-		} else if node.Left().IsAndExpression() {
-			left := node.Left().expandAnd()[0]
+		} else if term.IsAndExpression() {
+			left := term.expandAnd()[0]
 			result = append(result, left)
-		}
-	}
-	if node.Right().IsLicense() {
-		result = append(result, []*Node{node.Right()})
-	} else if node.Right().IsExpression() {
-		if node.Right().IsOrExpression() {
-			right := node.Right().expandOr()
-			result = append(result, right...)
-		} else if node.Right().IsAndExpression() {
-			right := node.Right().expandAnd()[0]
-			result = append(result, right)
 		}
 	}
 	return result
@@ -195,35 +188,32 @@ func (node *Node) expandOr() [][]*Node {
 //   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
 // See more examples under func expand.
 func (node *Node) expandAnd() [][]*Node {
-	var left [][]*Node
-	if node.Left().IsLicense() {
-		left = append(left, []*Node{node.Left()})
-	} else if node.Left().IsExpression() {
-		if node.Left().IsAndExpression() {
-			left = node.Left().expandAnd()
-		} else if node.Left().IsOrExpression() {
-			left = node.Left().expandOr()
-		}
-	}
-	var right [][]*Node
-	if node.Right().IsLicense() {
-		right = append(right, []*Node{node.Right()})
-	} else if node.Right().IsExpression() {
-		if node.Right().IsAndExpression() {
-			right = node.Right().expandAnd()
-		} else if node.Right().IsOrExpression() {
-			right = node.Right().expandOr()
-		}
-	}
+	left := expandAndTerm(node.Left())
+	right := expandAndTerm(node.Right())
 
 	if len(left) > 1 || len(right) > 1 {
 		// an OR expression has been processed
 		// somewhere on the left and/or right node path
-		return appendLeftRight(left, right)
+		return appendTerms(left, right)
 	}
 
 	// only AND expressions have been processed
-	return mergeLeftRight(left, right)
+	return mergeTerms(left, right)
+}
+
+// Expands the terms of an AND expression.
+func expandAndTerm(term *Node) [][]*Node {
+	var result [][]*Node
+	if term.IsLicense() {
+		result = append(result, []*Node{term})
+	} else if term.IsExpression() {
+		if term.IsAndExpression() {
+			result = term.expandAnd()
+		} else if term.IsOrExpression() {
+			result = term.expandOr()
+		}
+	}
+	return result
 }
 
 // Append results from expanding the right expression into the results
@@ -234,7 +224,7 @@ func (node *Node) expandAnd() [][]*Node {
 // Example:
 //   left: {{"MIT"}} right: {{"ISC"}, {"Apache-2.0"}} becomes
 //     {{"MIT", "ISC"}, {"MIT", "Apache-2.0"}}
-func appendLeftRight(left, right [][]*Node) [][]*Node {
+func appendTerms(left, right [][]*Node) [][]*Node {
 	var result [][]*Node
 	for _, r := range right {
 		for _, l := range left {
@@ -252,13 +242,14 @@ func appendLeftRight(left, right [][]*Node) [][]*Node {
 // Example:
 //   left: {{"MIT"}} right: {{"ISC", "Apache-2.0"}} becomes
 //     {{"MIT", "ISC", "Apache-2.0"}}
-func mergeLeftRight(left, right [][]*Node) [][]*Node {
+func mergeTerms(left, right [][]*Node) [][]*Node {
+	results := left
 	for _, r := range right {
-		for j, l := range left {
-			left[j] = append(l, r...)
+		for j, l := range results {
+			results[j] = append(l, r...)
 		}
 	}
-	return left
+	return results
 }
 
 // Sort and dedup an array of license nodes.

@@ -1,5 +1,7 @@
 package spdxexp
 
+import "sort"
+
 type NodePair struct {
 	firstNode  *Node
 	secondNode *Node
@@ -8,9 +10,9 @@ type NodePair struct {
 type nodeRole uint8
 
 const (
-	EXPRESSION_NODE nodeRole = iota
-	LICENSEREF_NODE
-	LICENSE_NODE
+	ExpressionNode nodeRole = iota
+	LicenseRefNode
+	LicenseNode
 )
 
 type Node struct {
@@ -42,7 +44,7 @@ type referenceNodePartial struct {
 // ---------------------- Helper Methods ----------------------
 
 func (node *Node) IsExpression() bool {
-	return node.role == EXPRESSION_NODE
+	return node.role == ExpressionNode
 }
 
 func (node *Node) Left() *Node {
@@ -59,6 +61,20 @@ func (node *Node) Conjunction() *string {
 	return &(node.exp.conjunction)
 }
 
+func (node *Node) IsOrExpression() bool {
+	if !node.IsExpression() {
+		return false
+	}
+	return node.exp.conjunction == "or"
+}
+
+func (node *Node) IsAndExpression() bool {
+	if !node.IsExpression() {
+		return false
+	}
+	return node.exp.conjunction == "and"
+}
+
 func (node *Node) Right() *Node {
 	if !node.IsExpression() {
 		return nil
@@ -67,9 +83,11 @@ func (node *Node) Right() *Node {
 }
 
 func (node *Node) IsLicense() bool {
-	return node.role == LICENSE_NODE
+	return node.role == LicenseNode
 }
 
+// Return the value of the license field.
+// See also LicenseString()
 func (node *Node) License() *string {
 	if !node.IsLicense() {
 		return nil
@@ -99,7 +117,7 @@ func (node *Node) HasException() bool {
 }
 
 func (node *Node) IsLicenseRef() bool {
-	return node.role == LICENSEREF_NODE
+	return node.role == LicenseRefNode
 }
 
 func (node *Node) LicenseRef() *string {
@@ -123,6 +141,46 @@ func (node *Node) HasDocumentRef() bool {
 	return node.ref.hasDocumentRef
 }
 
+// Return the string representation of the license or license ref.
+// TODO: Original had "NOASSERTION".  Does that still apply?
+func (node *Node) LicenseString() *string {
+	switch node.role {
+	case LicenseNode:
+		license := *node.License()
+		if node.HasPlus() {
+			license += "+"
+		}
+		if node.HasException() {
+			license += " WITH " + *node.Exception()
+		}
+		return &license
+	case LicenseRefNode:
+		license := "LicenseRef-" + *node.LicenseRef()
+		if node.HasDocumentRef() {
+			license = "DocumentRef-" + *node.DocumentRef() + ":" + license
+		}
+		return &license
+	}
+	return nil
+}
+
+// Sort an array of license and license reference nodes alphebetically based
+// on their LicenseString() representation.  The sort function does not expect
+// expression nodes, but if one is in the nodes list, it will sort to the end.
+func SortLicenses(nodes []*Node) {
+	sort.Slice(nodes, func(i, j int) bool {
+		if nodes[j].IsExpression() {
+			// push second license toward end by saying first license is less than
+			return true
+		}
+		if nodes[i].IsExpression() {
+			// push first license toward end by saying second license is less than
+			return false
+		}
+		return *nodes[i].LicenseString() < *nodes[j].LicenseString()
+	})
+}
+
 // ---------------------- Comparator Methods ----------------------
 
 // Return true if two licenses are compatible; otherwise, false.
@@ -141,8 +199,8 @@ func (nodes *NodePair) LicensesAreCompatible() bool {
 	} else {
 		if nodes.firstNode.HasPlus() {
 			// first+, second
-			rev_nodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
-			return rev_nodes.identifierInRange()
+			revNodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
+			return revNodes.identifierInRange()
 		} else {
 			// first, second
 			return nodes.licensesExactlyEqual()

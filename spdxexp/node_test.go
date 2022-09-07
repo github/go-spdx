@@ -6,6 +6,72 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestLicenseString(t *testing.T) {
+	tests := []struct {
+		name   string
+		node   *Node
+		result string
+	}{
+		{"License node - simple",
+			&Node{
+				role: LicenseNode,
+				exp:  nil,
+				lic: &licenseNodePartial{
+					license: "MIT", hasPlus: false,
+					hasException: false, exception: ""},
+				ref: nil,
+			}, "MIT"},
+		{"License node - plus",
+			&Node{
+				role: LicenseNode,
+				exp:  nil,
+				lic: &licenseNodePartial{
+					license: "Apache-1.0", hasPlus: true,
+					hasException: false, exception: ""},
+				ref: nil,
+			}, "Apache-1.0+"},
+		{"License node - exception",
+			&Node{
+				role: LicenseNode,
+				exp:  nil,
+				lic: &licenseNodePartial{
+					license: "GPL-2.0", hasPlus: false,
+					hasException: true, exception: "Bison-exception-2.2"},
+				ref: nil,
+			}, "GPL-2.0 WITH Bison-exception-2.2"},
+		{"LicenseRef node - simple",
+			&Node{
+				role: LicenseRefNode,
+				exp:  nil,
+				lic:  nil,
+				ref: &referenceNodePartial{
+					hasDocumentRef: false,
+					documentRef:    "",
+					licenseRef:     "MIT-Style-2",
+				},
+			}, "LicenseRef-MIT-Style-2"},
+		{"LicenseRef node - with DocumentRef",
+			&Node{
+				role: LicenseRefNode,
+				exp:  nil,
+				lic:  nil,
+				ref: &referenceNodePartial{
+					hasDocumentRef: true,
+					documentRef:    "spdx-tool-1.2",
+					licenseRef:     "MIT-Style-2",
+				},
+			}, "DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			license := *test.node.LicenseString()
+			assert.Equal(t, test.result, license)
+		})
+	}
+}
+
 func TestLicensesAreCompatible(t *testing.T) {
 	tests := []struct {
 		name   string

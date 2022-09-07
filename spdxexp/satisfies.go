@@ -56,37 +56,31 @@ func Satisfies(firstExp string, secondExp string) (bool, error) {
 	secondFlattened := secondTree.flatten()
 	fmt.Println("secondFlattened: ", secondFlattened)
 
-	// satisfactionFunc := func(o string) bool { return isAndCompatible(o, secondFlattened) }
-	// satisfaction := some(firstExpanded, satisfactionFunc)
-
-	// return one.some(satisfactionFunc)
-	// return satisfaction
-
-	// TODO: Stubbed
+	for _, s1d := range firstExpanded {
+		if isANDCompatible(s1d, secondFlattened) {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
-// Return the string representation of the license or license ref.
-// TODO: Original had "NOASSERTION".  Does that still apply?
-func (node *Node) licenseString() *string {
-	switch node.role {
-	case LICENSE_NODE:
-		license := *node.License()
-		if node.HasPlus() {
-			license += "+"
+func isANDCompatible(required, test []*Node) bool {
+	for _, r := range required {
+		compatible := false
+		for _, t := range test {
+			nodes := &NodePair{firstNode: r, secondNode: t}
+			if nodes.LicensesAreCompatible() {
+				compatible = true
+				break
+			}
 		}
-		if node.HasException() {
-			license += " WITH " + *node.Exception()
+		if !compatible {
+			// no compatible license found for one of the required licenses
+			return false
 		}
-		return &license
-	case LICENSEREF_NODE:
-		license := "LicenseRef-" + *node.LicenseRef()
-		if node.HasDocumentRef() {
-			license = "DocumentRef-" + *node.DocumentRef() + ":" + license
-		}
-		return &license
 	}
-	return nil
+	// found a compatible license in test for each required license
+	return true
 }
 
 // Flatten the given expression into an array of all licenses mentioned in the expression.
@@ -111,8 +105,8 @@ func (node *Node) licenseString() *string {
 //       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
 //   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
 //       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-func (node *Node) flatten() []string {
-	var flattened []string
+func (node *Node) flatten() []*Node {
+	var flattened []*Node
 	expanded := node.expand(false)
 	for _, licenses := range expanded {
 		flattened = append(flattened, licenses...)
@@ -143,14 +137,12 @@ func (node *Node) flatten() []string {
 //       [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
 //   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
 //       [["GPL-2.0", "ISC", "MIT"], ["Apache-2.0", "GPL-2.0", "MIT"]]
-func (node *Node) expand(withDeepSort bool) [][]string {
+func (node *Node) expand(withDeepSort bool) [][]*Node {
 	if node.IsLicense() || node.IsLicenseRef() {
-		var result [][]string
-		license := []string{*node.licenseString()}
-		return append(result, license)
+		return [][]*Node{{node}}
 	}
 
-	var expanded [][]string
+	var expanded [][]*Node
 	if node.IsOrExpression() {
 		expanded = node.expandOr()
 	} else {
@@ -167,11 +159,10 @@ func (node *Node) expand(withDeepSort bool) [][]string {
 //
 // Example:
 //   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
-func (node *Node) expandOr() [][]string {
-	var result [][]string
+func (node *Node) expandOr() [][]*Node {
+	var result [][]*Node
 	if node.Left().IsLicense() {
-		left := []string{*node.Left().licenseString()}
-		result = append(result, left)
+		result = append(result, []*Node{node.Left()})
 	} else if node.Left().IsExpression() {
 		if node.Left().IsOrExpression() {
 			left := node.Left().expandOr()
@@ -182,8 +173,7 @@ func (node *Node) expandOr() [][]string {
 		}
 	}
 	if node.Right().IsLicense() {
-		right := []string{*node.Right().licenseString()}
-		result = append(result, right)
+		result = append(result, []*Node{node.Right()})
 	} else if node.Right().IsExpression() {
 		if node.Right().IsOrExpression() {
 			right := node.Right().expandOr()
@@ -204,10 +194,10 @@ func (node *Node) expandOr() [][]string {
 //   AND Expression: "MIT AND Apache-2.0" becomes [["MIT", "Apache-2.0"]]
 //   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
 // See more examples under func expand.
-func (node *Node) expandAnd() [][]string {
-	var left [][]string
+func (node *Node) expandAnd() [][]*Node {
+	var left [][]*Node
 	if node.Left().IsLicense() {
-		left = append(left, []string{*node.Left().licenseString()})
+		left = append(left, []*Node{node.Left()})
 	} else if node.Left().IsExpression() {
 		if node.Left().IsAndExpression() {
 			left = node.Left().expandAnd()
@@ -215,9 +205,9 @@ func (node *Node) expandAnd() [][]string {
 			left = node.Left().expandOr()
 		}
 	}
-	var right [][]string
+	var right [][]*Node
 	if node.Right().IsLicense() {
-		right = append(right, []string{*node.Right().licenseString()})
+		right = append(right, []*Node{node.Right()})
 	} else if node.Right().IsExpression() {
 		if node.Right().IsAndExpression() {
 			right = node.Right().expandAnd()
@@ -244,8 +234,8 @@ func (node *Node) expandAnd() [][]string {
 // Example:
 //   left: {{"MIT"}} right: {{"ISC"}, {"Apache-2.0"}} becomes
 //     {{"MIT", "ISC"}, {"MIT", "Apache-2.0"}}
-func appendLeftRight(left, right [][]string) [][]string {
-	var result [][]string
+func appendLeftRight(left, right [][]*Node) [][]*Node {
+	var result [][]*Node
 	for _, r := range right {
 		for _, l := range left {
 			tmp := append(l, r...)
@@ -262,7 +252,7 @@ func appendLeftRight(left, right [][]string) [][]string {
 // Example:
 //   left: {{"MIT"}} right: {{"ISC", "Apache-2.0"}} becomes
 //     {{"MIT", "ISC", "Apache-2.0"}}
-func mergeLeftRight(left, right [][]string) [][]string {
+func mergeLeftRight(left, right [][]*Node) [][]*Node {
 	for _, r := range right {
 		for j, l := range left {
 			left[j] = append(l, r...)
@@ -271,51 +261,42 @@ func mergeLeftRight(left, right [][]string) [][]string {
 	return left
 }
 
-// func sort (licenseList) {
-//   var sortedLicenseLists = licenseList
-//     .filter(func (e) { return Object.keys(e).length })
-//     .map(func (e) { return Object.keys(e).sort() })
-//   return sortedLicenseLists.map(func (list, i) {
-//     return list.map(func (license) { return licenseList[i][license] })
-//   })
-// }
-
-// // func isANDCompatible (one string, two string) bool {
-// //   return one.every(func (o) {
-// //     return two.some(func (t) { return licensesAreCompatible(o, t) })
-// //   })
-// // }
-
-// Sort and dedup an array of strings.
-func sortAndDedup(s []string) []string {
-	if len(s) <= 1 {
-		return s
+// Sort and dedup an array of license nodes.
+func sortAndDedup(nodes []*Node) []*Node {
+	if len(nodes) <= 1 {
+		return nodes
 	}
 
-	sort.Strings(s)
+	SortLicenses(nodes)
 	prev := 1
-	for curr := 1; curr < len(s); curr++ {
-		if s[curr-1] != s[curr] {
-			s[prev] = s[curr]
+	for curr := 1; curr < len(nodes); curr++ {
+		if *nodes[curr-1].LicenseString() != *nodes[curr].LicenseString() {
+			nodes[prev] = nodes[curr]
 			prev++
 		}
 	}
 
-	return s[:prev]
+	return nodes[:prev]
 }
 
-func deepSort(s2d [][]string) [][]string {
-	if len(s2d) == 0 || len(s2d) == 1 && len(s2d[0]) <= 1 {
-		return s2d
+// Sort two-dimensional array of license nodes.  Internal arrays are sorted first.
+// Then each array of nodes are sorted relative to the other arrays.
+//
+// Example:
+//   BEFORE {{"MIT", "GPL-2.0"}, {"ISC", "Apache-2.0"}}
+//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
+func deepSort(nodes2d [][]*Node) [][]*Node {
+	if len(nodes2d) == 0 || len(nodes2d) == 1 && len(nodes2d[0]) <= 1 {
+		return nodes2d
 	}
 
 	// sort each array internally
 	// Example:
 	//   BEFORE {{"MIT", "GPL-2.0"}, {"ISC", "Apache-2.0"}}
 	//   AFTER  {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
-	for _, s := range s2d {
-		if len(s) > 1 {
-			sort.Strings(s)
+	for _, nodes := range nodes2d {
+		if len(nodes) > 1 {
+			SortLicenses(nodes)
 		}
 	}
 
@@ -323,21 +304,24 @@ func deepSort(s2d [][]string) [][]string {
 	// Example:
 	//   BEFORE {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
 	//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
-	sort.Slice(s2d, func(i, j int) bool {
-		for k, _ := range s2d[j] {
-			if k >= len(s2d[i]) {
+	sort.Slice(nodes2d, func(i, j int) bool {
+		// TODO: Consider refactor to map nodes to LicenseString before processing.
+		for k, _ := range nodes2d[j] {
+			if k >= len(nodes2d[i]) {
 				// if the first k elements are equal and the second array is
 				// longer than the first, the first is considered less than
 				return true
 			}
-			if s2d[i][k] != s2d[j][k] {
+			iLicense := *nodes2d[i][k].LicenseString()
+			jLicense := *nodes2d[j][k].LicenseString()
+			if iLicense != jLicense {
 				// when elements are not equal, return true if first is less than
-				return s2d[i][k] < s2d[j][k]
+				return iLicense < jLicense
 			}
 		}
 		// all elements are equal, return false to avoid a swap
 		return false
 	})
 
-	return s2d
+	return nodes2d
 }

@@ -1,5 +1,7 @@
 package spdxexp
 
+import "sort"
+
 type NodePair struct {
 	firstNode  *Node
 	secondNode *Node
@@ -84,6 +86,8 @@ func (node *Node) IsLicense() bool {
 	return node.role == LICENSE_NODE
 }
 
+// Return the value of the license field.
+// See also LicenseString()
 func (node *Node) License() *string {
 	if !node.IsLicense() {
 		return nil
@@ -135,6 +139,46 @@ func (node *Node) HasDocumentRef() bool {
 		return false
 	}
 	return node.ref.hasDocumentRef
+}
+
+// Return the string representation of the license or license ref.
+// TODO: Original had "NOASSERTION".  Does that still apply?
+func (node *Node) LicenseString() *string {
+	switch node.role {
+	case LICENSE_NODE:
+		license := *node.License()
+		if node.HasPlus() {
+			license += "+"
+		}
+		if node.HasException() {
+			license += " WITH " + *node.Exception()
+		}
+		return &license
+	case LICENSEREF_NODE:
+		license := "LicenseRef-" + *node.LicenseRef()
+		if node.HasDocumentRef() {
+			license = "DocumentRef-" + *node.DocumentRef() + ":" + license
+		}
+		return &license
+	}
+	return nil
+}
+
+// Sort an array of license and license reference nodes alphebetically based
+// on their LicenseString() representation.  The sort function does not expect
+// expression nodes, but if one is in the nodes list, it will sort to the end.
+func SortLicenses(nodes []*Node) {
+	sort.Slice(nodes, func(i, j int) bool {
+		if nodes[j].IsExpression() {
+			// push second license toward end by saying first license is less than
+			return true
+		}
+		if nodes[i].IsExpression() {
+			// push first license toward end by saying second license is less than
+			return false
+		}
+		return *nodes[i].LicenseString() < *nodes[j].LicenseString()
+	})
 }
 
 // ---------------------- Comparator Methods ----------------------

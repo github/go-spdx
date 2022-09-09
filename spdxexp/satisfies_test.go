@@ -27,7 +27,6 @@ func TestSatisfies(t *testing.T) {
 
 		{"Apache-2.0 AND MIT satisfies [MIT, Apache-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}, true, nil},
 		{"MIT AND Apache-2.0 satisfies [MIT, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}, true, nil},
-		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},
 		{"! MIT AND Apache-2.0 satisfies [MIT]", "MIT AND Apache-2.0", []string{"MIT"}, false, nil},
 		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, false, nil},
 
@@ -77,10 +76,6 @@ func TestSatisfies(t *testing.T) {
 			"(MIT OR GPL-2.0) AND ISC", []string{"MIT", "ISC"}, true, nil},
 		{"MIT AND ISC satisfies [MIT, GPL-2.0, ISC]",
 			"MIT AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, true, nil},
-		{"MIT AND ISC satisfies [MIT, GPL-2.0, ISC]",
-			"MIT AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, true, nil},
-		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [Apache-2.0, ISC]",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"Apache-2.0", "ISC"}, true, nil},
 		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [Apache-2.0, ISC]",
 			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"Apache-2.0", "ISC"}, true, nil},
 		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]",

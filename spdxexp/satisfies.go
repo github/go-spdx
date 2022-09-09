@@ -17,7 +17,6 @@ import (
 //
 //   "Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
 //   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
-//   "MIT" satisfies ["MIT", "Apache-2.0"] is true
 //   "MIT AND Apache-2.0" satisfies ["MIT"] is false
 //   "GPL" satisfies ["MIT", "Apache-2.0"] is false
 //

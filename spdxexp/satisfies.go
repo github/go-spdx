@@ -1,71 +1,87 @@
 package spdxexp
 
 import (
+	"errors"
 	"sort"
 )
 
-// Determine if first expression satisfies second expression.
+// Satisfies determines if test license expression satisfies allowed list of licenses.
 //
 // Examples:
 //   "MIT" satisfies "MIT" is true
 //
-//   "MIT" satisfies "MIT OR Apache-2.0" is true
-//   "MIT OR Apache-2.0" satisfies "MIT" is true
-//   "GPL" satisfies "MIT OR Apache-2.0" is false
-//   "MIT OR Apache-2.0" satisfies "GPL" is false
+//   "MIT" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT OR Apache-2.0" satisfies ["MIT"] is true
+//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
+//   "MIT OR Apache-2.0" satisfies ["GPL"] is false
 //
-//   "Apache-2.0 AND MIT" satisfies "MIT AND Apache-2.0" is true
-//   "MIT AND Apache-2.0" satisfies "MIT AND Apache-2.0" is true
-//   "MIT" satisfies "MIT AND Apache-2.0" is false
-//   "MIT AND Apache-2.0" satisfies "MIT" is false
-//   "GPL" satisfies "MIT AND Apache-2.0" is false
+//   "Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT AND Apache-2.0" satisfies ["MIT"] is false
+//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
 //
-//   "MIT AND Apache-2.0" satisfies "MIT AND (Apache-1.0 OR Apache-2.0)"
+//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-1.0", "Apache-2.0"] is true
 //
-//   "Apache-1.0" satisfies "Apache-2.0+" is false
-//   "Apache-2.0" satisfies "Apache-2.0+" is true
-//   "Apache-3.0" satisfies "Apache-2.0+" is true
+//   "Apache-1.0" satisfies ["Apache-2.0+"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0+"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0+"] returns error about Apache-3.0 license not existing
 //
-//   "Apache-1.0" satisfies "Apache-2.0-or-later" is false
-//   "Apache-2.0" satisfies "Apache-2.0-or-later" is true
-//   "Apache-3.0" satisfies "Apache-2.0-or-later" is true
+//   "Apache-1.0" satisfies ["Apache-2.0-or-later"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0-or-later"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0-or-later"] returns error about Apache-3.0 license not existing
 //
-//   "Apache-1.0" satisfies "Apache-2.0-only" is false
-//   "Apache-2.0" satisfies "Apache-2.0-only" is true
-//   "Apache-3.0" satisfies "Apache-2.0-only" is false
+//   "Apache-1.0" satisfies ["Apache-2.0-only"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0-only"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
 //
-func Satisfies(firstExp string, secondExp string) (bool, error) {
-	firstTree, err := Parse(firstExp)
+func Satisfies(testExpression string, allowedList []string) (bool, error) {
+	expressionNode, err := Parse(testExpression)
 	if err != nil {
 		return false, err
 	}
-
-	secondTree, err := Parse(secondExp)
+	allowedNodes, err := stringsToNodes(allowedList)
 	if err != nil {
 		return false, err
 	}
+	sortAndDedup(allowedNodes)
 
-	nodes := &NodePair{firstNode: firstTree, secondNode: secondTree}
-	if firstTree.IsLicense() && secondTree.IsLicense() {
-		return nodes.LicensesAreCompatible(), nil
-	}
+	expandedExpression := expressionNode.expand(true)
 
-	firstExpanded := firstTree.expand(true)
-	secondFlattened := secondTree.flatten()
-
-	for _, s1d := range firstExpanded {
-		if isANDCompatible(s1d, secondFlattened) {
+	for _, expressionPart := range expandedExpression {
+		if isCompatible(expressionPart, allowedNodes) {
+			// return once any expressionPart is compatible with the allow list
+			// * each part is an array of licenses that are ANDed, meaning all have to be on the allowedList
+			// * the parts are ORed, meaning only one of the parts need to be compatible
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func isANDCompatible(required, test []*Node) bool {
-	for _, r := range required {
+// stringsToNodes converts an array of single license strings to to an array of license nodes.
+func stringsToNodes(licenseStrings []string) ([]*Node, error) {
+	nodes := make([]*Node, len(licenseStrings))
+	for i, s := range licenseStrings {
+		node, err := Parse(s)
+		if err != nil {
+			return nil, err
+		}
+		if node.IsExpression() {
+			return nil, errors.New("expressions are not supported in the allowedList")
+		}
+		nodes[i] = node
+	}
+	return nodes, nil
+}
+
+// isCompatible checks if expressionPart is compatible with allowed list.
+// Expression part is an array of licenses that are ANDed together.
+// Allowed is an array of licenses that can fulfill the expression.
+func isCompatible(expressionPart, allowed []*Node) bool {
+	for _, expLicense := range expressionPart {
 		compatible := false
-		for _, t := range test {
-			nodes := &NodePair{firstNode: r, secondNode: t}
+		for _, allowedLicense := range allowed {
+			nodes := &NodePair{firstNode: expLicense, secondNode: allowedLicense}
 			if nodes.LicensesAreCompatible() {
 				compatible = true
 				break
@@ -80,38 +96,7 @@ func isANDCompatible(required, test []*Node) bool {
 	return true
 }
 
-// Flatten the given expression into an array of all licenses mentioned in the expression.
-//
-// Example:
-//   License Node: "MIT" becomes ["MIT"]
-//   OR Expression: "MIT OR Apache-2.0" becomes ["Apache-2.0", "MIT"]
-//   AND Expression: "MIT AND Apache-2.0" becomes ["Apache-2.0", "MIT"]
-//   OR-AND Expression: "MIT OR Apache-2.0 AND GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   OR(AND) Expression: "MIT OR (Apache-2.0 AND GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   AND-OR Expression: "MIT AND Apache-2.0 OR GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   OR-AND-OR Expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   (OR)AND(OR) Expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   OR(AND)OR Expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   AND-OR-AND Expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   (AND)OR(AND) Expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-func (node *Node) flatten() []*Node {
-	var flattened []*Node
-	expanded := node.expand(false)
-	for _, licenses := range expanded {
-		flattened = append(flattened, licenses...)
-	}
-	return sortAndDedup(flattened)
-}
-
-// Expand the given expression into an equivalent array representing ANDed licenses
+// expand will expand the given expression into an equivalent array representing ANDed licenses
 // grouped in an array and ORed licenses each in a separate array.
 //
 // Example:
@@ -152,7 +137,7 @@ func (node *Node) expand(withDeepSort bool) [][]*Node {
 	return expanded
 }
 
-// Expand the given expression into an equivalent array representing ORed licenses each in a separate array.
+// expandOr expands the given expression into an equivalent array representing ORed licenses each in a separate array.
 //
 // Example:
 //   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
@@ -163,7 +148,7 @@ func (node *Node) expandOr() [][]*Node {
 	return result
 }
 
-// Expands the terms of an OR expression.
+// expandOrTerm expands the terms of an OR expression.
 func expandOrTerm(term *Node, result [][]*Node) [][]*Node {
 	if term.IsLicense() {
 		result = append(result, []*Node{term})
@@ -179,7 +164,7 @@ func expandOrTerm(term *Node, result [][]*Node) [][]*Node {
 	return result
 }
 
-// Expand the given expression into an equivalent array representing ANDed licenses
+// expandAnd expands the given expression into an equivalent array representing ANDed licenses
 // grouped in an array.  When an ORed expression is combined with AND, the ORed
 // expressions are combined with the ANDed expressions.
 //
@@ -201,7 +186,7 @@ func (node *Node) expandAnd() [][]*Node {
 	return mergeTerms(left, right)
 }
 
-// Expands the terms of an AND expression.
+// expandAndTerm expands the terms of an AND expression.
 func expandAndTerm(term *Node) [][]*Node {
 	var result [][]*Node
 	if term.IsLicense() {
@@ -216,7 +201,7 @@ func expandAndTerm(term *Node) [][]*Node {
 	return result
 }
 
-// Append results from expanding the right expression into the results
+// appendTerms appends results from expanding the right expression into the results
 // from expanding the left expression.  When at least one of the left/right
 // nodes includes an OR expression, the values are spread across at times
 // producing more results than exists in the left or right results.
@@ -236,7 +221,7 @@ func appendTerms(left, right [][]*Node) [][]*Node {
 	return result
 }
 
-// Merge results from expanding left and right expressions.
+// mergeTerms merges results from expanding left and right expressions.
 // When neither left/right nodes includes an OR expression, the values
 // are merged left and right results.
 //
@@ -253,7 +238,7 @@ func mergeTerms(left, right [][]*Node) [][]*Node {
 	return results
 }
 
-// Sort and dedup an array of license nodes.
+// sortAndDedup sorts an array of license nodes and then removes duplicates.
 func sortAndDedup(nodes []*Node) []*Node {
 	if len(nodes) <= 1 {
 		return nodes
@@ -271,7 +256,7 @@ func sortAndDedup(nodes []*Node) []*Node {
 	return nodes[:prev]
 }
 
-// Sort two-dimensional array of license nodes.  Internal arrays are sorted first.
+// deepSort sorts a two-dimensional array of license nodes.  Internal arrays are sorted first.
 // Then each array of nodes are sorted relative to the other arrays.
 //
 // Example:

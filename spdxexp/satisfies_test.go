@@ -8,135 +8,98 @@ import (
 
 func TestSatisfies(t *testing.T) {
 	tests := []struct {
-		name      string
-		firstExp  string
-		secondExp string
-		satisfied bool
-		err       error
+		name           string
+		repoExpression string
+		allowedList    []string
+		satisfied      bool
+		err            error
 	}{
 		// TODO: Test error conditions (e.g. GPL is an invalid license, Apachie + has invalid + operator)
 		// regression tests from spdx-satisfies.js - comments for satisfies function
 		// TODO: Commented out tests are not yet supported.
-		{"MIT satisfies MIT", "MIT", "MIT", true, nil},
-		{"! MIT satisfies Apache-2.0", "MIT", "Apache-2.0", false, nil},
+		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
+		{"! MIT satisfies [Apache-2.0]", "MIT", []string{"Apache-2.0"}, false, nil},
 
-		{"MIT satisfies MIT OR Apache-2.0", "MIT", "MIT OR Apache-2.0", true, nil},
-		{"MIT OR Apache-2.0 satisfies MIT", "MIT OR Apache-2.0", "MIT", true, nil},
-		{"! GPL-2.0 satisfies MIT OR Apache-2.0", "GPL-2.0", "MIT OR Apache-2.0", false, nil},
-		{"! MIT OR Apache-2.0 satisfies GPL-2.0", "MIT OR Apache-2.0", "GPL-2.0", false, nil},
+		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},
+		{"MIT OR Apache-2.0 satisfies [MIT]", "MIT OR Apache-2.0", []string{"MIT"}, true, nil},
+		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, false, nil},
+		{"! MIT OR Apache-2.0 satisfies [GPL-2.0]", "MIT OR Apache-2.0", []string{"GPL-2.0"}, false, nil},
 
-		{"Apache-2.0 AND MIT satisfies MIT AND Apache-2.0", "Apache-2.0 AND MIT", "MIT AND Apache-2.0", true, nil},
-		{"MIT AND Apache-2.0 satisfies MIT AND Apache-2.0", "MIT AND Apache-2.0", "MIT AND Apache-2.0", true, nil},
-		// {"! MIT satisfies MIT AND Apache-2.0", "MIT", "MIT AND Apache-2.0", false, nil}, // TODO: Fails here and js
-		{"! MIT AND Apache-2.0 satisfies MIT", "MIT AND Apache-2.0", "MIT", false, nil},
-		{"! GPL-2.0 satisfies MIT AND Apache-2.0", "GPL-2.0", "MIT AND Apache-2.0", false, nil},
+		{"Apache-2.0 AND MIT satisfies [MIT, Apache-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}, true, nil},
+		{"MIT AND Apache-2.0 satisfies [MIT, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}, true, nil},
+		{"! MIT AND Apache-2.0 satisfies [MIT]", "MIT AND Apache-2.0", []string{"MIT"}, false, nil},
+		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, false, nil},
 
-		{"MIT AND Apache-2.0 satisfies MIT AND (Apache-1.0 OR Apache-2.0)", "MIT AND Apache-2.0", "MIT AND (Apache-1.0 OR Apache-2.0)", true, nil},
+		{"MIT AND Apache-2.0 satisfies [MIT, Apache-1.0, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}, true, nil},
 
-		// {"Apache-1.0+ satisfies Apache-2.0+", "Apache-1.0+", "Apache-2.0+", true, nil},  // TODO: Fails here but passes js
-		{"! Apache-1.0 satisfies Apache-2.0+", "Apache-1.0", "Apache-2.0+", false, nil},
-		{"Apache-2.0 satisfies Apache-2.0+", "Apache-2.0", "Apache-2.0+", true, nil},
-		// {"Apache-3.0 satisfies Apache-2.0+", "Apache-3.0", "Apache-2.0+", true, nil}, // TODO: gets error b/c Apache-3.0 doesn't exist -- need better error message
+		// {"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, true, nil},  // TODO: Fails here but passes js
+		{"! Apache-1.0 satisfies [Apache-2.0+]", "Apache-1.0", []string{"Apache-2.0+"}, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0+]", "Apache-2.0", []string{"Apache-2.0+"}, true, nil},
+		// {"Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, true, nil}, // TODO: gets error b/c Apache-3.0 doesn't exist -- need better error message
 
-		{"! Apache-1.0 satisfies Apache-2.0-or-later", "Apache-1.0", "Apache-2.0-or-later", false, nil},
-		{"Apache-2.0 satisfies Apache-2.0-or-later", "Apache-2.0", "Apache-2.0-or-later", true, nil},
-		// {"Apache-3.0 satisfies Apache-2.0-or-later", "Apache-3.0", "Apache-2.0-or-later", true, nil},
+		{"! Apache-1.0 satisfies [Apache-2.0-or-later]", "Apache-1.0", []string{"Apache-2.0-or-later"}, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0-or-later]", "Apache-2.0", []string{"Apache-2.0-or-later"}, true, nil},
+		// {"Apache-3.0 satisfies [Apache-2.0-or-later]", "Apache-3.0", []string{"Apache-2.0-or-later"}, true, nil},
 
-		{"! Apache-1.0 satisfies Apache-2.0-only", "Apache-1.0", "Apache-2.0-only", false, nil},
-		{"Apache-2.0 satisfies Apache-2.0-only", "Apache-2.0", "Apache-2.0-only", true, nil},
-		// {"Apache-3.0 satisfies Apache-2.0-only", "Apache-3.0", "Apache-2.0-only", false, nil},
+		{"! Apache-1.0 satisfies [Apache-2.0-only]", "Apache-1.0", []string{"Apache-2.0-only"}, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0-only]", "Apache-2.0", []string{"Apache-2.0-only"}, true, nil},
+		// {"Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, false, nil},
 
 		// regression tests from spdx-satisfies.js - assert statements in README
 		// TODO: Commented out tests are not yet supported.
-		{"MIT satisfies MIT", "MIT", "MIT", true, nil},
+		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
 
-		{"MIT satisfies (ISC OR MIT)", "MIT", "(ISC OR MIT)", true, nil},
-		{"Zlib satisfies (ISC OR (MIT OR Zlib))", "Zlib", "(ISC OR (MIT OR Zlib))", true, nil},
-		{"! GPL-3.0 satisfies (ISC OR MIT)", "GPL-3.0", "(ISC OR MIT)", false, nil},
-		// {"GPL-2.0 satisfies GPL-2.0+", "GPL-2.0", "GPL-2.0+", true, nil},   // TODO: Fails here but passes js
-		// {"GPL-2.0 satisfies GPL-2.0-or-later", "GPL-2.0", "GPL-2.0-or-later", true, nil},  // TODO: Fails here and js
-		{"GPL-3.0 satisfies GPL-2.0+", "GPL-3.0", "GPL-2.0+", true, nil},
-		{"GPL-1.0-or-later satisfies GPL-2.0-or-later", "GPL-1.0-or-later", "GPL-2.0-or-later", true, nil},
-		{"GPL-1.0+ satisfies GPL-2.0+", "GPL-1.0+", "GPL-2.0+", true, nil},
-		{"! GPL-1.0 satisfies GPL-2.0+", "GPL-1.0", "GPL-2.0+", false, nil},
-		{"GPL-2.0-only satisfies GPL-2.0-only", "GPL-2.0-only", "GPL-2.0-only", true, nil},
-		{"GPL-3.0-only satisfies GPL-2.0+", "GPL-3.0-only", "GPL-2.0+", true, nil},
+		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, true, nil},
+		{"Zlib satisfies [ISC, MIT, Zlib]", "Zlib", []string{"ISC", "MIT", "Zlib"}, true, nil},
+		{"! GPL-3.0 satisfies [ISC, MIT]", "GPL-3.0", []string{"ISC", "MIT"}, false, nil},
+		// {"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, true, nil},   // TODO: Fails here but passes js
+		// {"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, true, nil},  // TODO: Fails here and js
+		{"GPL-3.0 satisfies [GPL-2.0+]", "GPL-3.0", []string{"GPL-2.0+"}, true, nil},
+		{"GPL-1.0-or-later satisfies [GPL-2.0-or-later]", "GPL-1.0-or-later", []string{"GPL-2.0-or-later"}, true, nil},
+		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, true, nil},
+		{"! GPL-1.0 satisfies [GPL-2.0+]", "GPL-1.0", []string{"GPL-2.0+"}, false, nil},
+		{"GPL-2.0-only satisfies [GPL-2.0-only]", "GPL-2.0-only", []string{"GPL-2.0-only"}, true, nil},
+		{"GPL-3.0-only satisfies [GPL-2.0+]", "GPL-3.0-only", []string{"GPL-2.0+"}, true, nil},
 
-		{"! GPL-2.0 satisfies GPL-2.0+ WITH Bison-exception-2.2",
-			"GPL-2.0", "GPL-2.0+ WITH Bison-exception-2.2", false, nil},
-		{"GPL-3.0 WITH Bison-exception-2.2 satisfies GPL-2.0+ WITH Bison-exception-2.2",
-			"GPL-3.0 WITH Bison-exception-2.2", "GPL-2.0+ WITH Bison-exception-2.2", true, nil},
+		{"! GPL-2.0 satisfies [GPL-2.0+ WITH Bison-exception-2.2]",
+			"GPL-2.0", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, false, nil},
+		{"GPL-3.0 WITH Bison-exception-2.2 satisfies [GPL-2.0+ WITH Bison-exception-2.2]",
+			"GPL-3.0 WITH Bison-exception-2.2", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, true, nil},
 
-		{"(MIT OR GPL-2.0) satisfies (ISC OR MIT)", "(MIT OR GPL-2.0)", "(ISC OR MIT)", true, nil},
-		{"(MIT AND GPL-2.0) satisfies (MIT AND GPL-2.0)", "(MIT AND GPL-2.0)", "(MIT AND GPL-2.0)", true, nil},
-		{"MIT AND GPL-2.0 AND ISC satisfies MIT AND GPL-2.0 AND ISC",
-			"MIT AND GPL-2.0 AND ISC", "MIT AND GPL-2.0 AND ISC", true, nil},
-		{"MIT AND GPL-2.0 AND ISC satisfies ISC AND GPL-2.0 AND MIT",
-			"MIT AND GPL-2.0 AND ISC", "ISC AND GPL-2.0 AND MIT", true, nil},
-		{"(MIT OR GPL-2.0) AND ISC satisfies MIT AND ISC",
-			"(MIT OR GPL-2.0) AND ISC", "MIT AND ISC", true, nil},
-		{"MIT AND ISC satisfies (MIT OR GPL-2.0) AND ISC",
-			"MIT AND ISC", "(MIT OR GPL-2.0) AND ISC", true, nil},
-		{"MIT AND ISC satisfies (MIT AND GPL-2.0) OR ISC",
-			"MIT AND ISC", "(MIT AND GPL-2.0) OR ISC", true, nil},
-		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies Apache-2.0 AND ISC",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", "Apache-2.0 AND ISC", true, nil},
-		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies Apache-2.0 OR ISC",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", "Apache-2.0 OR ISC", true, nil},
-		{"(MIT AND GPL-2.0) satisfies (MIT OR GPL-2.0)",
-			"(MIT AND GPL-2.0)", "(MIT OR GPL-2.0)", true, nil},
-		{"(MIT AND GPL-2.0) satisfies (GPL-2.0 AND MIT)",
-			"(MIT AND GPL-2.0)", "(GPL-2.0 AND MIT)", true, nil},
-		{"MIT satisfies (GPL-2.0 OR MIT) AND (MIT OR ISC)",
-			"MIT", "(GPL-2.0 OR MIT) AND (MIT OR ISC)", true, nil},
-		// {"MIT AND ICU satisfies (MIT AND GPL-2.0) OR (ISC AND (Apache-2.0 OR ICU))",
-		// 	"MIT AND ICU", "(MIT AND GPL-2.0) OR (ISC AND (Apache-2.0 OR ICU))", true, nil}, // TODO: This says true and the js version returns true, but it shouldn't.
-		{"! (MIT AND GPL-2.0) satisfies (ISC OR GPL-2.0)",
-			"(MIT AND GPL-2.0)", "(ISC OR GPL-2.0)", false, nil},
-		{"! MIT AND (GPL-2.0 OR ISC) satisfies MIT",
-			"MIT AND (GPL-2.0 OR ISC)", "MIT", false, nil},
-		{"! (MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies MIT",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", "MIT", false, nil},
+		{"(MIT OR GPL-2.0) satisfies [ISC, MIT]", "(MIT OR GPL-2.0)", []string{"ISC", "MIT"}, true, nil},
+		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]", "(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, true, nil},
+		{"MIT AND GPL-2.0 AND ISC satisfies [MIT, GPL-2.0, ISC]",
+			"MIT AND GPL-2.0 AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, true, nil},
+		{"MIT AND GPL-2.0 AND ISC satisfies [ISC, GPL-2.0, MIT]",
+			"MIT AND GPL-2.0 AND ISC", []string{"ISC", "GPL-2.0", "MIT"}, true, nil},
+		{"(MIT OR GPL-2.0) AND ISC satisfies [MIT, ISC]",
+			"(MIT OR GPL-2.0) AND ISC", []string{"MIT", "ISC"}, true, nil},
+		{"MIT AND ISC satisfies [MIT, GPL-2.0, ISC]",
+			"MIT AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, true, nil},
+		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [Apache-2.0, ISC]",
+			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"Apache-2.0", "ISC"}, true, nil},
+		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]",
+			"(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, true, nil},
+		{"(MIT AND GPL-2.0) satisfies [GPL-2.0, MIT]",
+			"(MIT AND GPL-2.0)", []string{"GPL-2.0", "MIT"}, true, nil},
+		{"MIT satisfies [GPL-2.0, MIT, MIT, ISC]",
+			"MIT", []string{"GPL-2.0", "MIT", "MIT", "ISC"}, true, nil},
+		{"MIT AND ICU satisfies [MIT, GPL-2.0, ISC, Apache-2.0, ICU]",
+			"MIT AND ICU", []string{"MIT", "GPL-2.0", "ISC", "Apache-2.0", "ICU"}, true, nil}, // TODO: This says true and the js version returns true, but it shouldn't.
+		{"! (MIT AND GPL-2.0) satisfies [ISC, GPL-2.0]",
+			"(MIT AND GPL-2.0)", []string{"ISC", "GPL-2.0"}, false, nil},
+		{"! MIT AND (GPL-2.0 OR ISC) satisfies [MIT]",
+			"MIT AND (GPL-2.0 OR ISC)", []string{"MIT"}, false, nil},
+		{"! (MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [MIT]",
+			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"MIT"}, false, nil},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			satisfied, err := Satisfies(test.firstExp, test.secondExp)
+			satisfied, err := Satisfies(test.repoExpression, test.allowedList)
 			assert.Equal(t, test.err, err)
 			assert.Equal(t, test.satisfied, satisfied)
-		})
-	}
-}
-
-func TestFlatten(t *testing.T) {
-	tests := []struct {
-		name      string
-		node      *Node
-		flattened []*Node
-	}{
-		{singleLicense().name, singleLicense().node, singleLicense().flattened},
-		{orExpression().name, orExpression().node, orExpression().flattened},
-		{orAndExpression().name, orAndExpression().node, orAndExpression().flattened},
-		{orOPAndCPExpression().name, orOPAndCPExpression().node, orOPAndCPExpression().flattened},
-		{andOrExpression().name, andOrExpression().node, andOrExpression().flattened},
-		{orAndOrExpression().name, orAndOrExpression().node, orAndOrExpression().flattened},
-		{orOPAndCPOrExpression().name, orOPAndCPOrExpression().node, orOPAndCPOrExpression().flattened},
-		{orOrOrExpression().name, orOrOrExpression().node, orOrOrExpression().flattened},
-		{andOrAndExpression().name, andOrAndExpression().node, andOrAndExpression().flattened},
-		{oPAndCPOrOPAndCPExpression().name, oPAndCPOrOPAndCPExpression().node, oPAndCPOrOPAndCPExpression().flattened},
-		{andExpression().name, andExpression().node, andExpression().flattened},
-		{andOPOrCPExpression().name, andOPOrCPExpression().node, andOPOrCPExpression().flattened},
-		{oPOrCPAndOPOrCPExpression().name, oPOrCPAndOPOrCPExpression().node, oPOrCPAndOPOrCPExpression().flattened},
-		{andOPOrCPAndExpression().name, andOPOrCPAndExpression().node, andOPOrCPAndExpression().flattened},
-		{andAndAndExpression().name, andAndAndExpression().node, andAndAndExpression().flattened},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.name, func(t *testing.T) {
-			flattened := test.node.flatten()
-			assert.Equal(t, test.flattened, flattened)
 		})
 	}
 }
@@ -301,7 +264,6 @@ type testCaseData struct {
 	node       *Node
 	expanded   [][]*Node
 	sorted     [][]*Node
-	flattened  []*Node
 }
 
 func singleLicense() testCaseData {
@@ -338,16 +300,6 @@ func singleLicense() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			},
-		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -422,24 +374,6 @@ func orExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			},
-		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -554,32 +488,6 @@ func orAndExpression() testCaseData {
 				},
 			},
 		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-		},
 	}
 }
 
@@ -692,32 +600,6 @@ func orOPAndCPExpression() testCaseData {
 				},
 			},
 		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-		},
 	}
 }
 
@@ -828,32 +710,6 @@ func andOrExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			},
-		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1010,40 +866,6 @@ func orAndOrExpression() testCaseData {
 				},
 			},
 		},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-		},
 	}
 }
 
@@ -1156,7 +978,9 @@ func orOPAndCPOrExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1195,39 +1019,6 @@ func orOPAndCPOrExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1343,7 +1134,9 @@ func orOrOrExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1384,39 +1177,6 @@ func orOrOrExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1528,7 +1288,9 @@ func andOrAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1565,39 +1327,6 @@ func andOrAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1709,7 +1438,9 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1746,39 +1477,6 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1830,7 +1528,9 @@ func andExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1849,23 +1549,6 @@ func andExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -1959,7 +1642,9 @@ func andOPOrCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -1996,31 +1681,6 @@ func andOPOrCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -2168,7 +1828,9 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -2241,39 +1903,6 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -2403,7 +2032,9 @@ func andOPOrCPAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -2456,39 +2087,6 @@ func andOPOrCPAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}
@@ -2600,7 +2198,9 @@ func andAndAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
+			},
+		},
+
 		sorted: [][]*Node{
 			{
 				{
@@ -2635,39 +2235,6 @@ func andAndAndExpression() testCaseData {
 						hasException: false, exception: ""},
 					ref: nil,
 				},
-			}},
-		flattened: []*Node{
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "GPL-2.0", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "ISC", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			},
-			{
-				role: LicenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
 			},
 		},
 	}

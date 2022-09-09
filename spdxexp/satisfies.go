@@ -96,37 +96,6 @@ func isCompatible(expressionPart, allowed []*Node) bool {
 	return true
 }
 
-// Flatten the given expression into an array of all licenses mentioned in the expression.
-//
-// Example:
-//   License Node: "MIT" becomes ["MIT"]
-//   OR Expression: "MIT OR Apache-2.0" becomes ["Apache-2.0", "MIT"]
-//   AND Expression: "MIT AND Apache-2.0" becomes ["Apache-2.0", "MIT"]
-//   OR-AND Expression: "MIT OR Apache-2.0 AND GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   OR(AND) Expression: "MIT OR (Apache-2.0 AND GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   AND-OR Expression: "MIT AND Apache-2.0 OR GPL-2.0" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes ["Apache-2.0", "GPL-2.0", "MIT"]
-//   OR-AND-OR Expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   (OR)AND(OR) Expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   OR(AND)OR Expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   AND-OR-AND Expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   (AND)OR(AND) Expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-//   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
-//       ["Apache-2.0", "GPL-2.0", "ISC", "MIT"]
-func (node *Node) flatten() []*Node {
-	var flattened []*Node
-	expanded := node.expand(false)
-	for _, licenses := range expanded {
-		flattened = append(flattened, licenses...)
-	}
-	return sortAndDedup(flattened)
-}
-
 // Expand the given expression into an equivalent array representing ANDed licenses
 // grouped in an array and ORed licenses each in a separate array.
 //

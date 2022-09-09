@@ -1,71 +1,88 @@
 package spdxexp
 
 import (
+	"errors"
 	"sort"
 )
 
-// Determine if first expression satisfies second expression.
+// Determine if repository license expression satisfies allowed list of licenses.
 //
 // Examples:
 //   "MIT" satisfies "MIT" is true
 //
-//   "MIT" satisfies "MIT OR Apache-2.0" is true
-//   "MIT OR Apache-2.0" satisfies "MIT" is true
-//   "GPL" satisfies "MIT OR Apache-2.0" is false
-//   "MIT OR Apache-2.0" satisfies "GPL" is false
+//   "MIT" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT OR Apache-2.0" satisfies ["MIT"] is true
+//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
+//   "MIT OR Apache-2.0" satisfies ["GPL"] is false
 //
-//   "Apache-2.0 AND MIT" satisfies "MIT AND Apache-2.0" is true
-//   "MIT AND Apache-2.0" satisfies "MIT AND Apache-2.0" is true
-//   "MIT" satisfies "MIT AND Apache-2.0" is false
-//   "MIT AND Apache-2.0" satisfies "MIT" is false
-//   "GPL" satisfies "MIT AND Apache-2.0" is false
+//   "Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT" satisfies ["MIT", "Apache-2.0"] is true
+//   "MIT AND Apache-2.0" satisfies ["MIT"] is false
+//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
 //
-//   "MIT AND Apache-2.0" satisfies "MIT AND (Apache-1.0 OR Apache-2.0)"
+//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-1.0", "Apache-2.0"] is true
 //
-//   "Apache-1.0" satisfies "Apache-2.0+" is false
-//   "Apache-2.0" satisfies "Apache-2.0+" is true
-//   "Apache-3.0" satisfies "Apache-2.0+" is true
+//   "Apache-1.0" satisfies ["Apache-2.0+"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0+"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0+"] returns error about Apache-3.0 license not existing
 //
-//   "Apache-1.0" satisfies "Apache-2.0-or-later" is false
-//   "Apache-2.0" satisfies "Apache-2.0-or-later" is true
-//   "Apache-3.0" satisfies "Apache-2.0-or-later" is true
+//   "Apache-1.0" satisfies ["Apache-2.0-or-later"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0-or-later"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0-or-later"] returns error about Apache-3.0 license not existing
 //
-//   "Apache-1.0" satisfies "Apache-2.0-only" is false
-//   "Apache-2.0" satisfies "Apache-2.0-only" is true
-//   "Apache-3.0" satisfies "Apache-2.0-only" is false
+//   "Apache-1.0" satisfies ["Apache-2.0-only"] is false
+//   "Apache-2.0" satisfies ["Apache-2.0-only"] is true
+//   "Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
 //
-func Satisfies(firstExp string, secondExp string) (bool, error) {
-	firstTree, err := Parse(firstExp)
+func Satisfies(repoExpression string, allowedList []string) (bool, error) {
+	expressionNode, err := Parse(repoExpression)
 	if err != nil {
 		return false, err
 	}
-
-	secondTree, err := Parse(secondExp)
+	allowedNodes, err := stringsToNodes(allowedList)
 	if err != nil {
 		return false, err
 	}
+	sortAndDedup(allowedNodes)
 
-	nodes := &NodePair{firstNode: firstTree, secondNode: secondTree}
-	if firstTree.IsLicense() && secondTree.IsLicense() {
-		return nodes.LicensesAreCompatible(), nil
-	}
+	expandedExpression := expressionNode.expand(true)
 
-	firstExpanded := firstTree.expand(true)
-	secondFlattened := secondTree.flatten()
-
-	for _, s1d := range firstExpanded {
-		if isANDCompatible(s1d, secondFlattened) {
+	for _, expressionPart := range expandedExpression {
+		if isCompatible(expressionPart, allowedNodes) {
+			// return once any expressionPart is compatible with the allow list
+			// * each part is an array of licenses that are ANDed, meaning all have to be on the allowedList
+			// * the parts are ORed, meaning only one of the parts need to be compatible
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func isANDCompatible(required, test []*Node) bool {
-	for _, r := range required {
+// Convert array of single license strings to license nodes.
+func stringsToNodes(licenseStrings []string) ([]*Node, error) {
+	nodes := make([]*Node, len(licenseStrings))
+	for i, s := range licenseStrings {
+		node, err := Parse(s)
+		if err != nil {
+			return nil, err
+		}
+		if node.IsExpression() {
+			return nil, errors.New("expressions are not supported in the allowedList")
+		}
+		nodes[i] = node
+	}
+	return nodes, nil
+}
+
+// Check if expressionPart is compatible with allowed list.
+// Expression part is an array of licenses that are ANDed together.
+// Allowed is an array of licenses that can fulfill the expression.
+func isCompatible(expressionPart, allowed []*Node) bool {
+	for _, expLicense := range expressionPart {
 		compatible := false
-		for _, t := range test {
-			nodes := &NodePair{firstNode: r, secondNode: t}
+		for _, allowedLicense := range allowed {
+			nodes := &NodePair{firstNode: expLicense, secondNode: allowedLicense}
 			if nodes.LicensesAreCompatible() {
 				compatible = true
 				break

@@ -28,6 +28,8 @@ func TestParse(t *testing.T) {
 			},
 			"MIT", nil},
 
+		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
+
 		{"OR Expression", "MIT OR Apache-2.0",
 			&Node{
 				role: ExpressionNode,

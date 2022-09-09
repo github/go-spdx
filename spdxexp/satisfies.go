@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-// Determine if repository license expression satisfies allowed list of licenses.
+// Satisfies determines if test license expression satisfies allowed list of licenses.
 //
 // Examples:
 //   "MIT" satisfies "MIT" is true
@@ -34,8 +34,8 @@ import (
 //   "Apache-2.0" satisfies ["Apache-2.0-only"] is true
 //   "Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
 //
-func Satisfies(repoExpression string, allowedList []string) (bool, error) {
-	expressionNode, err := Parse(repoExpression)
+func Satisfies(testExpression string, allowedList []string) (bool, error) {
+	expressionNode, err := Parse(testExpression)
 	if err != nil {
 		return false, err
 	}
@@ -58,7 +58,7 @@ func Satisfies(repoExpression string, allowedList []string) (bool, error) {
 	return false, nil
 }
 
-// Convert array of single license strings to license nodes.
+// stringsToNodes converts an array of single license strings to to an array of license nodes.
 func stringsToNodes(licenseStrings []string) ([]*Node, error) {
 	nodes := make([]*Node, len(licenseStrings))
 	for i, s := range licenseStrings {
@@ -74,7 +74,7 @@ func stringsToNodes(licenseStrings []string) ([]*Node, error) {
 	return nodes, nil
 }
 
-// Check if expressionPart is compatible with allowed list.
+// isCompatible checks if expressionPart is compatible with allowed list.
 // Expression part is an array of licenses that are ANDed together.
 // Allowed is an array of licenses that can fulfill the expression.
 func isCompatible(expressionPart, allowed []*Node) bool {
@@ -96,7 +96,7 @@ func isCompatible(expressionPart, allowed []*Node) bool {
 	return true
 }
 
-// Expand the given expression into an equivalent array representing ANDed licenses
+// expand will expand the given expression into an equivalent array representing ANDed licenses
 // grouped in an array and ORed licenses each in a separate array.
 //
 // Example:
@@ -137,7 +137,7 @@ func (node *Node) expand(withDeepSort bool) [][]*Node {
 	return expanded
 }
 
-// Expand the given expression into an equivalent array representing ORed licenses each in a separate array.
+// expandOr expands the given expression into an equivalent array representing ORed licenses each in a separate array.
 //
 // Example:
 //   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
@@ -148,7 +148,7 @@ func (node *Node) expandOr() [][]*Node {
 	return result
 }
 
-// Expands the terms of an OR expression.
+// expandOrTerm expands the terms of an OR expression.
 func expandOrTerm(term *Node, result [][]*Node) [][]*Node {
 	if term.IsLicense() {
 		result = append(result, []*Node{term})
@@ -164,7 +164,7 @@ func expandOrTerm(term *Node, result [][]*Node) [][]*Node {
 	return result
 }
 
-// Expand the given expression into an equivalent array representing ANDed licenses
+// expandAnd expands the given expression into an equivalent array representing ANDed licenses
 // grouped in an array.  When an ORed expression is combined with AND, the ORed
 // expressions are combined with the ANDed expressions.
 //
@@ -186,7 +186,7 @@ func (node *Node) expandAnd() [][]*Node {
 	return mergeTerms(left, right)
 }
 
-// Expands the terms of an AND expression.
+// expandAndTerm expands the terms of an AND expression.
 func expandAndTerm(term *Node) [][]*Node {
 	var result [][]*Node
 	if term.IsLicense() {
@@ -201,7 +201,7 @@ func expandAndTerm(term *Node) [][]*Node {
 	return result
 }
 
-// Append results from expanding the right expression into the results
+// appendTerms appends results from expanding the right expression into the results
 // from expanding the left expression.  When at least one of the left/right
 // nodes includes an OR expression, the values are spread across at times
 // producing more results than exists in the left or right results.
@@ -221,7 +221,7 @@ func appendTerms(left, right [][]*Node) [][]*Node {
 	return result
 }
 
-// Merge results from expanding left and right expressions.
+// mergeTerms merges results from expanding left and right expressions.
 // When neither left/right nodes includes an OR expression, the values
 // are merged left and right results.
 //
@@ -238,7 +238,7 @@ func mergeTerms(left, right [][]*Node) [][]*Node {
 	return results
 }
 
-// Sort and dedup an array of license nodes.
+// sortAndDedup sorts an array of license nodes and then removes duplicates.
 func sortAndDedup(nodes []*Node) []*Node {
 	if len(nodes) <= 1 {
 		return nodes
@@ -256,7 +256,7 @@ func sortAndDedup(nodes []*Node) []*Node {
 	return nodes[:prev]
 }
 
-// Sort two-dimensional array of license nodes.  Internal arrays are sorted first.
+// deepSort sorts a two-dimensional array of license nodes.  Internal arrays are sorted first.
 // Then each array of nodes are sorted relative to the other arrays.
 //
 // Example:

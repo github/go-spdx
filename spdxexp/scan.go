@@ -30,7 +30,7 @@ const (
 	ExceptionToken
 )
 
-// Scan expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
+// Scan scans a string expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
 func scan(expression string) ([]token, error) {
 	var tokens []token
 	var token *token

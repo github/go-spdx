@@ -17,6 +17,9 @@ type tokenStream struct {
 }
 
 func Parse(source string) (*Node, error) {
+	if len(source) == 0 {
+		return nil, errors.New("parse error - cannot parse empty string")
+	}
 	tokens, err := scan(source)
 	if err != nil {
 		return nil, err

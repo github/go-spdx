@@ -39,6 +39,9 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if len(allowedList) == 0 {
+		return false, errors.New("allowedList requires at least one element, but is empty")
+	}
 	allowedNodes, err := stringsToNodes(allowedList)
 	if err != nil {
 		return false, err

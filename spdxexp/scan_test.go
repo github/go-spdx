@@ -19,6 +19,7 @@ func TestScan(t *testing.T) {
 			[]token{
 				{role: LicenseToken, value: "MIT"},
 			}, nil},
+		{"empty expression", "", nil, nil},
 		{"two licenses using AND", "MIT AND Apache-2.0",
 			[]token{
 				{role: LicenseToken, value: "MIT"},

@@ -23,11 +23,11 @@ type token struct {
 type tokenrole uint8
 
 const (
-	OperatorToken tokenrole = iota
-	DocumentRefToken
-	LicenseRefToken
-	LicenseToken
-	ExceptionToken
+	operatorToken tokenrole = iota
+	documentRefToken
+	licenseRefToken
+	licenseToken
+	exceptionToken
 )
 
 // Scan scans a string expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
@@ -157,7 +157,7 @@ func (exp *expressionStream) readOperator() *token {
 		return nil
 	}
 
-	return &token{role: OperatorToken, value: op}
+	return &token{role: operatorToken, value: op}
 }
 
 // Get id from expression starting at index.  Raise error if id not found.
@@ -183,7 +183,7 @@ func (exp *expressionStream) readDocumentRef() *token {
 	if exp.err != nil {
 		return nil
 	}
-	return &token{role: DocumentRefToken, value: id}
+	return &token{role: documentRefToken, value: id}
 }
 
 // Read LicenseRef in expression starting at index if it exists. Raise error if found and id doesn't follow.
@@ -198,7 +198,7 @@ func (exp *expressionStream) readLicenseRef() *token {
 	if exp.err != nil {
 		return nil
 	}
-	return &token{role: LicenseRefToken, value: id}
+	return &token{role: licenseRefToken, value: id}
 }
 
 // Read a LICENSE/EXCEPTION in expression starting at index if it exists. Raise error if found and id doesn't follow.
@@ -276,10 +276,10 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 // Lookup license identifier in active and exception lists to determine if it is a supported SPDX id
 func licenseLookup(license string) *token {
 	if activeLicense(license) {
-		return &token{role: LicenseToken, value: license}
+		return &token{role: licenseToken, value: license}
 	}
 	if exceptionLicense(license) {
-		return &token{role: ExceptionToken, value: license}
+		return &token{role: exceptionToken, value: license}
 	}
 	return nil
 }
@@ -287,7 +287,7 @@ func licenseLookup(license string) *token {
 // Lookup license identifier in deprecated list to determine if it is a supported SPDX id
 func deprecatedLicenseLookup(license string) *token {
 	if deprecatedLicense(license) {
-		return &token{role: LicenseToken, value: license}
+		return &token{role: licenseToken, value: license}
 	}
 	return nil
 }

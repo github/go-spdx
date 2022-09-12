@@ -9,12 +9,12 @@ import (
 func TestLicenseString(t *testing.T) {
 	tests := []struct {
 		name   string
-		node   *Node
+		node   *node
 		result string
 	}{
 		{"License node - simple",
-			&Node{
-				role: LicenseNode,
+			&node{
+				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "MIT", hasPlus: false,
@@ -22,8 +22,8 @@ func TestLicenseString(t *testing.T) {
 				ref: nil,
 			}, "MIT"},
 		{"License node - plus",
-			&Node{
-				role: LicenseNode,
+			&node{
+				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "Apache-1.0", hasPlus: true,
@@ -31,8 +31,8 @@ func TestLicenseString(t *testing.T) {
 				ref: nil,
 			}, "Apache-1.0+"},
 		{"License node - exception",
-			&Node{
-				role: LicenseNode,
+			&node{
+				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "GPL-2.0", hasPlus: false,
@@ -40,8 +40,8 @@ func TestLicenseString(t *testing.T) {
 				ref: nil,
 			}, "GPL-2.0 WITH Bison-exception-2.2"},
 		{"LicenseRef node - simple",
-			&Node{
-				role: LicenseRefNode,
+			&node{
+				role: licenseRefNode,
 				exp:  nil,
 				lic:  nil,
 				ref: &referenceNodePartial{
@@ -51,8 +51,8 @@ func TestLicenseString(t *testing.T) {
 				},
 			}, "LicenseRef-MIT-Style-2"},
 		{"LicenseRef node - with DocumentRef",
-			&Node{
-				role: LicenseRefNode,
+			&node{
+				role: licenseRefNode,
 				exp:  nil,
 				lic:  nil,
 				ref: &referenceNodePartial{
@@ -81,9 +81,6 @@ func TestLicensesAreCompatible(t *testing.T) {
 		{"compatible (exact equal): GPL-3.0, GPL-3.0", &nodePair{
 			getLicenseNode("GPL-3.0", false),
 			getLicenseNode("GPL-3.0", false)}, true},
-		{"compatible (diff case equal): Apache-2.0, APACHE-2.0", &nodePair{
-			getLicenseNode("Apache-2.0", false),
-			getLicenseNode("APACHE-2.0", false)}, true},
 		// {"compatible (same version with +): Apache-1.0+, Apache-1.0", &nodePair{
 		// 	getLicenseNode("Apache-1.0+", true),
 		// 	getLicenseNode("Apache-1.0", false)}, true},

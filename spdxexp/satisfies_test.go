@@ -112,8 +112,8 @@ func TestExpand(t *testing.T) {
 	// TODO: Add tests for license ref and document ref.
 	tests := []struct {
 		name   string
-		node   *Node
-		result [][]*Node
+		node   *node
+		result [][]*node
 	}{
 		{singleLicense().name, singleLicense().node, singleLicense().sorted},
 		{orExpression().name, orExpression().node, orExpression().sorted},
@@ -144,8 +144,8 @@ func TestExpand(t *testing.T) {
 func TestExpandOr(t *testing.T) {
 	tests := []struct {
 		name     string
-		node     *Node
-		expanded [][]*Node
+		node     *node
+		expanded [][]*node
 	}{
 		{orExpression().name, orExpression().node, orExpression().expanded},
 		{orAndExpression().name, orAndExpression().node, orAndExpression().expanded},
@@ -160,14 +160,14 @@ func TestExpandOr(t *testing.T) {
 		// TODO: Uncomment kitchen sink test when license plus, exception, license ref, and document ref are supported.
 		// {"kitchen sink",
 		// 	// "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-		// 	&Node{
-		// 		role: ExpressionNode,
+		// 	&node{
+		// 		role: expressionNode,
 		// 		exp: &expressionNodePartial{
-		// 			left: &Node{
-		// 				role: ExpressionNode,
+		// 			left: &node{
+		// 				role: expressionNode,
 		// 				exp: &expressionNodePartial{
-		// 					left: &Node{
-		// 						role: LicenseNode,
+		// 					left: &node{
+		// 						role: licenseNode,
 		// 						exp:  nil,
 		// 						lic: &licenseNodePartial{
 		// 							license:      "MIT",
@@ -178,8 +178,8 @@ func TestExpandOr(t *testing.T) {
 		// 						ref: nil,
 		// 					},
 		// 					conjunction: "and",
-		// 					right: &Node{
-		// 						role: LicenseNode,
+		// 					right: &node{
+		// 						role: licenseNode,
 		// 						exp:  nil,
 		// 						lic: &licenseNodePartial{
 		// 							license:      "Apache-1.0",
@@ -194,11 +194,11 @@ func TestExpandOr(t *testing.T) {
 		// 				ref: nil,
 		// 			},
 		// 			conjunction: "or",
-		// 			right: &Node{
-		// 				role: ExpressionNode,
+		// 			right: &node{
+		// 				role: expressionNode,
 		// 				exp: &expressionNodePartial{
-		// 					left: &Node{
-		// 						role: LicenseRefNode,
+		// 					left: &node{
+		// 						role: licenseRefNode,
 		// 						exp:  nil,
 		// 						lic:  nil,
 		// 						ref: &referenceNodePartial{
@@ -208,8 +208,8 @@ func TestExpandOr(t *testing.T) {
 		// 						},
 		// 					},
 		// 					conjunction: "or",
-		// 					right: &Node{
-		// 						role: LicenseNode,
+		// 					right: &node{
+		// 						role: licenseNode,
 		// 						exp:  nil,
 		// 						lic: &licenseNodePartial{
 		// 							license:      "GPL-2.0",
@@ -242,8 +242,8 @@ func TestExpandOr(t *testing.T) {
 func TestExpandAnd(t *testing.T) {
 	tests := []struct {
 		name     string
-		node     *Node
-		expanded [][]*Node
+		node     *node
+		expanded [][]*node
 	}{
 		{andExpression().name, andExpression().node, andExpression().expanded},
 		{andOPOrCPExpression().name, andOPOrCPExpression().node, andOPOrCPExpression().expanded},
@@ -264,27 +264,27 @@ func TestExpandAnd(t *testing.T) {
 type testCaseData struct {
 	name       string
 	expression string
-	node       *Node
-	expanded   [][]*Node
-	sorted     [][]*Node
+	node       *node
+	expanded   [][]*node
+	sorted     [][]*node
 }
 
 func singleLicense() testCaseData {
 	return testCaseData{
 		name:       "Single License",
 		expression: "MIT",
-		node: &Node{
-			role: LicenseNode,
+		node: &node{
+			role: licenseNode,
 			exp:  nil,
 			lic: &licenseNodePartial{
 				license: "MIT", hasPlus: false,
 				hasException: false, exception: ""},
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -293,10 +293,10 @@ func singleLicense() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -311,11 +311,11 @@ func orExpression() testCaseData {
 	return testCaseData{
 		name:       "OR Expression",
 		expression: "MIT OR Apache-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -323,8 +323,8 @@ func orExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
-					role: LicenseNode,
+				right: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -335,10 +335,10 @@ func orExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -348,7 +348,7 @@ func orExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -357,10 +357,10 @@ func orExpression() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -370,7 +370,7 @@ func orExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -386,11 +386,11 @@ func orAndExpression() testCaseData {
 	return testCaseData{
 		name:       "OR-AND Expression",
 		expression: "MIT OR Apache-2.0 AND GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -398,10 +398,10 @@ func orAndExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -412,8 +412,8 @@ func orAndExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -431,10 +431,10 @@ func orAndExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -444,7 +444,7 @@ func orAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -452,7 +452,7 @@ func orAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -461,10 +461,10 @@ func orAndExpression() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -472,7 +472,7 @@ func orAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -482,7 +482,7 @@ func orAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -498,11 +498,11 @@ func orOPAndCPExpression() testCaseData {
 	return testCaseData{
 		name:       "OR(AND) Expression",
 		expression: "MIT OR (Apache-2.0 AND GPL-2.0)",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -510,10 +510,10 @@ func orOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -524,8 +524,8 @@ func orOPAndCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -543,10 +543,10 @@ func orOPAndCPExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -556,7 +556,7 @@ func orOPAndCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -564,7 +564,7 @@ func orOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -573,10 +573,10 @@ func orOPAndCPExpression() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -584,7 +584,7 @@ func orOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -594,7 +594,7 @@ func orOPAndCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -610,13 +610,13 @@ func andOrExpression() testCaseData {
 	return testCaseData{
 		name:       "AND-OR Expression",
 		expression: "MIT AND Apache-2.0 OR GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
+				left: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "MIT",
@@ -627,8 +627,8 @@ func andOrExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -643,8 +643,8 @@ func andOrExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
-					role: LicenseNode,
+				right: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -655,10 +655,10 @@ func andOrExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -666,7 +666,7 @@ func andOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -676,7 +676,7 @@ func andOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -685,10 +685,10 @@ func andOrExpression() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -696,7 +696,7 @@ func andOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -706,7 +706,7 @@ func andOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -722,11 +722,11 @@ func orAndOrExpression() testCaseData {
 	return testCaseData{
 		name:       "OR-AND-OR Expression",
 		expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -737,13 +737,13 @@ func orAndOrExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: ExpressionNode,
+						left: &node{
+							role: expressionNode,
 							exp: &expressionNodePartial{
-								left: &Node{
-									role: LicenseNode,
+								left: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "ISC",
@@ -754,8 +754,8 @@ func orAndOrExpression() testCaseData {
 									ref: nil,
 								},
 								conjunction: "and",
-								right: &Node{
-									role: LicenseNode,
+								right: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "Apache-2.0",
@@ -770,8 +770,8 @@ func orAndOrExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -789,10 +789,10 @@ func orAndOrExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -802,7 +802,7 @@ func orAndOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -810,7 +810,7 @@ func orAndOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -820,7 +820,7 @@ func orAndOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -829,10 +829,10 @@ func orAndOrExpression() testCaseData {
 				},
 			},
 		},
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -840,7 +840,7 @@ func orAndOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -850,7 +850,7 @@ func orAndOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -860,7 +860,7 @@ func orAndOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -876,11 +876,11 @@ func orOPAndCPOrExpression() testCaseData {
 	return testCaseData{
 		name:       "OR(AND)OR Expression",
 		expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -891,13 +891,13 @@ func orOPAndCPOrExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: ExpressionNode,
+						left: &node{
+							role: expressionNode,
 							exp: &expressionNodePartial{
-								left: &Node{
-									role: LicenseNode,
+								left: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "ISC",
@@ -908,8 +908,8 @@ func orOPAndCPOrExpression() testCaseData {
 									ref: nil,
 								},
 								conjunction: "and",
-								right: &Node{
-									role: LicenseNode,
+								right: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "Apache-2.0",
@@ -924,8 +924,8 @@ func orOPAndCPOrExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -943,10 +943,10 @@ func orOPAndCPOrExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -956,7 +956,7 @@ func orOPAndCPOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -964,7 +964,7 @@ func orOPAndCPOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -974,7 +974,7 @@ func orOPAndCPOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -984,10 +984,10 @@ func orOPAndCPOrExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -995,7 +995,7 @@ func orOPAndCPOrExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1005,7 +1005,7 @@ func orOPAndCPOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1015,7 +1015,7 @@ func orOPAndCPOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1031,11 +1031,11 @@ func orOrOrExpression() testCaseData {
 	return testCaseData{
 		name:       "OR-OR-OR Expression",
 		expression: "MIT OR ISC OR Apache-2.0 OR GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -1046,10 +1046,10 @@ func orOrOrExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "ISC",
@@ -1060,10 +1060,10 @@ func orOrOrExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
+						right: &node{
 							exp: &expressionNodePartial{
-								left: &Node{
-									role: LicenseNode,
+								left: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "Apache-2.0",
@@ -1074,8 +1074,8 @@ func orOrOrExpression() testCaseData {
 									ref: nil,
 								},
 								conjunction: "or",
-								right: &Node{
-									role: LicenseNode,
+								right: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "GPL-2.0",
@@ -1097,10 +1097,10 @@ func orOrOrExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1110,7 +1110,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1120,7 +1120,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1130,7 +1130,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1140,10 +1140,10 @@ func orOrOrExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1153,7 +1153,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1163,7 +1163,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1173,7 +1173,7 @@ func orOrOrExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1189,13 +1189,13 @@ func andOrAndExpression() testCaseData {
 	return testCaseData{
 		name:       "AND-OR-AND Expression",
 		expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
+				left: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "MIT",
@@ -1206,8 +1206,8 @@ func andOrAndExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "ISC",
@@ -1222,10 +1222,10 @@ func andOrAndExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -1236,8 +1236,8 @@ func andOrAndExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -1255,10 +1255,10 @@ func andOrAndExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1266,7 +1266,7 @@ func andOrAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1276,7 +1276,7 @@ func andOrAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1284,7 +1284,7 @@ func andOrAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1294,10 +1294,10 @@ func andOrAndExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1305,7 +1305,7 @@ func andOrAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1315,7 +1315,7 @@ func andOrAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1323,7 +1323,7 @@ func andOrAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1339,13 +1339,13 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 	return testCaseData{
 		name:       "(AND)OR(AND) Expression",
 		expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
+				left: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "MIT",
@@ -1356,8 +1356,8 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "ISC",
@@ -1372,10 +1372,10 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "or",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -1386,8 +1386,8 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -1405,10 +1405,10 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1416,7 +1416,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1426,7 +1426,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1434,7 +1434,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1444,10 +1444,10 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1455,7 +1455,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1465,7 +1465,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1473,7 +1473,7 @@ func oPAndCPOrOPAndCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1489,11 +1489,11 @@ func andExpression() testCaseData {
 	return testCaseData{
 		name:       "AND Expression",
 		expression: "MIT AND Apache-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1501,8 +1501,8 @@ func andExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "and",
-				right: &Node{
-					role: LicenseNode,
+				right: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1513,10 +1513,10 @@ func andExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1524,7 +1524,7 @@ func andExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1534,10 +1534,10 @@ func andExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1545,7 +1545,7 @@ func andExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1561,11 +1561,11 @@ func andOPOrCPExpression() testCaseData {
 	return testCaseData{
 		name:       "AND(OR) Expression",
 		expression: "MIT AND (Apache-2.0 OR GPL-2.0)",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -1576,10 +1576,10 @@ func andOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "and",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -1590,8 +1590,8 @@ func andOPOrCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -1609,10 +1609,10 @@ func andOPOrCPExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1620,7 +1620,7 @@ func andOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1630,7 +1630,7 @@ func andOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1638,7 +1638,7 @@ func andOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1648,10 +1648,10 @@ func andOPOrCPExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1659,7 +1659,7 @@ func andOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1669,7 +1669,7 @@ func andOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1677,7 +1677,7 @@ func andOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1693,13 +1693,13 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 	return testCaseData{
 		name:       "(OR)AND(OR) Expression",
 		expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
+				left: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "MIT",
@@ -1710,8 +1710,8 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "ISC",
@@ -1726,10 +1726,10 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "and",
-				right: &Node{
+				right: &node{
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "Apache-2.0",
@@ -1740,8 +1740,8 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "or",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -1759,10 +1759,10 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1770,7 +1770,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1780,7 +1780,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1788,7 +1788,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1798,7 +1798,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1806,7 +1806,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1816,7 +1816,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1824,7 +1824,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1834,10 +1834,10 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1845,7 +1845,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1855,7 +1855,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -1863,7 +1863,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1873,7 +1873,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1881,7 +1881,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -1891,7 +1891,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -1899,7 +1899,7 @@ func oPOrCPAndOPOrCPExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1915,11 +1915,11 @@ func andOPOrCPAndExpression() testCaseData {
 	return testCaseData{
 		name:       "AND(OR)AND Expression",
 		expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -1930,14 +1930,14 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "and",
-				right: &Node{
-					role: ExpressionNode,
+				right: &node{
+					role: expressionNode,
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: ExpressionNode,
+						left: &node{
+							role: expressionNode,
 							exp: &expressionNodePartial{
-								left: &Node{
-									role: LicenseNode,
+								left: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "ISC",
@@ -1948,8 +1948,8 @@ func andOPOrCPAndExpression() testCaseData {
 									ref: nil,
 								},
 								conjunction: "or",
-								right: &Node{
-									role: LicenseNode,
+								right: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "Apache-2.0",
@@ -1964,8 +1964,8 @@ func andOPOrCPAndExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: LicenseNode,
+						right: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "GPL-2.0",
@@ -1983,10 +1983,10 @@ func andOPOrCPAndExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -1994,7 +1994,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -2002,7 +2002,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2012,7 +2012,7 @@ func andOPOrCPAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -2020,7 +2020,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -2028,7 +2028,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2038,10 +2038,10 @@ func andOPOrCPAndExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -2049,7 +2049,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2057,7 +2057,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -2067,7 +2067,7 @@ func andOPOrCPAndExpression() testCaseData {
 			},
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2075,7 +2075,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -2083,7 +2083,7 @@ func andOPOrCPAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -2099,11 +2099,11 @@ func andAndAndExpression() testCaseData {
 	return testCaseData{
 		name:       "AND-AND-AND Expression",
 		expression: "MIT AND ISC AND Apache-2.0 AND GPL-2.0",
-		node: &Node{
-			role: ExpressionNode,
+		node: &node{
+			role: expressionNode,
 			exp: &expressionNodePartial{
-				left: &Node{
-					role: LicenseNode,
+				left: &node{
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license:      "MIT",
@@ -2114,11 +2114,11 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				conjunction: "and",
-				right: &Node{
-					role: ExpressionNode,
+				right: &node{
+					role: expressionNode,
 					exp: &expressionNodePartial{
-						left: &Node{
-							role: LicenseNode,
+						left: &node{
+							role: licenseNode,
 							exp:  nil,
 							lic: &licenseNodePartial{
 								license:      "ISC",
@@ -2129,11 +2129,11 @@ func andAndAndExpression() testCaseData {
 							ref: nil,
 						},
 						conjunction: "and",
-						right: &Node{
-							role: ExpressionNode,
+						right: &node{
+							role: expressionNode,
 							exp: &expressionNodePartial{
-								left: &Node{
-									role: LicenseNode,
+								left: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "Apache-2.0",
@@ -2144,8 +2144,8 @@ func andAndAndExpression() testCaseData {
 									ref: nil,
 								},
 								conjunction: "and",
-								right: &Node{
-									role: LicenseNode,
+								right: &node{
+									role: licenseNode,
 									exp:  nil,
 									lic: &licenseNodePartial{
 										license:      "GPL-2.0",
@@ -2167,10 +2167,10 @@ func andAndAndExpression() testCaseData {
 			lic: nil,
 			ref: nil,
 		},
-		expanded: [][]*Node{
+		expanded: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,
@@ -2178,7 +2178,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -2186,7 +2186,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -2194,7 +2194,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2204,10 +2204,10 @@ func andAndAndExpression() testCaseData {
 			},
 		},
 
-		sorted: [][]*Node{
+		sorted: [][]*node{
 			{
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "Apache-2.0", hasPlus: false,
@@ -2215,7 +2215,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "GPL-2.0", hasPlus: false,
@@ -2223,7 +2223,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "ISC", hasPlus: false,
@@ -2231,7 +2231,7 @@ func andAndAndExpression() testCaseData {
 					ref: nil,
 				},
 				{
-					role: LicenseNode,
+					role: licenseNode,
 					exp:  nil,
 					lic: &licenseNodePartial{
 						license: "MIT", hasPlus: false,

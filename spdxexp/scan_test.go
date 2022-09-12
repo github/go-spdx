@@ -17,41 +17,41 @@ func TestScan(t *testing.T) {
 	}{
 		{"single license", "MIT",
 			[]token{
-				{role: LicenseToken, value: "MIT"},
+				{role: licenseToken, value: "MIT"},
 			}, nil},
 		{"empty expression", "", nil, nil},
 		{"two licenses using AND", "MIT AND Apache-2.0",
 			[]token{
-				{role: LicenseToken, value: "MIT"},
-				{role: OperatorToken, value: "AND"},
-				{role: LicenseToken, value: "Apache-2.0"},
+				{role: licenseToken, value: "MIT"},
+				{role: operatorToken, value: "AND"},
+				{role: licenseToken, value: "Apache-2.0"},
 			}, nil},
 		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)",
 			[]token{
-				{role: OperatorToken, value: "("},
-				{role: LicenseToken, value: "MIT"},
-				{role: OperatorToken, value: "OR"},
-				{role: LicenseToken, value: "Apache-2.0"},
-				{role: OperatorToken, value: ")"},
+				{role: operatorToken, value: "("},
+				{role: licenseToken, value: "MIT"},
+				{role: operatorToken, value: "OR"},
+				{role: licenseToken, value: "Apache-2.0"},
+				{role: operatorToken, value: ")"},
 			}, nil},
 		{"kitchen sink", "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
 			[]token{
-				{role: OperatorToken, value: "("},
-				{role: LicenseToken, value: "MIT"},
-				{role: OperatorToken, value: "AND"},
-				{role: LicenseToken, value: "Apache-1.0"},
-				{role: OperatorToken, value: "+"},
-				{role: OperatorToken, value: ")"},
-				{role: OperatorToken, value: "OR"},
-				{role: DocumentRefToken, value: "spdx-tool-1.2"},
-				{role: OperatorToken, value: ":"},
-				{role: LicenseRefToken, value: "MIT-Style-2"},
-				{role: OperatorToken, value: "OR"},
-				{role: OperatorToken, value: "("},
-				{role: LicenseToken, value: "GPL-2.0"},
-				{role: OperatorToken, value: "WITH"},
-				{role: ExceptionToken, value: "Bison-exception-2.2"},
-				{role: OperatorToken, value: ")"},
+				{role: operatorToken, value: "("},
+				{role: licenseToken, value: "MIT"},
+				{role: operatorToken, value: "AND"},
+				{role: licenseToken, value: "Apache-1.0"},
+				{role: operatorToken, value: "+"},
+				{role: operatorToken, value: ")"},
+				{role: operatorToken, value: "OR"},
+				{role: documentRefToken, value: "spdx-tool-1.2"},
+				{role: operatorToken, value: ":"},
+				{role: licenseRefToken, value: "MIT-Style-2"},
+				{role: operatorToken, value: "OR"},
+				{role: operatorToken, value: "("},
+				{role: licenseToken, value: "GPL-2.0"},
+				{role: operatorToken, value: "WITH"},
+				{role: exceptionToken, value: "Bison-exception-2.2"},
+				{role: operatorToken, value: ")"},
 			}, nil},
 	}
 
@@ -103,19 +103,19 @@ func TestParseToken(t *testing.T) {
 		err      error
 	}{
 		{"operator found", getExpressionStream("MIT AND Apache-2.0", 4),
-			&token{role: OperatorToken, value: "AND"}, 7, nil},
+			&token{role: operatorToken, value: "AND"}, 7, nil},
 		{"operator error", getExpressionStream("Apache-1.0 + OR MIT", 11),
 			nil, 11, errors.New("unexpected space before +")},
 		{"document ref found", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 0),
-			&token{role: DocumentRefToken, value: "spdx-tool-1.2"}, 25, nil},
+			&token{role: documentRefToken, value: "spdx-tool-1.2"}, 25, nil},
 		{"document ref error", getExpressionStream("DocumentRef-!23", 0),
 			nil, 12, errors.New("expected id at offset 12")},
 		{"license ref found", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 26),
-			&token{role: LicenseRefToken, value: "MIT-Style-2"}, 48, nil},
+			&token{role: licenseRefToken, value: "MIT-Style-2"}, 48, nil},
 		{"license ref error", getExpressionStream("LicenseRef-!23", 0),
 			nil, 11, errors.New("expected id at offset 11")},
 		{"identifier found", getExpressionStream("MIT AND Apache-2.0", 8),
-			&token{role: LicenseToken, value: "Apache-2.0"}, 18, nil},
+			&token{role: licenseToken, value: "Apache-2.0"}, 18, nil},
 		{"identifier error", getExpressionStream("NON-EXISTENT-LICENSE", 0),
 			nil, 0, errors.New("unexpected 'N' at offset 0")},
 	}
@@ -222,19 +222,19 @@ func TestReadOperator(t *testing.T) {
 		err      error
 	}{
 		{"WITH operator", getExpressionStream("MIT WITH Bison-exception-2.2", 4),
-			&token{role: OperatorToken, value: "WITH"}, 8, nil},
+			&token{role: operatorToken, value: "WITH"}, 8, nil},
 		{"AND operator", getExpressionStream("MIT AND Apache-2.0", 4),
-			&token{role: OperatorToken, value: "AND"}, 7, nil},
+			&token{role: operatorToken, value: "AND"}, 7, nil},
 		{"OR operator", getExpressionStream("MIT OR Apache-2.0", 4),
-			&token{role: OperatorToken, value: "OR"}, 6, nil},
+			&token{role: operatorToken, value: "OR"}, 6, nil},
 		{"( operator", getExpressionStream("(MIT OR Apache-2.0)", 0),
-			&token{role: OperatorToken, value: "("}, 1, nil},
+			&token{role: operatorToken, value: "("}, 1, nil},
 		{") operator", getExpressionStream("(MIT OR Apache-2.0)", 18),
-			&token{role: OperatorToken, value: ")"}, 19, nil},
+			&token{role: operatorToken, value: ")"}, 19, nil},
 		{": operator", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 25),
-			&token{role: OperatorToken, value: ":"}, 26, nil},
+			&token{role: operatorToken, value: ":"}, 26, nil},
 		{"plus operator - correctly used", getExpressionStream("Apache-1.0+ OR MIT", 10),
-			&token{role: OperatorToken, value: "+"}, 11, nil},
+			&token{role: operatorToken, value: "+"}, 11, nil},
 		{"plus operator - with preceding space", getExpressionStream("Apache-1.0 + OR MIT", 11),
 			nil, 11, errors.New("unexpected space before +")},
 		{"operator not found", getExpressionStream("MIT AND Apache-2.0", 8),
@@ -286,7 +286,7 @@ func TestReadDocumentRef(t *testing.T) {
 		newIndex int
 		err      error
 	}{
-		{"valid document ref with id", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 0), &token{role: DocumentRefToken, value: "spdx-tool-1.2"}, 25, nil},
+		{"valid document ref with id", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 0), &token{role: documentRefToken, value: "spdx-tool-1.2"}, 25, nil},
 		{"document ref not found", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 26), nil, 26, nil},
 		{"invalid document ref with bad id", getExpressionStream("DocumentRef-!23", 0), nil, 12, errors.New("expected id at offset 12")},
 	}
@@ -319,7 +319,7 @@ func TestReadLicenseRef(t *testing.T) {
 		newIndex int
 		err      error
 	}{
-		{"valid license ref with id", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 26), &token{role: LicenseRefToken, value: "MIT-Style-2"}, 48, nil},
+		{"valid license ref with id", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 26), &token{role: licenseRefToken, value: "MIT-Style-2"}, 48, nil},
 		{"license ref not found", getExpressionStream("DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", 0), nil, 0, nil},
 		{"invalid license ref with bad id", getExpressionStream("LicenseRef-!23", 0), nil, 11, errors.New("expected id at offset 11")},
 	}
@@ -353,14 +353,14 @@ func TestReadLicense(t *testing.T) {
 		newIndex      int
 		err           error
 	}{
-		{"active license", getExpressionStream("MIT", 0), &token{role: LicenseToken, value: "MIT"}, "MIT", 3, nil},
-		{"active -or-later", getExpressionStream("AGPL-1.0-or-later", 0), &token{role: LicenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0-or-later", 17, nil},
-		{"active -or-later using +", getExpressionStream("AGPL-1.0+", 0), &token{role: LicenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0+", 9, nil}, // no valid example for this; all that include -or-later have the base as a deprecated license
-		{"active -or-later not in list", getExpressionStream("Apache-1.0-or-later", 0), &token{role: LicenseToken, value: "Apache-1.0"}, "Apache-1.0+", 10, nil},
-		{"active -only", getExpressionStream("GPL-2.0-only", 0), &token{role: LicenseToken, value: "GPL-2.0-only"}, "GPL-2.0-only", 12, nil},
-		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), &token{role: LicenseToken, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
-		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: LicenseToken, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
-		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: ExceptionToken, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
+		{"active license", getExpressionStream("MIT", 0), &token{role: licenseToken, value: "MIT"}, "MIT", 3, nil},
+		{"active -or-later", getExpressionStream("AGPL-1.0-or-later", 0), &token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0-or-later", 17, nil},
+		{"active -or-later using +", getExpressionStream("AGPL-1.0+", 0), &token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0+", 9, nil}, // no valid example for this; all that include -or-later have the base as a deprecated license
+		{"active -or-later not in list", getExpressionStream("Apache-1.0-or-later", 0), &token{role: licenseToken, value: "Apache-1.0"}, "Apache-1.0+", 10, nil},
+		{"active -only", getExpressionStream("GPL-2.0-only", 0), &token{role: licenseToken, value: "GPL-2.0-only"}, "GPL-2.0-only", 12, nil},
+		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), &token{role: licenseToken, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
+		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: licenseToken, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
+		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: exceptionToken, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
 		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, "NON-EXISTENT-LICENSE", 0, nil}, // TODO: should this return an error?
 	}
 

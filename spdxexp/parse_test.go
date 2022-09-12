@@ -12,14 +12,14 @@ func TestParse(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
-		node       *Node
+		node       *node
 		nodestr    string
 		err        error
 	}{
 		{"single license",
 			"MIT",
-			&Node{
-				role: LicenseNode,
+			&node{
+				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "MIT", hasPlus: false,
@@ -31,11 +31,11 @@ func TestParse(t *testing.T) {
 		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
 
 		{"OR Expression", "MIT OR Apache-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -43,8 +43,8 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
-						role: LicenseNode,
+					right: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "Apache-2.0", hasPlus: false,
@@ -57,11 +57,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
 		{"AND Expression", "MIT AND Apache-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -69,8 +69,8 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
-						role: LicenseNode,
+					right: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "Apache-2.0", hasPlus: false,
@@ -83,11 +83,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT and RIGHT: Apache-2.0 }", nil},
 		{"OR-AND Expression", "MIT OR Apache-2.0 AND GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -95,10 +95,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -109,8 +109,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -130,11 +130,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
 		{"OR(AND) Expression", "MIT OR (Apache-2.0 AND GPL-2.0)",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -142,10 +142,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -156,8 +156,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -177,13 +177,13 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
 		{"AND-OR Expression", "MIT AND Apache-2.0 OR GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
+					left: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -194,8 +194,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -210,8 +210,8 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
-						role: LicenseNode,
+					right: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "GPL-2.0", hasPlus: false,
@@ -224,11 +224,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 }", nil},
 		{"AND(OR) Expression", "MIT AND (Apache-2.0 OR GPL-2.0)",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -239,10 +239,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -253,8 +253,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -274,11 +274,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
 		{"OR-AND-OR Expression", "MIT OR ISC AND Apache-2.0 OR GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -289,13 +289,13 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: ExpressionNode,
+							left: &node{
+								role: expressionNode,
 								exp: &expressionNodePartial{
-									left: &Node{
-										role: LicenseNode,
+									left: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "ISC",
@@ -306,8 +306,8 @@ func TestParse(t *testing.T) {
 										ref: nil,
 									},
 									conjunction: "and",
-									right: &Node{
-										role: LicenseNode,
+									right: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "Apache-2.0",
@@ -322,8 +322,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -343,13 +343,13 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
 		{"(OR)AND(OR) Expression", "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
+					left: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -360,8 +360,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "ISC",
@@ -376,10 +376,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -390,8 +390,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -411,11 +411,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT or RIGHT: ISC } and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
 		{"OR(AND)OR Expression", "MIT OR (ISC AND Apache-2.0) OR GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -426,13 +426,13 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: ExpressionNode,
+							left: &node{
+								role: expressionNode,
 								exp: &expressionNodePartial{
-									left: &Node{
-										role: LicenseNode,
+									left: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "ISC",
@@ -443,8 +443,8 @@ func TestParse(t *testing.T) {
 										ref: nil,
 									},
 									conjunction: "and",
-									right: &Node{
-										role: LicenseNode,
+									right: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "Apache-2.0",
@@ -459,8 +459,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -480,11 +480,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
 		{"OR-OR-OR Expression", "MIT OR ISC OR Apache-2.0 OR GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -495,10 +495,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "ISC",
@@ -509,10 +509,10 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "or",
-							right: &Node{
+							right: &node{
 								exp: &expressionNodePartial{
-									left: &Node{
-										role: LicenseNode,
+									left: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "Apache-2.0",
@@ -523,8 +523,8 @@ func TestParse(t *testing.T) {
 										ref: nil,
 									},
 									conjunction: "or",
-									right: &Node{
-										role: LicenseNode,
+									right: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "GPL-2.0",
@@ -548,13 +548,13 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: ISC or RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } } }", nil},
 		{"AND-OR-AND Expression", "MIT AND ISC OR Apache-2.0 AND GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
+					left: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -565,8 +565,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "ISC",
@@ -581,10 +581,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -595,8 +595,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -616,13 +616,13 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
 		{"(AND)OR(AND) Expression", "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
+					left: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -633,8 +633,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "ISC",
@@ -649,10 +649,10 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
+					right: &node{
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-2.0",
@@ -663,8 +663,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -684,11 +684,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
 		{"AND(OR)AND Expression", "MIT AND (ISC OR Apache-2.0) AND GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -699,14 +699,14 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
-						role: ExpressionNode,
+					right: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: ExpressionNode,
+							left: &node{
+								role: expressionNode,
 								exp: &expressionNodePartial{
-									left: &Node{
-										role: LicenseNode,
+									left: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "ISC",
@@ -717,8 +717,8 @@ func TestParse(t *testing.T) {
 										ref: nil,
 									},
 									conjunction: "or",
-									right: &Node{
-										role: LicenseNode,
+									right: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "Apache-2.0",
@@ -733,8 +733,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -754,11 +754,11 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT and RIGHT: { LEFT: { LEFT: ISC or RIGHT: Apache-2.0 } and RIGHT: GPL-2.0 } }", nil},
 		{"AND-AND-AND Expression", "MIT AND ISC AND Apache-2.0 AND GPL-2.0",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license:      "MIT",
@@ -769,11 +769,11 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
-						role: ExpressionNode,
+					right: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "ISC",
@@ -784,11 +784,11 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: ExpressionNode,
+							right: &node{
+								role: expressionNode,
 								exp: &expressionNodePartial{
-									left: &Node{
-										role: LicenseNode,
+									left: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "Apache-2.0",
@@ -799,8 +799,8 @@ func TestParse(t *testing.T) {
 										ref: nil,
 									},
 									conjunction: "and",
-									right: &Node{
-										role: LicenseNode,
+									right: &node{
+										role: licenseNode,
 										exp:  nil,
 										lic: &licenseNodePartial{
 											license:      "GPL-2.0",
@@ -825,14 +825,14 @@ func TestParse(t *testing.T) {
 			"{ LEFT: MIT and RIGHT: { LEFT: ISC and RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } } }", nil},
 		{"kitchen sink",
 			"   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: ExpressionNode,
+					left: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -843,8 +843,8 @@ func TestParse(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-1.0",
@@ -859,11 +859,11 @@ func TestParse(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
-						role: ExpressionNode,
+					right: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseRefNode,
+							left: &node{
+								role: licenseRefNode,
 								exp:  nil,
 								lic:  nil,
 								ref: &referenceNodePartial{
@@ -873,8 +873,8 @@ func TestParse(t *testing.T) {
 								},
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -899,19 +899,19 @@ func TestParse(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			startNode, err := Parse(test.expression)
+			startNode, err := parse(test.expression)
 
 			require.Equal(t, test.err, err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *Node = nil
+				var nilNode *node = nil
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
 
 			// ref found, check token values are as expected
 			assert.Equal(t, test.node, startNode)
-			assert.Equal(t, test.nodestr, startNode.String())
+			assert.Equal(t, test.nodestr, startNode.string())
 		})
 	}
 }
@@ -920,14 +920,14 @@ func TestParseTokens(t *testing.T) {
 	tests := []struct {
 		name    string
 		tokens  *tokenStream
-		node    *Node
+		node    *node
 		nodestr string
 		err     error
 	}{
 		{"single license",
 			getLicenseTokens(0),
-			&Node{
-				role: LicenseNode,
+			&node{
+				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
 					license: "MIT", hasPlus: false,
@@ -937,11 +937,11 @@ func TestParseTokens(t *testing.T) {
 			"MIT", nil},
 		{"two licenses using AND",
 			getAndClauseTokens(0),
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -949,8 +949,8 @@ func TestParseTokens(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "and",
-					right: &Node{
-						role: LicenseNode,
+					right: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "Apache-2.0", hasPlus: false,
@@ -964,11 +964,11 @@ func TestParseTokens(t *testing.T) {
 			"{ LEFT: MIT and RIGHT: Apache-2.0 }", nil},
 		{"two licenses using OR",
 			getOrClauseTokens(0),
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: LicenseNode,
+					left: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "MIT", hasPlus: false,
@@ -976,8 +976,8 @@ func TestParseTokens(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
-						role: LicenseNode,
+					right: &node{
+						role: licenseNode,
 						exp:  nil,
 						lic: &licenseNodePartial{
 							license: "Apache-2.0", hasPlus: false,
@@ -991,14 +991,14 @@ func TestParseTokens(t *testing.T) {
 			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
 		{"kitchen sink",
 			getKitchSinkTokens(0),
-			&Node{
-				role: ExpressionNode,
+			&node{
+				role: expressionNode,
 				exp: &expressionNodePartial{
-					left: &Node{
-						role: ExpressionNode,
+					left: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseNode,
+							left: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "MIT",
@@ -1009,8 +1009,8 @@ func TestParseTokens(t *testing.T) {
 								ref: nil,
 							},
 							conjunction: "and",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "Apache-1.0",
@@ -1025,11 +1025,11 @@ func TestParseTokens(t *testing.T) {
 						ref: nil,
 					},
 					conjunction: "or",
-					right: &Node{
-						role: ExpressionNode,
+					right: &node{
+						role: expressionNode,
 						exp: &expressionNodePartial{
-							left: &Node{
-								role: LicenseRefNode,
+							left: &node{
+								role: licenseRefNode,
 								exp:  nil,
 								lic:  nil,
 								ref: &referenceNodePartial{
@@ -1039,8 +1039,8 @@ func TestParseTokens(t *testing.T) {
 								},
 							},
 							conjunction: "or",
-							right: &Node{
-								role: LicenseNode,
+							right: &node{
+								role: licenseNode,
 								exp:  nil,
 								lic: &licenseNodePartial{
 									license:      "GPL-2.0",
@@ -1070,14 +1070,14 @@ func TestParseTokens(t *testing.T) {
 			require.Equal(t, test.err, test.tokens.err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *Node = nil
+				var nilNode *node = nil
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
 
 			// ref found, check token values are as expected
 			assert.Equal(t, test.node, startNode)
-			assert.Equal(t, test.nodestr, startNode.String())
+			assert.Equal(t, test.nodestr, startNode.string())
 		})
 	}
 }
@@ -1108,9 +1108,9 @@ func TestPeek(t *testing.T) {
 		tokens *tokenStream
 		token  *token
 	}{
-		{"at start", getAndClauseTokens(0), &(token{role: LicenseToken, value: "MIT"})},
-		{"at middle", getAndClauseTokens(1), &(token{role: OperatorToken, value: "AND"})},
-		{"at end", getAndClauseTokens(2), &(token{role: LicenseToken, value: "Apache-2.0"})},
+		{"at start", getAndClauseTokens(0), &(token{role: licenseToken, value: "MIT"})},
+		{"at middle", getAndClauseTokens(1), &(token{role: operatorToken, value: "AND"})},
+		{"at end", getAndClauseTokens(2), &(token{role: licenseToken, value: "Apache-2.0"})},
 		{"past end", getAndClauseTokens(3), nil},
 	}
 
@@ -1145,12 +1145,12 @@ func TestNext(t *testing.T) {
 	}
 }
 
-// // TODO: func parseParenthesizedExpression(tokens *[]token, index int) (*Node, int, error) {
-// // TODO: func parseAtom(tokens *[]token, index int) (*Node, int, error) {
-// // TODO: func parseExpression(tokens *[]token, index int) (*Node, int, error) {
-// // TODO: func parseAnd(tokens *[]token, index int) (*Node, int, error) {
-// // TODO: func parseLicenseRef(tokens *[]token, index int) (*Node, int, error) {
-// // TODO: func parseLicense(tokens *[]token, index int) (*Node, int, error) {
+// // TODO: func parseParenthesizedExpression(tokens *[]token, index int) (*node, int, error) {
+// // TODO: func parseAtom(tokens *[]token, index int) (*node, int, error) {
+// // TODO: func parseExpression(tokens *[]token, index int) (*node, int, error) {
+// // TODO: func parseAnd(tokens *[]token, index int) (*node, int, error) {
+// // TODO: func parseLicenseRef(tokens *[]token, index int) (*node, int, error) {
+// // TODO: func parseLicense(tokens *[]token, index int) (*node, int, error) {
 
 func TestParseOperator(t *testing.T) {
 	tests := []struct {
@@ -1223,93 +1223,93 @@ func TestParseWith(t *testing.T) {
 	}
 }
 
-// TODO: func (n *Node) String() string {
+// TODO: func (n *node) String() string {
 
 func getLicenseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
 	return getTokenStream(tokens, index)
 }
 
 func getWithClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "WITH"})
-	tokens = append(tokens, token{role: ExceptionToken, value: "Bison-exception-2.2"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
+	tokens = append(tokens, token{role: exceptionToken, value: "Bison-exception-2.2"})
 	return getTokenStream(tokens, index)
 }
 
 func getInvalidWithClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "WITH"})
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-2.0"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
 	return getTokenStream(tokens, index)
 }
 
 func getAndClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "AND"})
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-2.0"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
 	return getTokenStream(tokens, index)
 }
 
 func getOrClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "OR"})
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-2.0"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
 	return getTokenStream(tokens, index)
 }
 
 func getOrAndClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-2.0"})
-	tokens = append(tokens, token{role: OperatorToken, value: "OR"})
-	tokens = append(tokens, token{role: OperatorToken, value: "("})
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "AND"})
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache 2.0"})
-	tokens = append(tokens, token{role: OperatorToken, value: ")"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: operatorToken, value: "("})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache 2.0"})
+	tokens = append(tokens, token{role: operatorToken, value: ")"})
 	return getTokenStream(tokens, index)
 }
 
 func getColonClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: DocumentRefToken, value: "spdx-tool-1.2"})
-	tokens = append(tokens, token{role: OperatorToken, value: ":"})
-	tokens = append(tokens, token{role: LicenseRefToken, value: "MIT-Style-2"})
+	tokens = append(tokens, token{role: documentRefToken, value: "spdx-tool-1.2"})
+	tokens = append(tokens, token{role: operatorToken, value: ":"})
+	tokens = append(tokens, token{role: licenseRefToken, value: "MIT-Style-2"})
 	return getTokenStream(tokens, index)
 }
 
 func getPlusClauseTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-1.0"})
-	tokens = append(tokens, token{role: OperatorToken, value: "+"})
-	tokens = append(tokens, token{role: OperatorToken, value: "OR"})
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-1.0"})
+	tokens = append(tokens, token{role: operatorToken, value: "+"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
 	return getTokenStream(tokens, index)
 }
 
 func getKitchSinkTokens(index int) *tokenStream {
 	var tokens []token
-	tokens = append(tokens, token{role: OperatorToken, value: "("})
-	tokens = append(tokens, token{role: LicenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: OperatorToken, value: "AND"})
-	tokens = append(tokens, token{role: LicenseToken, value: "Apache-1.0"})
-	tokens = append(tokens, token{role: OperatorToken, value: "+"})
-	tokens = append(tokens, token{role: OperatorToken, value: ")"})
-	tokens = append(tokens, token{role: OperatorToken, value: "OR"})
-	tokens = append(tokens, token{role: DocumentRefToken, value: "spdx-tool-1.2"})
-	tokens = append(tokens, token{role: OperatorToken, value: ":"})
-	tokens = append(tokens, token{role: LicenseRefToken, value: "MIT-Style-2"})
-	tokens = append(tokens, token{role: OperatorToken, value: "OR"})
-	tokens = append(tokens, token{role: OperatorToken, value: "("})
-	tokens = append(tokens, token{role: LicenseToken, value: "GPL-2.0"})
-	tokens = append(tokens, token{role: OperatorToken, value: "WITH"})
-	tokens = append(tokens, token{role: ExceptionToken, value: "Bison-exception-2.2"})
-	tokens = append(tokens, token{role: OperatorToken, value: ")"})
+	tokens = append(tokens, token{role: operatorToken, value: "("})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-1.0"})
+	tokens = append(tokens, token{role: operatorToken, value: "+"})
+	tokens = append(tokens, token{role: operatorToken, value: ")"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: documentRefToken, value: "spdx-tool-1.2"})
+	tokens = append(tokens, token{role: operatorToken, value: ":"})
+	tokens = append(tokens, token{role: licenseRefToken, value: "MIT-Style-2"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: operatorToken, value: "("})
+	tokens = append(tokens, token{role: licenseToken, value: "GPL-2.0"})
+	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
+	tokens = append(tokens, token{role: exceptionToken, value: "Bison-exception-2.2"})
+	tokens = append(tokens, token{role: operatorToken, value: ")"})
 	return getTokenStream(tokens, index)
 }
 

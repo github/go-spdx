@@ -1,21 +1,23 @@
 package spdxexp
 
-import "sort"
+import (
+	"sort"
+)
 
-type NodePair struct {
-	firstNode  *Node
-	secondNode *Node
+type nodePair struct {
+	firstNode  *node
+	secondNode *node
 }
 
 type nodeRole uint8
 
 const (
-	ExpressionNode nodeRole = iota
-	LicenseRefNode
-	LicenseNode
+	expressionNode nodeRole = iota
+	licenseRefNode
+	licenseNode
 )
 
-type Node struct {
+type node struct {
 	role nodeRole
 	exp  *expressionNodePartial
 	lic  *licenseNodePartial
@@ -23,9 +25,9 @@ type Node struct {
 }
 
 type expressionNodePartial struct {
-	left        *Node
+	left        *node
 	conjunction string
-	right       *Node
+	right       *node
 }
 
 type licenseNodePartial struct {
@@ -43,121 +45,121 @@ type referenceNodePartial struct {
 
 // ---------------------- Helper Methods ----------------------
 
-func (node *Node) IsExpression() bool {
-	return node.role == ExpressionNode
+func (n *node) isExpression() bool {
+	return n.role == expressionNode
 }
 
-func (node *Node) Left() *Node {
-	if !node.IsExpression() {
-		return nil
-	}
-	return node.exp.left
-}
-
-func (node *Node) Conjunction() *string {
-	if !node.IsExpression() {
-		return nil
-	}
-	return &(node.exp.conjunction)
-}
-
-func (node *Node) IsOrExpression() bool {
-	if !node.IsExpression() {
+func (n *node) isOrExpression() bool {
+	if !n.isExpression() {
 		return false
 	}
-	return node.exp.conjunction == "or"
+	return *n.conjunction() == "or"
 }
 
-func (node *Node) IsAndExpression() bool {
-	if !node.IsExpression() {
+func (n *node) isAndExpression() bool {
+	if !n.isExpression() {
 		return false
 	}
-	return node.exp.conjunction == "and"
+	return *n.conjunction() == "and"
 }
 
-func (node *Node) Right() *Node {
-	if !node.IsExpression() {
+func (n *node) left() *node {
+	if !n.isExpression() {
 		return nil
 	}
-	return node.exp.right
+	return n.exp.left
 }
 
-func (node *Node) IsLicense() bool {
-	return node.role == LicenseNode
+func (n *node) conjunction() *string {
+	if !n.isExpression() {
+		return nil
+	}
+	return &(n.exp.conjunction)
+}
+
+func (n *node) right() *node {
+	if !n.isExpression() {
+		return nil
+	}
+	return n.exp.right
+}
+
+func (n *node) isLicense() bool {
+	return n.role == licenseNode
 }
 
 // Return the value of the license field.
-// See also LicenseString()
-func (node *Node) License() *string {
-	if !node.IsLicense() {
+// See also reconstructedLicenseString()
+func (n *node) license() *string {
+	if !n.isLicense() {
 		return nil
 	}
-	return &(node.lic.license)
+	return &(n.lic.license)
 }
 
-func (node *Node) Exception() *string {
-	if !node.HasException() {
+func (n *node) exception() *string {
+	if !n.hasException() {
 		return nil
 	}
-	return &(node.lic.exception)
+	return &(n.lic.exception)
 }
 
-func (node *Node) HasPlus() bool {
-	if !node.IsLicense() {
+func (n *node) hasPlus() bool {
+	if !n.isLicense() {
 		return false
 	}
-	return node.lic.hasPlus
+	return n.lic.hasPlus
 }
 
-func (node *Node) HasException() bool {
-	if !node.IsLicense() {
+func (n *node) hasException() bool {
+	if !n.isLicense() {
 		return false
 	}
-	return node.lic.hasException
+	return n.lic.hasException
 }
 
-func (node *Node) IsLicenseRef() bool {
-	return node.role == LicenseRefNode
+func (n *node) isLicenseRef() bool {
+	return n.role == licenseRefNode
 }
 
-func (node *Node) LicenseRef() *string {
-	if !node.IsLicenseRef() {
+func (n *node) licenseRef() *string {
+	if !n.isLicenseRef() {
 		return nil
 	}
-	return &(node.ref.licenseRef)
+	return &(n.ref.licenseRef)
 }
 
-func (node *Node) DocumentRef() *string {
-	if !node.HasDocumentRef() {
+func (n *node) documentRef() *string {
+	if !n.hasDocumentRef() {
 		return nil
 	}
-	return &(node.ref.documentRef)
+	return &(n.ref.documentRef)
 }
 
-func (node *Node) HasDocumentRef() bool {
-	if !node.IsLicenseRef() {
+func (n *node) hasDocumentRef() bool {
+	if !n.isLicenseRef() {
 		return false
 	}
-	return node.ref.hasDocumentRef
+	return n.ref.hasDocumentRef
 }
 
 // Return the string representation of the license or license ref.
 // TODO: Original had "NOASSERTION".  Does that still apply?
-func (node *Node) LicenseString() *string {
-	switch node.role {
-	case LicenseNode:
-		license := *node.License()
-		if node.HasPlus() {
+func (n *node) reconstructedLicenseString() *string {
+	switch n.role {
+	case licenseNode:
+		license := *n.license()
+		if n.hasPlus() {
 			license += "+"
 		}
-		if node.HasException() {
-			license += " WITH " + *node.Exception()
+		if n.hasException() {
+			license += " WITH " + *n.exception()
 		}
 		return &license
-	case LicenseRefNode:
-		license := "LicenseRef-" + *node.LicenseRef()
-		if node.HasDocumentRef() {
-			license = "DocumentRef-" + *node.DocumentRef() + ":" + license
+	case licenseRefNode:
+		license := "LicenseRef-" + *n.licenseRef()
+		if n.hasDocumentRef() {
+			license = "DocumentRef-" + *n.documentRef() + ":" + license
 		}
 		return &license
 	}
@@ -165,31 +167,31 @@ func (node *Node) LicenseString() *string {
 }
 
 // Sort an array of license and license reference nodes alphebetically based
-// on their LicenseString() representation.  The sort function does not expect
+// on their reconstructedLicenseString() representation.  The sort function does not expect
 // expression nodes, but if one is in the nodes list, it will sort to the end.
-func SortLicenses(nodes []*Node) {
+func sortLicenses(nodes []*node) {
 	sort.Slice(nodes, func(i, j int) bool {
-		if nodes[j].IsExpression() {
+		if nodes[j].isExpression() {
 			// push second license toward end by saying first license is less than
 			return true
 		}
-		if nodes[i].IsExpression() {
+		if nodes[i].isExpression() {
 			// push first license toward end by saying second license is less than
 			return false
 		}
-		return *nodes[i].LicenseString() < *nodes[j].LicenseString()
+		return *nodes[i].reconstructedLicenseString() < *nodes[j].reconstructedLicenseString()
 	})
 }
 
 // ---------------------- Comparator Methods ----------------------
 
 // Return true if two licenses are compatible; otherwise, false.
-func (nodes *NodePair) LicensesAreCompatible() bool {
-	if !nodes.firstNode.IsLicense() || !nodes.secondNode.IsLicense() {
+func (nodes *nodePair) licensesAreCompatible() bool {
+	if !nodes.firstNode.isLicense() || !nodes.secondNode.isLicense() {
 		return false
 	}
-	if nodes.secondNode.HasPlus() {
-		if nodes.firstNode.HasPlus() {
+	if nodes.secondNode.hasPlus() {
+		if nodes.firstNode.hasPlus() {
 			// first+, second+
 			return nodes.rangesAreCompatible()
 		}
@@ -197,9 +199,9 @@ func (nodes *NodePair) LicensesAreCompatible() bool {
 		return nodes.identifierInRange()
 	}
 	// else secondNode does not have plus
-	if nodes.firstNode.HasPlus() {
+	if nodes.firstNode.hasPlus() {
 		// first+, second
-		revNodes := &NodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
+		revNodes := &nodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
 		return revNodes.identifierInRange()
 	}
 	// first, second
@@ -207,20 +209,20 @@ func (nodes *NodePair) LicensesAreCompatible() bool {
 }
 
 // Return true if two licenses are compatible in the context of their ranges; otherwise, false.
-func (nodes *NodePair) rangesAreCompatible() bool {
+func (nodes *nodePair) rangesAreCompatible() bool {
 	if nodes.licensesExactlyEqual() {
 		// licenses specify ranges exactly the same
 		return true
 	}
 
-	firstLicense := *nodes.firstNode.License()
-	secondLicense := *nodes.secondNode.License()
+	firstLicense := *nodes.firstNode.license()
+	secondLicense := *nodes.secondNode.license()
 
-	firstLicenseRange := GetLicenseRange(firstLicense)
-	secondLicenseRange := GetLicenseRange(secondLicense)
+	firstLicenseRange := getLicenseRange(firstLicense)
+	secondLicenseRange := getLicenseRange(secondLicense)
 
-	return licenseInRange(firstLicense, secondLicenseRange.Licenses) &&
-		licenseInRange(secondLicense, firstLicenseRange.Licenses)
+	return licenseInRange(firstLicense, secondLicenseRange.licenses) &&
+		licenseInRange(secondLicense, firstLicenseRange.licenses)
 }
 
 // Return true if license is found in licenseRange; otherwise, false
@@ -234,7 +236,7 @@ func licenseInRange(simpleLicense string, licenseRange []string) bool {
 }
 
 // Return true if the (first) simple license is in range of the (second) ranged license; otherwise, false.
-func (nodes *NodePair) identifierInRange() bool {
+func (nodes *nodePair) identifierInRange() bool {
 	simpleLicense := nodes.firstNode
 	plusLicense := nodes.secondNode
 
@@ -243,6 +245,6 @@ func (nodes *NodePair) identifierInRange() bool {
 }
 
 // Return true if the licenses are the same; otherwise, false
-func (nodes *NodePair) licensesExactlyEqual() bool {
-	return *nodes.firstNode.License() == *nodes.secondNode.License()
+func (nodes *nodePair) licensesExactlyEqual() bool {
+	return *nodes.firstNode.reconstructedLicenseString() == *nodes.secondNode.reconstructedLicenseString()
 }

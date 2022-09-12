@@ -9,8 +9,8 @@ import (
 func TestCompareGT(t *testing.T) {
 	tests := []struct {
 		name   string
-		first  *Node
-		second *Node
+		first  *node
+		second *node
 		result bool
 	}{
 		{"expect greater than: GPL-3.0 > GPL-2.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-2.0", false), true},
@@ -38,8 +38,8 @@ func TestCompareGT(t *testing.T) {
 func TestCompareEQ(t *testing.T) {
 	tests := []struct {
 		name   string
-		first  *Node
-		second *Node
+		first  *node
+		second *node
 		result bool
 	}{
 		{"expect greater than: GPL-3.0 == GPL-2.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-2.0", false), false},
@@ -67,8 +67,8 @@ func TestCompareEQ(t *testing.T) {
 func TestCompareLT(t *testing.T) {
 	tests := []struct {
 		name   string
-		first  *Node
-		second *Node
+		first  *node
+		second *node
 		result bool
 	}{
 		{"expect greater than: GPL-3.0 < GPL-2.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-2.0", false), false},

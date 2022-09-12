@@ -66,7 +66,7 @@ func TestLicenseString(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			license := *test.node.LicenseString()
+			license := *test.node.reconstructedLicenseString()
 			assert.Equal(t, test.result, license)
 		})
 	}
@@ -75,28 +75,54 @@ func TestLicenseString(t *testing.T) {
 func TestLicensesAreCompatible(t *testing.T) {
 	tests := []struct {
 		name   string
-		first  *Node
-		second *Node
+		nodes  *nodePair
 		result bool
 	}{
-		{"expect greater than: GPL-3.0 > GPL-2.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-2.0", false), true},
-		{"expect greater than: GPL-3.0-only > GPL-2.0-only", getLicenseNode("GPL-3.0-only", false), getLicenseNode("GPL-2.0-only", false), true},
-		{"expect greater than: LPPL-1.3a > LPPL-1.0", getLicenseNode("LPPL-1.3a", false), getLicenseNode("LPPL-1.0", false), true},
-		{"expect greater than: LPPL-1.3c > LPPL-1.3a", getLicenseNode("LPPL-1.3c", false), getLicenseNode("LPPL-1.3a", false), true},
-		{"expect greater than: AGPL-3.0 > AGPL-1.0", getLicenseNode("AGPL-3.0", false), getLicenseNode("AGPL-1.0", false), true},
-		{"expect greater than: GPL-2.0-or-later > GPL-2.0-only", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0-only", false), true}, // TODO: Double check that -or-later and -only should be true for GT
-		{"expect greater than: GPL-2.0-or-later > GPL-2.0", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0", false), true},
-		{"expect equal: GPL-3.0 > GPL-3.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-3.0", false), false},
-		{"expect less than: MPL-1.0 > MPL-2.0", getLicenseNode("MPL-1.0", false), getLicenseNode("MPL-2.0", false), false},
-		{"incompatible: MIT > ISC", getLicenseNode("MIT", false), getLicenseNode("ISC", false), false},
-		{"incompatible: OSL-1.0 > OPL-1.0", getLicenseNode("OSL-1.0", false), getLicenseNode("OPL-1.0", false), false},
-		{"not simple license: (MIT OR ISC) > GPL-3.0", getLicenseNode("(MIT OR ISC)", false), getLicenseNode("GPL-3.0", false), false}, // TODO: should it raise error?
+		{"compatible (exact equal): GPL-3.0, GPL-3.0", &nodePair{
+			getLicenseNode("GPL-3.0", false),
+			getLicenseNode("GPL-3.0", false)}, true},
+		{"compatible (diff case equal): Apache-2.0, APACHE-2.0", &nodePair{
+			getLicenseNode("Apache-2.0", false),
+			getLicenseNode("APACHE-2.0", false)}, true},
+		// {"compatible (same version with +): Apache-1.0+, Apache-1.0", &nodePair{
+		// 	getLicenseNode("Apache-1.0+", true),
+		// 	getLicenseNode("Apache-1.0", false)}, true},
+		// {"compatible (later version with +): Apache-1.0+, Apache-2.0", &nodePair{
+		// 	getLicenseNode("Apache-1.0+", true),
+		// 	getLicenseNode("Apache-2.0", false)}, true},
+		// {"compatible (same version with -or-later): GPL-2.0-or-later, GPL-2.0", &nodePair{
+		// 	getLicenseNode("GPL-2.0-or-later", true),
+		// 	getLicenseNode("GPL-2.0", false)}, true},
+		// {"compatible (same version with -or-later and -only): GPL-2.0-or-later, GPL-2.0-only", &nodePair{
+		// 	getLicenseNode("GPL-2.0-or-later", true),
+		// 	getLicenseNode("GPL-2.0-only", false)}, true}, // TODO: Double check that -or-later and -only should be true for GT
+		// {"compatible (later version with -or-later): GPL-2.0-or-later, GPL-3.0", &nodePair{
+		// 	getLicenseNode("GPL-2.0-or-later", true),
+		// 	getLicenseNode("GPL-3.0", false)}, true},
+		// {"incompatible (different versions using -only): GPL-3.0-only, GPL-2.0-only", &nodePair{
+		// 	getLicenseNode("GPL-3.0-only", false),
+		// 	getLicenseNode("GPL-2.0-only", false)}, false},
+		{"incompatible (different versions with letter): LPPL-1.3c, LPPL-1.3a", &nodePair{
+			getLicenseNode("LPPL-1.3c", false),
+			getLicenseNode("LPPL-1.3a", false)}, false},
+		{"incompatible (first > second): AGPL-3.0, AGPL-1.0", &nodePair{
+			getLicenseNode("AGPL-3.0", false),
+			getLicenseNode("AGPL-1.0", false)}, false},
+		{"incompatible (second > first): MPL-1.0, MPL-2.0", &nodePair{
+			getLicenseNode("MPL-1.0", false),
+			getLicenseNode("MPL-2.0", false)}, false},
+		{"incompatible (diff licenses): MIT, ISC", &nodePair{
+			getLicenseNode("MIT", false),
+			getLicenseNode("ISC", false)}, false},
+		{"not simple license: (MIT OR ISC), GPL-3.0", &nodePair{
+			getLicenseNode("(MIT OR ISC)", false),
+			getLicenseNode("GPL-3.0", false)}, false}, // TODO: should it raise error?
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.result, compareGT(test.first, test.second))
+			assert.Equal(t, test.result, test.nodes.licensesAreCompatible())
 		})
 	}
 }
@@ -104,16 +130,16 @@ func TestLicensesAreCompatible(t *testing.T) {
 func TestRangesAreCompatible(t *testing.T) {
 	tests := []struct {
 		name   string
-		nodes  *NodePair
+		nodes  *nodePair
 		result bool
 	}{
-		{"compatible - both use -or-later", &NodePair{
+		{"compatible - both use -or-later", &nodePair{
 			firstNode:  getLicenseNode("GPL-1.0-or-later", true),
 			secondNode: getLicenseNode("GPL-2.0-or-later", true)}, true},
-		// {"compatible - both use +", &NodePair{                     // TODO: fails here and in js, but passes js satisfies
+		// {"compatible - both use +", &nodePair{                     // TODO: fails here and in js, but passes js satisfies
 		// 	firstNode:  getLicenseNode("Apache-1.0", true),
 		// 	secondNode: getLicenseNode("Apache-2.0", true)}, true},
-		{"not compatible", &NodePair{
+		{"not compatible", &nodePair{
 			firstNode:  getLicenseNode("GPL-1.0-or-later", true),
 			secondNode: getLicenseNode("LGPL-3.0-or-later", true)}, false},
 	}
@@ -155,22 +181,22 @@ func TestLicenseInRange(t *testing.T) {
 func TestIdentifierInRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		nodes  *NodePair
+		nodes  *nodePair
 		result bool
 	}{
-		{"in or-later range (later)", &NodePair{
+		{"in or-later range (later)", &nodePair{
 			firstNode:  getLicenseNode("GPL-3.0", false),
 			secondNode: getLicenseNode("GPL-2.0-or-later", true)}, true},
-		{"in or-later range (same)", &NodePair{
+		{"in or-later range (same)", &nodePair{
 			firstNode:  getLicenseNode("GPL-2.0", false),
 			secondNode: getLicenseNode("GPL-2.0-or-later", true)}, false}, // TODO: why doesn't this
-		{"in + range", &NodePair{
+		{"in + range", &nodePair{
 			firstNode:  getLicenseNode("Apache-2.0", false),
 			secondNode: getLicenseNode("Apache-1.0+", true)}, false}, // TODO: think this doesn't match because Apache doesn't have any -or-later
-		{"not in range", &NodePair{
+		{"not in range", &nodePair{
 			firstNode:  getLicenseNode("GPL-1.0", false),
 			secondNode: getLicenseNode("GPL-2.0-or-later", true)}, false},
-		{"different base license", &NodePair{
+		{"different base license", &nodePair{
 			firstNode:  getLicenseNode("GPL-1.0", false),
 			secondNode: getLicenseNode("LGPL-2.0-or-later", true)}, false},
 	}
@@ -186,13 +212,13 @@ func TestIdentifierInRange(t *testing.T) {
 func TestLicensesExactlyEqual(t *testing.T) {
 	tests := []struct {
 		name   string
-		nodes  *NodePair
+		nodes  *nodePair
 		result bool
 	}{
-		{"equal", &NodePair{
+		{"equal", &nodePair{
 			firstNode:  getLicenseNode("GPL-2.0", false),
 			secondNode: getLicenseNode("GPL-2.0", false)}, true},
-		{"not equal", &NodePair{
+		{"not equal", &nodePair{
 			firstNode:  getLicenseNode("GPL-1.0", false),
 			secondNode: getLicenseNode("GPL-2.0", false)}, false},
 	}

@@ -4,15 +4,18 @@ import (
 	"sort"
 )
 
-func ActiveLicense(id string) bool {
+// activeLicense returns true if the id is an active license.
+func activeLicense(id string) bool {
 	return inLicenseList(getLicenses(), id)
 }
 
-func DeprecatedLicense(id string) bool {
+// deprecatedLicense returns true if the id is a deprecated license.
+func deprecatedLicense(id string) bool {
 	return inLicenseList(getDeprecated(), id)
 }
 
-func ExceptionLicense(id string) bool {
+// exceptionLicense returns true if the id is an exception license.
+func exceptionLicense(id string) bool {
 	return inLicenseList(getExceptions(), id)
 }
 
@@ -27,30 +30,30 @@ func inLicenseList(licenses []string, id string) bool {
 }
 
 const (
-	LicenseGroup uint8 = iota
-	VersionGroup
-	LicenseIndex
+	licenseGroup uint8 = iota
+	versionGroup
+	licenseIndex
 )
 
-type LicenseRange struct {
-	Licenses []string
-	Location map[uint8]int
+type licenseRange struct {
+	licenses []string
+	location map[uint8]int
 }
 
-func GetLicenseRange(id string) *LicenseRange {
+func getLicenseRange(id string) *licenseRange {
 	allRanges := licenseRanges()
-	for lg, licenseGroup := range allRanges {
-		for vg, versionGroup := range licenseGroup {
-			for li, license := range versionGroup {
+	for i, licenseGrp := range allRanges {
+		for j, versionGrp := range licenseGrp {
+			for k, license := range versionGrp {
 				if id == license {
 					location := map[uint8]int{
-						LicenseGroup: lg,
-						VersionGroup: vg,
-						LicenseIndex: li,
+						licenseGroup: i,
+						versionGroup: j,
+						licenseIndex: k,
 					}
-					return &LicenseRange{
-						Licenses: versionGroup,
-						Location: location,
+					return &licenseRange{
+						licenses: versionGrp,
+						location: location,
 					}
 				}
 			}

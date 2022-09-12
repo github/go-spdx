@@ -911,7 +911,7 @@ func TestParse(t *testing.T) {
 
 			// ref found, check token values are as expected
 			assert.Equal(t, test.node, startNode)
-			assert.Equal(t, test.nodestr, startNode.String())
+			assert.Equal(t, test.nodestr, startNode.string())
 		})
 	}
 }
@@ -1077,7 +1077,7 @@ func TestParseTokens(t *testing.T) {
 
 			// ref found, check token values are as expected
 			assert.Equal(t, test.node, startNode)
-			assert.Equal(t, test.nodestr, startNode.String())
+			assert.Equal(t, test.nodestr, startNode.string())
 		})
 	}
 }

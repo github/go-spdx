@@ -303,7 +303,7 @@ func (t *tokenStream) parseWith() *string {
 }
 
 // Returns a human readable representation of the node tree.
-func (n *Node) String() string {
+func (n *Node) string() string {
 	switch n.role {
 	case ExpressionNode:
 		return expressionString(*n.exp)
@@ -316,9 +316,9 @@ func (n *Node) String() string {
 }
 
 func expressionString(exp expressionNodePartial) string {
-	s := "{ LEFT: " + exp.left.String() + " "
+	s := "{ LEFT: " + exp.left.string() + " "
 	s += exp.conjunction
-	s += " RIGHT: " + exp.right.String() + " }"
+	s += " RIGHT: " + exp.right.string() + " }"
 	return s
 }
 

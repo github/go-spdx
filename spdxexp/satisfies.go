@@ -84,8 +84,8 @@ func isCompatible(expressionPart, allowed []*Node) bool {
 	for _, expLicense := range expressionPart {
 		compatible := false
 		for _, allowedLicense := range allowed {
-			nodes := &NodePair{firstNode: expLicense, secondNode: allowedLicense}
-			if nodes.LicensesAreCompatible() {
+			nodes := &nodePair{firstNode: expLicense, secondNode: allowedLicense}
+			if nodes.licensesAreCompatible() {
 				compatible = true
 				break
 			}
@@ -247,10 +247,10 @@ func sortAndDedup(nodes []*Node) []*Node {
 		return nodes
 	}
 
-	SortLicenses(nodes)
+	sortLicenses(nodes)
 	prev := 1
 	for curr := 1; curr < len(nodes); curr++ {
-		if *nodes[curr-1].LicenseString() != *nodes[curr].LicenseString() {
+		if *nodes[curr-1].reconstructedLicenseString() != *nodes[curr].reconstructedLicenseString() {
 			nodes[prev] = nodes[curr]
 			prev++
 		}
@@ -276,7 +276,7 @@ func deepSort(nodes2d [][]*Node) [][]*Node {
 	//   AFTER  {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
 	for _, nodes := range nodes2d {
 		if len(nodes) > 1 {
-			SortLicenses(nodes)
+			sortLicenses(nodes)
 		}
 	}
 
@@ -285,15 +285,15 @@ func deepSort(nodes2d [][]*Node) [][]*Node {
 	//   BEFORE {{"GPL-2.0", "MIT"}, {"Apache-2.0", "ISC"}}
 	//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
 	sort.Slice(nodes2d, func(i, j int) bool {
-		// TODO: Consider refactor to map nodes to LicenseString before processing.
+		// TODO: Consider refactor to map nodes to licenseString before processing.
 		for k := range nodes2d[j] {
 			if k >= len(nodes2d[i]) {
 				// if the first k elements are equal and the second array is
 				// longer than the first, the first is considered less than
 				return true
 			}
-			iLicense := *nodes2d[i][k].LicenseString()
-			jLicense := *nodes2d[j][k].LicenseString()
+			iLicense := *nodes2d[i][k].reconstructedLicenseString()
+			jLicense := *nodes2d[j][k].reconstructedLicenseString()
 			if iLicense != jLicense {
 				// when elements are not equal, return true if first is less than
 				return iLicense < jLicense

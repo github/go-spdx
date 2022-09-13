@@ -6,7 +6,7 @@ func getLicenseNode(license string, hasPlus bool) *node {
 		exp:  nil,
 		lic: &licenseNodePartial{
 			license:      license,
-			hasPlus:      false,
+			hasPlus:      hasPlus,
 			hasException: false,
 			exception:    "",
 		},

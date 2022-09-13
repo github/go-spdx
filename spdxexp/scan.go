@@ -277,19 +277,22 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 
 // Lookup license identifier in active and exception lists to determine if it is a supported SPDX id
 func licenseLookup(license string) *token {
-	if activeLicense(license) {
-		return &token{role: licenseToken, value: license}
+	active, preferredLicense := activeLicense(license)
+	if active {
+		return &token{role: licenseToken, value: preferredLicense}
 	}
-	if exceptionLicense(license) {
-		return &token{role: exceptionToken, value: license}
+	exception, preferredLicense := exceptionLicense(license)
+	if exception {
+		return &token{role: exceptionToken, value: preferredLicense}
 	}
 	return nil
 }
 
 // Lookup license identifier in deprecated list to determine if it is a supported SPDX id
 func deprecatedLicenseLookup(license string) *token {
-	if deprecatedLicense(license) {
-		return &token{role: licenseToken, value: license}
+	deprecated, preferredLicense := deprecatedLicense(license)
+	if deprecated {
+		return &token{role: licenseToken, value: preferredLicense}
 	}
 	return nil
 }

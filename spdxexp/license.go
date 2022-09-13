@@ -1,32 +1,32 @@
 package spdxexp
 
 import (
-	"sort"
+	"strings"
 )
 
 // activeLicense returns true if the id is an active license.
-func activeLicense(id string) bool {
+func activeLicense(id string) (bool, string) {
 	return inLicenseList(getLicenses(), id)
 }
 
 // deprecatedLicense returns true if the id is a deprecated license.
-func deprecatedLicense(id string) bool {
+func deprecatedLicense(id string) (bool, string) {
 	return inLicenseList(getDeprecated(), id)
 }
 
 // exceptionLicense returns true if the id is an exception license.
-func exceptionLicense(id string) bool {
+func exceptionLicense(id string) (bool, string) {
 	return inLicenseList(getExceptions(), id)
 }
 
-func inLicenseList(licenses []string, id string) bool {
-	idx := sort.Search(len(licenses), func(i int) bool {
-		return licenses[i] >= id
-	})
-	if idx < len(licenses) && licenses[idx] == id {
-		return true
+// inLicenseList looks for id in the list of licenses.  The check is case-insensitive (e.g. "mit" will match "MIT").
+func inLicenseList(licenses []string, id string) (bool, string) {
+	for _, license := range licenses {
+		if strings.EqualFold(license, id) {
+			return true, license
+		}
 	}
-	return false
+	return false, id
 }
 
 const (
@@ -37,9 +37,10 @@ const (
 
 type licenseRange struct {
 	licenses []string
-	location map[uint8]int
+	location map[uint8]int // licenseGroup, versionGroup, licenseIndex
 }
 
+// getLicenseRange returns a range of licenses from licenseRanges
 func getLicenseRange(id string) *licenseRange {
 	allRanges := licenseRanges()
 	for i, licenseGrp := range allRanges {

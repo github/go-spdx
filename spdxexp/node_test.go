@@ -6,30 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLicenseString(t *testing.T) {
+func TestReconstructedLicenseString(t *testing.T) {
 	tests := []struct {
 		name   string
 		node   *node
 		result string
 	}{
-		{"License node - simple",
-			&node{
-				role: licenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "MIT", hasPlus: false,
-					hasException: false, exception: ""},
-				ref: nil,
-			}, "MIT"},
-		{"License node - plus",
-			&node{
-				role: licenseNode,
-				exp:  nil,
-				lic: &licenseNodePartial{
-					license: "Apache-1.0", hasPlus: true,
-					hasException: false, exception: ""},
-				ref: nil,
-			}, "Apache-1.0+"},
+		{"License node - simple", getLicenseNode("MIT", false), "MIT"},
+		{"License node - plus", getLicenseNode("Apache-1.0", true), "Apache-1.0+"},
 		{"License node - exception",
 			&node{
 				role: licenseNode,
@@ -81,6 +65,9 @@ func TestLicensesAreCompatible(t *testing.T) {
 		{"compatible (exact equal): GPL-3.0, GPL-3.0", &nodePair{
 			getLicenseNode("GPL-3.0", false),
 			getLicenseNode("GPL-3.0", false)}, true},
+		{"compatible (diff case equal): Apache-2.0, APACHE-2.0", &nodePair{
+			getLicenseNode("Apache-2.0", false),
+			getLicenseNode("APACHE-2.0", false)}, true},
 		// {"compatible (same version with +): Apache-1.0+, Apache-1.0", &nodePair{
 		// 	getLicenseNode("Apache-1.0+", true),
 		// 	getLicenseNode("Apache-1.0", false)}, true},

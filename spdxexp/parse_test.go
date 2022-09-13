@@ -28,6 +28,18 @@ func TestParse(t *testing.T) {
 			},
 			"MIT", nil},
 
+		{"single license - diff case",
+			"mit",
+			&node{
+				role: licenseNode,
+				exp:  nil,
+				lic: &licenseNodePartial{
+					license: "MIT", hasPlus: false,
+					hasException: false, exception: ""},
+				ref: nil,
+			},
+			"MIT", nil},
+
 		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
 
 		{"invalid license", "NON-EXISTENT-LICENSE", nil, "",

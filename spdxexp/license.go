@@ -5,28 +5,28 @@ import (
 )
 
 // activeLicense returns true if the id is an active license.
-func activeLicense(id string) bool {
+func activeLicense(id string) (bool, string) {
 	return inLicenseList(getLicenses(), id)
 }
 
 // deprecatedLicense returns true if the id is a deprecated license.
-func deprecatedLicense(id string) bool {
+func deprecatedLicense(id string) (bool, string) {
 	return inLicenseList(getDeprecated(), id)
 }
 
 // exceptionLicense returns true if the id is an exception license.
-func exceptionLicense(id string) bool {
+func exceptionLicense(id string) (bool, string) {
 	return inLicenseList(getExceptions(), id)
 }
 
 // inLicenseList looks for id in the list of licenses.  The check is case-insensitive (e.g. "mit" will match "MIT").
-func inLicenseList(licenses []string, id string) bool {
+func inLicenseList(licenses []string, id string) (bool, string) {
 	for _, license := range licenses {
 		if strings.EqualFold(license, id) {
-			return true
+			return true, license
 		}
 	}
-	return false
+	return false, id
 }
 
 const (

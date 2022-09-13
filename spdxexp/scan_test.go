@@ -21,7 +21,7 @@ func TestScan(t *testing.T) {
 			}, nil},
 		{"single license - diff case", "mit",
 			[]token{
-				{role: licenseToken, value: "mit"},
+				{role: licenseToken, value: "MIT"},
 			}, nil},
 		{"empty expression", "", []token(nil), nil},
 		{"invalid license", "NON-EXISTENT-LICENSE", []token(nil),

@@ -34,11 +34,11 @@ func TestParse(t *testing.T) {
 				role: licenseNode,
 				exp:  nil,
 				lic: &licenseNodePartial{
-					license: "mit", hasPlus: false,
+					license: "MIT", hasPlus: false,
 					hasException: false, exception: ""},
 				ref: nil,
 			},
-			"mit", nil},
+			"MIT", nil},
 
 		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
 

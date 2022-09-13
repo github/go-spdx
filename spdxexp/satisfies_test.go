@@ -19,6 +19,8 @@ func TestSatisfies(t *testing.T) {
 		// regression tests from spdx-satisfies.js - comments for satisfies function
 		// TODO: Commented out tests are not yet supported.
 		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
+		{"miT satisfies [MIT]", "miT", []string{"MIT"}, true, nil},
+		{"MIT satisfies [mit]", "MIT", []string{"mit"}, true, nil},
 		{"! MIT satisfies [Apache-2.0]", "MIT", []string{"Apache-2.0"}, false, nil},
 		{"err - <empty expression> satisfies MIT", "", []string{"MIT"}, false,
 			errors.New("parse error - cannot parse empty string")},
@@ -32,6 +34,8 @@ func TestSatisfies(t *testing.T) {
 		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, false, nil},
 		{"! MIT OR Apache-2.0 satisfies [GPL-2.0]", "MIT OR Apache-2.0", []string{"GPL-2.0"}, false, nil},
 
+		{"Apache-2.0 AND MIT satisfies [MIT, APACHE-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "APACHE-2.0"}, true, nil},
+		{"apache-2.0 AND mit satisfies [MIT, APACHE-2.0]", "apache-2.0 AND mit", []string{"MIT", "APACHE-2.0"}, true, nil},
 		{"Apache-2.0 AND MIT satisfies [MIT, Apache-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}, true, nil},
 		{"MIT AND Apache-2.0 satisfies [MIT, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}, true, nil},
 		{"! MIT AND Apache-2.0 satisfies [MIT]", "MIT AND Apache-2.0", []string{"MIT"}, false, nil},

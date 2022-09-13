@@ -2,6 +2,7 @@ package spdxexp
 
 import (
 	"sort"
+	"strings"
 )
 
 type nodePair struct {
@@ -143,7 +144,7 @@ func (n *node) hasDocumentRef() bool {
 	return n.ref.hasDocumentRef
 }
 
-// Return the string representation of the license or license ref.
+// reconstructedLicenseString returns the string representation of the license or license ref.
 // TODO: Original had "NOASSERTION".  Does that still apply?
 func (n *node) reconstructedLicenseString() *string {
 	switch n.role {
@@ -246,5 +247,5 @@ func (nodes *nodePair) identifierInRange() bool {
 
 // Return true if the licenses are the same; otherwise, false
 func (nodes *nodePair) licensesExactlyEqual() bool {
-	return *nodes.firstNode.reconstructedLicenseString() == *nodes.secondNode.reconstructedLicenseString()
+	return strings.EqualFold(*nodes.firstNode.reconstructedLicenseString(), *nodes.secondNode.reconstructedLicenseString())
 }

@@ -12,9 +12,18 @@ func TestActiveLicense(t *testing.T) {
 		id     string
 		result bool
 	}{
-		{"active license", "Apache-2.0", true},
-		{"deprecated license", "GFDL-1.3", false},
-		{"exception license", "Bison-exception-2.2", false},
+		{"active license - direct match", "Apache-2.0", true},
+		{"active license - all upper", "APACHE-2.0", true},
+		{"active license - all lower", "apache-2.0", true},
+		{"active license - mixed case", "apACHe-2.0", true},
+		{"deprecated license - direct match", "eCos-2.0", false},
+		{"deprecated license - all upper", "ECOS-2.0", false},
+		{"deprecated license - all lower", "ecos-2.0", false},
+		{"deprecated license - mixed case", "ECos-2.0", false},
+		{"exception license - direct match", "Bison-exception-2.2", false},
+		{"exception license - all upper", "BISON-EXCEPTION-2.2", false},
+		{"exception license - all lower", "bison-exception-2.2", false},
+		{"exception license - mixed case", "BisoN-Exception-2.2", false},
 	}
 
 	for _, test := range tests {
@@ -31,9 +40,18 @@ func TestDeprecatedLicense(t *testing.T) {
 		id     string
 		result bool
 	}{
-		{"active license", "Apache-2.0", false},
-		{"deprecated license", "GFDL-1.3", true},
-		{"exception license", "Bison-exception-2.2", false},
+		{"active license - direct match", "Apache-2.0", false},
+		{"active license - all upper", "APACHE-2.0", false},
+		{"active license - all lower", "apache-2.0", false},
+		{"active license - mixed case", "apACHe-2.0", false},
+		{"deprecated license - direct match", "eCos-2.0", true},
+		{"deprecated license - all upper", "ECOS-2.0", true},
+		{"deprecated license - all lower", "ecos-2.0", true},
+		{"deprecated license - mixed case", "ECos-2.0", true},
+		{"exception license - direct match", "Bison-exception-2.2", false},
+		{"exception license - all upper", "BISON-EXCEPTION-2.2", false},
+		{"exception license - all lower", "bison-exception-2.2", false},
+		{"exception license - mixed case", "BisoN-Exception-2.2", false},
 	}
 
 	for _, test := range tests {
@@ -50,9 +68,18 @@ func TestExceptionLicense(t *testing.T) {
 		id     string
 		result bool
 	}{
-		{"active license", "Apache-2.0", false},
-		{"deprecated license", "GFDL-1.3", false},
-		{"exception license", "Bison-exception-2.2", true},
+		{"active license - direct match", "Apache-2.0", false},
+		{"active license - all upper", "APACHE-2.0", false},
+		{"active license - all lower", "apache-2.0", false},
+		{"active license - mixed case", "apACHe-2.0", false},
+		{"deprecated license - direct match", "eCos-2.0", false},
+		{"deprecated license - all upper", "ECOS-2.0", false},
+		{"deprecated license - all lower", "ecos-2.0", false},
+		{"deprecated license - mixed case", "ECos-2.0", false},
+		{"exception license - direct match", "Bison-exception-2.2", true},
+		{"exception license - all upper", "BISON-EXCEPTION-2.2", true},
+		{"exception license - all lower", "bison-exception-2.2", true},
+		{"exception license - mixed case", "BisoN-Exception-2.2", true},
 	}
 
 	for _, test := range tests {

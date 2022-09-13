@@ -1,7 +1,7 @@
 package spdxexp
 
 import (
-	"sort"
+	"strings"
 )
 
 // activeLicense returns true if the id is an active license.
@@ -19,12 +19,12 @@ func exceptionLicense(id string) bool {
 	return inLicenseList(getExceptions(), id)
 }
 
+// inLicenseList looks for id in the list of licenses.  The check is case-insensitive (e.g. "mit" will match "MIT").
 func inLicenseList(licenses []string, id string) bool {
-	idx := sort.Search(len(licenses), func(i int) bool {
-		return licenses[i] >= id
-	})
-	if idx < len(licenses) && licenses[idx] == id {
-		return true
+	for _, license := range licenses {
+		if strings.EqualFold(license, id) {
+			return true
+		}
 	}
 	return false
 }
@@ -37,9 +37,10 @@ const (
 
 type licenseRange struct {
 	licenses []string
-	location map[uint8]int
+	location map[uint8]int // licenseGroup, versionGroup, licenseIndex
 }
 
+// getLicenseRange returns a range of licenses from licenseRanges
 func getLicenseRange(id string) *licenseRange {
 	allRanges := licenseRanges()
 	for i, licenseGrp := range allRanges {

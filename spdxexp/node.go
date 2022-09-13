@@ -212,37 +212,56 @@ func (nodes *nodePair) licensesAreCompatible() bool {
 // Return true if two licenses are compatible in the context of their ranges; otherwise, false.
 func (nodes *nodePair) rangesAreCompatible() bool {
 	if nodes.licensesExactlyEqual() {
-		// licenses specify ranges exactly the same
+		// licenses specify ranges exactly the same (e.g. Apache-1.0+, Apache-1.0+)
 		return true
 	}
 
-	firstLicense := *nodes.firstNode.license()
-	secondLicense := *nodes.secondNode.license()
+	firstNode := *nodes.firstNode
+	secondNode := *nodes.secondNode
 
-	firstLicenseRange := getLicenseRange(firstLicense)
-	secondLicenseRange := getLicenseRange(secondLicense)
+	firstRange := getLicenseRange(*firstNode.license())
+	secondRange := getLicenseRange(*secondNode.license())
 
-	return licenseInRange(firstLicense, secondLicenseRange.licenses) &&
-		licenseInRange(secondLicense, firstLicenseRange.licenses)
+	// When both licenses allow later versions (i.e. hasPlus==true), being in the same license
+	// group is sufficient for compatibility, as long as, any exception is also compatible
+	// Example: All Apache licenses (e.g. Apache-1.0, Apache-2.0) are in the same license group
+	return sameLicenseGroup(firstRange, secondRange) && nodes.exceptionsAreCompatible()
 }
 
-// Return true if license is found in licenseRange; otherwise, false
-func licenseInRange(simpleLicense string, licenseRange []string) bool {
-	for _, testLicense := range licenseRange {
-		if simpleLicense == testLicense {
-			return true
-		}
-	}
-	return false
-}
-
-// Return true if the (first) simple license is in range of the (second) ranged license; otherwise, false.
+// identifierInRange returns true if the (first) simple license is in range of the (second)
+// ranged license; otherwise, false.
 func (nodes *nodePair) identifierInRange() bool {
 	simpleLicense := nodes.firstNode
 	plusLicense := nodes.secondNode
 
-	return compareGT(simpleLicense, plusLicense) ||
-		compareEQ(simpleLicense, plusLicense)
+	if !compareGT(simpleLicense, plusLicense) && !compareEQ(simpleLicense, plusLicense) {
+		return false
+	}
+
+	// With simpleLicense >= plusLicense, licenses are compatible, as long as, any exception
+	// is also compatible
+	return nodes.exceptionsAreCompatible()
+
+}
+
+// exceptionsAreCompatible returns true if neither license has an exception or they have
+// the same exception; otherwise, false
+func (nodes *nodePair) exceptionsAreCompatible() bool {
+	firstNode := *nodes.firstNode
+	secondNode := *nodes.secondNode
+
+	if !firstNode.hasException() && !secondNode.hasException() {
+		// if neither has an exception, then licenses are compatible
+		return true
+	}
+
+	if firstNode.hasException() != secondNode.hasException() {
+		// if one has and exception and the other does not, then the license are NOT compatible
+		return false
+	}
+
+	return *nodes.firstNode.exception() == *nodes.secondNode.exception()
+
 }
 
 // Return true if the licenses are the same; otherwise, false

@@ -43,18 +43,19 @@ func TestSatisfies(t *testing.T) {
 
 		{"MIT AND Apache-2.0 satisfies [MIT, Apache-1.0, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}, true, nil},
 
-		// {"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, true, nil},  // TODO: Fails here but passes js
+		{"Apache-1.0+ satisfies [Apache-2.0]", "Apache-1.0+", []string{"Apache-2.0"}, true, nil},
+		{"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, true, nil}, // TODO: Fails here but passes js
 		{"! Apache-1.0 satisfies [Apache-2.0+]", "Apache-1.0", []string{"Apache-2.0+"}, false, nil},
 		{"Apache-2.0 satisfies [Apache-2.0+]", "Apache-2.0", []string{"Apache-2.0+"}, true, nil},
-		// {"Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, true, nil}, // TODO: gets error b/c Apache-3.0 doesn't exist -- need better error message
+		{"! Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
 		{"! Apache-1.0 satisfies [Apache-2.0-or-later]", "Apache-1.0", []string{"Apache-2.0-or-later"}, false, nil},
 		{"Apache-2.0 satisfies [Apache-2.0-or-later]", "Apache-2.0", []string{"Apache-2.0-or-later"}, true, nil},
-		// {"Apache-3.0 satisfies [Apache-2.0-or-later]", "Apache-3.0", []string{"Apache-2.0-or-later"}, true, nil},
+		{"! Apache-3.0 satisfies [Apache-2.0-or-later]", "Apache-3.0", []string{"Apache-2.0-or-later"}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
 		{"! Apache-1.0 satisfies [Apache-2.0-only]", "Apache-1.0", []string{"Apache-2.0-only"}, false, nil},
 		{"Apache-2.0 satisfies [Apache-2.0-only]", "Apache-2.0", []string{"Apache-2.0-only"}, true, nil},
-		// {"Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, false, nil},
+		{"! Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
 		// regression tests from spdx-satisfies.js - assert statements in README
 		// TODO: Commented out tests are not yet supported.
@@ -63,8 +64,8 @@ func TestSatisfies(t *testing.T) {
 		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, true, nil},
 		{"Zlib satisfies [ISC, MIT, Zlib]", "Zlib", []string{"ISC", "MIT", "Zlib"}, true, nil},
 		{"! GPL-3.0 satisfies [ISC, MIT]", "GPL-3.0", []string{"ISC", "MIT"}, false, nil},
-		// {"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, true, nil},   // TODO: Fails here but passes js
-		// {"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, true, nil},  // TODO: Fails here and js
+		{"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, true, nil},                 // TODO: Fails here but passes js
+		{"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, true, nil}, // TODO: Fails here and js
 		{"GPL-3.0 satisfies [GPL-2.0+]", "GPL-3.0", []string{"GPL-2.0+"}, true, nil},
 		{"GPL-1.0-or-later satisfies [GPL-2.0-or-later]", "GPL-1.0-or-later", []string{"GPL-2.0-or-later"}, true, nil},
 		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, true, nil},

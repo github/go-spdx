@@ -20,8 +20,12 @@ func TestSatisfies(t *testing.T) {
 		// TODO: Commented out tests are not yet supported.
 		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
 		{"! MIT satisfies [Apache-2.0]", "MIT", []string{"Apache-2.0"}, false, nil},
-		{"err - <empty expression> satisfies MIT", "", []string{"MIT"}, false, errors.New("parse error - cannot parse empty string")},
-		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, false, errors.New("allowedList requires at least one element, but is empty")},
+		{"err - <empty expression> satisfies MIT", "", []string{"MIT"}, false,
+			errors.New("parse error - cannot parse empty string")},
+		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, false,
+			errors.New("allowedList requires at least one element, but is empty")},
+		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, false,
+			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
 		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},
 		{"MIT OR Apache-2.0 satisfies [MIT]", "MIT OR Apache-2.0", []string{"MIT"}, true, nil},

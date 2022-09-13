@@ -19,7 +19,9 @@ func TestScan(t *testing.T) {
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"empty expression", "", nil, nil},
+		{"empty expression", "", []token(nil), nil},
+		{"invalid license", "NON-EXISTENT-LICENSE", []token(nil),
+			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 		{"two licenses using AND", "MIT AND Apache-2.0",
 			[]token{
 				{role: licenseToken, value: "MIT"},
@@ -61,14 +63,6 @@ func TestScan(t *testing.T) {
 			tokens, err := scan(test.expression)
 
 			require.Equal(t, test.err, err)
-			if test.err != nil {
-				// tokens should be nil when error occurs
-				var nilTokens *[]token = nil
-				assert.Equal(t, nilTokens, tokens, "Expected nil token array when error occurs.")
-				return
-			}
-
-			// scan completed, check tokens
 			assert.Equal(t, test.tokens, tokens)
 		})
 	}
@@ -117,7 +111,7 @@ func TestParseToken(t *testing.T) {
 		{"identifier found", getExpressionStream("MIT AND Apache-2.0", 8),
 			&token{role: licenseToken, value: "Apache-2.0"}, 18, nil},
 		{"identifier error", getExpressionStream("NON-EXISTENT-LICENSE", 0),
-			nil, 0, errors.New("unexpected 'N' at offset 0")},
+			nil, 0, errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 	}
 
 	for _, test := range tests {
@@ -361,7 +355,7 @@ func TestReadLicense(t *testing.T) {
 		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), &token{role: licenseToken, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
 		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: licenseToken, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
 		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: exceptionToken, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
-		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, "NON-EXISTENT-LICENSE", 0, nil}, // TODO: should this return an error?
+		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, "NON-EXISTENT-LICENSE", 0, errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 	}
 
 	for _, test := range tests {

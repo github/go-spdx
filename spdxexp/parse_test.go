@@ -30,6 +30,9 @@ func TestParse(t *testing.T) {
 
 		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
 
+		{"invalid license", "NON-EXISTENT-LICENSE", nil, "",
+			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
+
 		{"OR Expression", "MIT OR Apache-2.0",
 			&node{
 				role: expressionNode,

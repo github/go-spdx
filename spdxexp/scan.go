@@ -217,6 +217,8 @@ func (exp *expressionStream) readLicense() *token {
 
 	// license not found in indices, need to reset index since readID advanced it
 	exp.index = index
+	errmsg := fmt.Sprintf("unknown license '%s' at offset %d", license, exp.index)
+	exp.err = errors.New(errmsg)
 	return nil
 }
 

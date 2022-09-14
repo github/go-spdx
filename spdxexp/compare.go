@@ -1,6 +1,9 @@
 package spdxexp
 
 func compareGT(first *node, second *node) bool {
+	if !first.isLicense() || !second.isLicense() {
+		return false
+	}
 	firstRange := getLicenseRange(*first.license())
 	secondRange := getLicenseRange(*second.license())
 
@@ -11,6 +14,9 @@ func compareGT(first *node, second *node) bool {
 }
 
 func compareLT(first *node, second *node) bool {
+	if !first.isLicense() || !second.isLicense() {
+		return false
+	}
 	firstRange := getLicenseRange(*first.license())
 	secondRange := getLicenseRange(*second.license())
 
@@ -21,6 +27,9 @@ func compareLT(first *node, second *node) bool {
 }
 
 func compareEQ(first *node, second *node) bool {
+	if !first.isLicense() || !second.isLicense() {
+		return false
+	}
 	firstRange := getLicenseRange(*first.license())
 	secondRange := getLicenseRange(*second.license())
 

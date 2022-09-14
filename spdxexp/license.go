@@ -42,11 +42,12 @@ type licenseRange struct {
 
 // getLicenseRange returns a range of licenses from licenseRanges
 func getLicenseRange(id string) *licenseRange {
+	simpleID := simplifyLicense(id)
 	allRanges := licenseRanges()
 	for i, licenseGrp := range allRanges {
 		for j, versionGrp := range licenseGrp {
 			for k, license := range versionGrp {
-				if id == license {
+				if simpleID == license {
 					location := map[uint8]int{
 						licenseGroup: i,
 						versionGroup: j,
@@ -61,6 +62,13 @@ func getLicenseRange(id string) *licenseRange {
 		}
 	}
 	return nil
+}
+
+func simplifyLicense(id string) string {
+	if strings.HasSuffix(id, "-or-later") {
+		return id[0 : len(id)-9]
+	}
+	return id
 }
 
 func getLicenses() []string {

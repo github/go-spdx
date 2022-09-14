@@ -234,7 +234,7 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 	if token := licenseLookup(license); token != nil {
 		// checks active and exception license lists
 		// deprecated list is checked at the end to avoid a deprecated license being used for +
-		// (example: GPL-1.0 is on the depcated list, but GPL-1.0+ should become GPL-1.0-or-later)
+		// (example: GPL-1.0 is on the deprecated list, but GPL-1.0+ should become GPL-1.0-or-later)
 		return token
 	}
 

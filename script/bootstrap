@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+# download dependencies
+go mod download -json

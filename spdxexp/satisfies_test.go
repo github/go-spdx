@@ -116,6 +116,39 @@ func TestSatisfies(t *testing.T) {
 	}
 }
 
+func TestSatisfiesWithExtensions(t *testing.T) {
+	tests := []struct {
+		name           string
+		repoExpression string
+		allowedList    []string
+		extensionList  []string
+		satisfied      bool
+		err            error
+	}{
+		{"extension is expression", "X-BSD-3-Clause-Golang",
+			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
+			[]string{"X-BSD-3-Clause-Golang"}, true, nil},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)",
+			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
+			[]string{"X-BSD-3-Clause-Golang"}, true, nil},
+		{"extension not in expression", "(MIT OR Apache-2.0)",
+			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
+			[]string{"X-BSD-3-Clause-Golang"}, true, nil},
+		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang",
+			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
+			[]string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}, true, nil},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			satisfied, err := SatisfiesWithExtensions(test.repoExpression, test.allowedList, test.extensionList)
+			assert.Equal(t, test.err, err)
+			assert.Equal(t, test.satisfied, satisfied)
+		})
+	}
+}
+
 func TestExpand(t *testing.T) {
 	// TODO: Add tests for licenses that include plus and/or exception.
 	// TODO: Add tests for license ref and document ref.

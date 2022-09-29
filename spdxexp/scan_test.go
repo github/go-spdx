@@ -8,31 +8,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestScan(t *testing.T) {
+func TestScanWithExtensions(t *testing.T) {
 	tests := []struct {
-		name       string
-		expression string
-		tokens     []token
-		err        error
+		name          string
+		expression    string
+		extensionList []string
+		tokens        []token
+		err           error
 	}{
-		{"single license", "MIT",
+		{"single license", "MIT", []string{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"single license - diff case", "mit",
+		{"single license - diff case", "mit", []string{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"empty expression", "", []token(nil), nil},
-		{"invalid license", "NON-EXISTENT-LICENSE", []token(nil),
+		{"empty expression", "", []string{}, []token(nil), nil},
+		{"invalid license", "NON-EXISTENT-LICENSE", []string{}, []token(nil),
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
-		{"two licenses using AND", "MIT AND Apache-2.0",
+		{"two licenses using AND", "MIT AND Apache-2.0", []string{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 				{role: operatorToken, value: "AND"},
 				{role: licenseToken, value: "Apache-2.0"},
 			}, nil},
-		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)",
+		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)", []string{},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -41,6 +42,7 @@ func TestScan(t *testing.T) {
 				{role: operatorToken, value: ")"},
 			}, nil},
 		{"kitchen sink", "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
+			[]string{},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -59,12 +61,38 @@ func TestScan(t *testing.T) {
 				{role: exceptionToken, value: "Bison-exception-2.2"},
 				{role: operatorToken, value: ")"},
 			}, nil},
+		{"extension is expression", "X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang"},
+			[]token{
+				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
+			}, nil},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", []string{"X-BSD-3-Clause-Golang"},
+			[]token{
+				{role: operatorToken, value: "("},
+				{role: licenseToken, value: "MIT"},
+				{role: operatorToken, value: "OR"},
+				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
+				{role: operatorToken, value: ")"},
+			}, nil},
+		{"extension not in expression", "(MIT OR Apache-2.0)", []string{"X-BSD-3-Clause-Golang"},
+			[]token{
+				{role: operatorToken, value: "("},
+				{role: licenseToken, value: "MIT"},
+				{role: operatorToken, value: "OR"},
+				{role: licenseToken, value: "Apache-2.0"},
+				{role: operatorToken, value: ")"},
+			}, nil},
+		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"},
+			[]token{
+				{role: licenseToken, value: "BSD-3-Clause"},
+				{role: operatorToken, value: "OR"},
+				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
+			}, nil},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tokens, err := scan(test.expression)
+			tokens, err := scanWithExtensions(test.expression, test.extensionList)
 
 			require.Equal(t, test.err, err)
 			assert.Equal(t, test.tokens, tokens)
@@ -121,13 +149,13 @@ func TestParseToken(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tokn := test.exp.parseToken()
+			tokn := test.exp.parseToken([]string{})
 			assert.Equal(t, test.newIndex, test.exp.index)
 
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// token is nil when error occurs or token is not recognized
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, tokn)
 				return
 			}
@@ -298,7 +326,7 @@ func TestReadDocumentRef(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// ref should be nil when error occurs or a ref is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, ref, "Expected nil token when error occurs.")
 				return
 			}
@@ -331,7 +359,7 @@ func TestReadLicenseRef(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// ref should be nil when error occurs or a ref is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, ref)
 				return
 			}
@@ -346,32 +374,44 @@ func TestReadLicense(t *testing.T) {
 	tests := []struct {
 		name          string
 		exp           *expressionStream
+		extensionList []string
 		license       *token
 		newExpression string
 		newIndex      int
 		err           error
 	}{
-		{"active license", getExpressionStream("MIT", 0), &token{role: licenseToken, value: "MIT"}, "MIT", 3, nil},
-		{"active -or-later", getExpressionStream("AGPL-1.0-or-later", 0), &token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0-or-later", 17, nil},
-		{"active -or-later using +", getExpressionStream("AGPL-1.0+", 0), &token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0+", 9, nil}, // no valid example for this; all that include -or-later have the base as a deprecated license
-		{"active -or-later not in list", getExpressionStream("Apache-1.0-or-later", 0), &token{role: licenseToken, value: "Apache-1.0"}, "Apache-1.0+", 10, nil},
-		{"active -only", getExpressionStream("GPL-2.0-only", 0), &token{role: licenseToken, value: "GPL-2.0-only"}, "GPL-2.0-only", 12, nil},
-		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), &token{role: licenseToken, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
-		{"deprecated license", getExpressionStream("LGPL-2.1", 0), &token{role: licenseToken, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
-		{"exception license", getExpressionStream("GPL-CC-1.0", 0), &token{role: exceptionToken, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
-		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), nil, "NON-EXISTENT-LICENSE", 0, errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
+		{"active license", getExpressionStream("MIT", 0), []string{},
+			&token{role: licenseToken, value: "MIT"}, "MIT", 3, nil},
+		{"active -or-later", getExpressionStream("AGPL-1.0-or-later", 0), []string{},
+			&token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0-or-later", 17, nil},
+		{"active -or-later using +", getExpressionStream("AGPL-1.0+", 0), []string{},
+			&token{role: licenseToken, value: "AGPL-1.0-or-later"}, "AGPL-1.0+", 9, nil}, // no valid example for this; all that include -or-later have the base as a deprecated license
+		{"active -or-later not in list", getExpressionStream("Apache-1.0-or-later", 0), []string{},
+			&token{role: licenseToken, value: "Apache-1.0"}, "Apache-1.0+", 10, nil},
+		{"active -only", getExpressionStream("GPL-2.0-only", 0), []string{},
+			&token{role: licenseToken, value: "GPL-2.0-only"}, "GPL-2.0-only", 12, nil},
+		{"active -only not in list", getExpressionStream("ECL-1.0-only", 0), []string{},
+			&token{role: licenseToken, value: "ECL-1.0"}, "ECL-1.0-only", 12, nil},
+		{"deprecated license", getExpressionStream("LGPL-2.1", 0), []string{},
+			&token{role: licenseToken, value: "LGPL-2.1"}, "LGPL-2.1", 8, nil},
+		{"exception license", getExpressionStream("GPL-CC-1.0", 0), []string{},
+			&token{role: exceptionToken, value: "GPL-CC-1.0"}, "GPL-CC-1.0", 10, nil},
+		{"extension license", getExpressionStream("X-BSD-3-Clause-Golang", 0), []string{"X-BSD-3-Clause-Golang"},
+			&token{role: extensionToken, value: "X-BSD-3-Clause-Golang"}, "X-BSD-3-Clause-Golang", 21, nil},
+		{"invalid license", getExpressionStream("NON-EXISTENT-LICENSE", 0), []string{},
+			nil, "NON-EXISTENT-LICENSE", 0, errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			license := test.exp.readLicense()
+			license := test.exp.readLicense(test.extensionList)
 			assert.Equal(t, test.newIndex, test.exp.index)
 
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// license should be nil when error occurs or a license is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, license)
 				return
 			}

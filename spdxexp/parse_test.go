@@ -919,7 +919,126 @@ func TestParse(t *testing.T) {
 			require.Equal(t, test.err, err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *node = nil
+				var nilNode *node
+				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
+				return
+			}
+
+			// ref found, check token values are as expected
+			assert.Equal(t, test.node, startNode)
+			assert.Equal(t, test.nodestr, startNode.string())
+		})
+	}
+}
+
+func TestParseWithExtensions(t *testing.T) {
+	tests := []struct {
+		name          string
+		expression    string
+		extensionList []string
+		node          *node
+		nodestr       string
+		err           error
+	}{
+		{"extension is expression", "X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang"},
+			&node{
+				role: licenseNode,
+				exp:  nil,
+				lic: &licenseNodePartial{
+					license: "X-BSD-3-Clause-Golang", hasPlus: false,
+					hasException: false, exception: ""},
+				ref: nil,
+			},
+			"X-BSD-3-Clause-Golang", nil},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", []string{"X-BSD-3-Clause-Golang"},
+			&node{
+				role: expressionNode,
+				exp: &expressionNodePartial{
+					left: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "X-BSD-3-Clause-Golang", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: X-BSD-3-Clause-Golang }", nil},
+		{"extension not in expression", "(MIT OR Apache-2.0)", []string{"X-BSD-3-Clause-Golang"},
+			&node{
+				role: expressionNode,
+				exp: &expressionNodePartial{
+					left: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "Apache-2.0", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
+		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"},
+			&node{
+				role: expressionNode,
+				exp: &expressionNodePartial{
+					left: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "BSD-3-Clause", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &node{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "X-BSD-3-Clause-Golang", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			"{ LEFT: BSD-3-Clause or RIGHT: X-BSD-3-Clause-Golang }", nil},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			startNode, err := parseWithExtensions(test.expression, test.extensionList)
+
+			require.Equal(t, test.err, err)
+			if test.err != nil {
+				// when error, check that returned node is nil
+				var nilNode *node
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
@@ -1085,7 +1204,7 @@ func TestParseTokens(t *testing.T) {
 			require.Equal(t, test.err, test.tokens.err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *node = nil
+				var nilNode *node
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
@@ -1227,7 +1346,7 @@ func TestParseWith(t *testing.T) {
 			require.Equal(t, test.err, test.tokens.err)
 			if test.expectNil {
 				// exception license is nil when error occurs or WITH operator is not found
-				var nilString *string = nil
+				var nilString *string
 				assert.Equal(t, nilString, exceptionLicense)
 				return
 			}

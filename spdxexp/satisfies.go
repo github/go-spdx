@@ -5,7 +5,8 @@ import (
 	"sort"
 )
 
-// Satisfies determines if test license expression satisfies allowed list of licenses.
+// Satisfies determines if test license expression is satisfied by the licenses in the allowed list. All licenses in the
+// test expression and allowed list must be one of the set of [canonical SPDX licenses](https://spdx.org/licenses/).
 //
 // Examples:
 //   "MIT" satisfies "MIT" is true
@@ -35,14 +36,35 @@ import (
 //   "Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
 //
 func Satisfies(testExpression string, allowedList []string) (bool, error) {
-	expressionNode, err := parse(testExpression)
+	return SatisfiesWithExtensions(testExpression, allowedList, []string{})
+}
+
+// Satisfies determines if test license expression is satisfied by the licenses in the allowed list. All licenses in the
+// test expression and allowed list must be one of the set of [canonical SPDX licenses](https://spdx.org/licenses/) or
+// one of the licenses passed in licenseExtensionList.
+//
+// Examples:
+//
+//   // return true
+//   allowedList := []string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"}
+//   licenseExtensionList := []string{“X-BSD-3-Clause-Golang"}
+//   SatisfiesWithExtensions(“X-BSD-3-Clause-Golang”, allowedList, licenseExtensionList)
+//   SatisfiesWithExtensions(“(MIT OR X-BSD-3-Clause-Golang)”, allowedList, licenseExtensionList)
+//   SatisfiesWithExtensions(“(MIT OR Apache-2.0)”, allowedList, licenseExtensionList)
+
+//   // return false
+//   allowedList := []string{"MIT", "Apache-2.0"}
+//   licenseExtensionList := []string{“X-BSD-3-Clause-Golang"}
+//   SatisfiesWithExtensions(“X-BSD-3-Clause-Golang”, allowedList, licenseExtensionList) // test license is not in allowed List
+func SatisfiesWithExtensions(testExpression string, allowedList, licenseExtensionList []string) (bool, error) {
+	expressionNode, err := parseWithExtensions(testExpression, licenseExtensionList)
 	if err != nil {
 		return false, err
 	}
 	if len(allowedList) == 0 {
 		return false, errors.New("allowedList requires at least one element, but is empty")
 	}
-	allowedNodes, err := stringsToNodes(allowedList)
+	allowedNodes, err := stringsToNodes(allowedList, licenseExtensionList)
 	if err != nil {
 		return false, err
 	}
@@ -62,10 +84,10 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 }
 
 // stringsToNodes converts an array of single license strings to to an array of license nodes.
-func stringsToNodes(licenseStrings []string) ([]*node, error) {
+func stringsToNodes(licenseStrings, licenseExtensionList []string) ([]*node, error) {
 	nodes := make([]*node, len(licenseStrings))
 	for i, s := range licenseStrings {
-		node, err := parse(s)
+		node, err := parseWithExtensions(s, licenseExtensionList)
 		if err != nil {
 			return nil, err
 		}

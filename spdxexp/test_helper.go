@@ -22,6 +22,6 @@ func getLicenseNode(license string, hasPlus bool) *node {
 // Use this function when the test data is expected to parse successfully.
 func getParsedNode(expression string) *node {
 	// swallows errors
-	n, _ := parse(expression)
+	n, _ := parse(expression, Options{})
 	return n
 }

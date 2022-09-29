@@ -16,15 +16,13 @@ type tokenStream struct {
 	err    error
 }
 
-func parse(source string) (*node, error) {
-	return parseWithExtensions(source, []string{})
-}
+func parse(source string, options Options) (*node, error) {
+	// NOTE: If parse becomes public, the options will need to be processed with `processOptions(options)`
 
-func parseWithExtensions(source string, licenseExtensionList []string) (*node, error) {
 	if len(source) == 0 {
 		return nil, errors.New("parse error - cannot parse empty string")
 	}
-	tokens, err := scanWithExtensions(source, licenseExtensionList)
+	tokens, err := scan(source, options)
 	if err != nil {
 		return nil, err
 	}

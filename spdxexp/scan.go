@@ -32,7 +32,9 @@ const (
 )
 
 // Scan scans a string expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
-func scanWithExtensions(expression string, licenseExtensionList []string) ([]token, error) {
+func scan(expression string, options Options) ([]token, error) {
+	// NOTE: If scan becomes public, the options will need to be processed with `processOptions(options)`
+
 	var tokens []token
 	var token *token
 
@@ -44,7 +46,7 @@ func scanWithExtensions(expression string, licenseExtensionList []string) ([]tok
 			break
 		}
 
-		token = exp.parseToken(licenseExtensionList)
+		token = exp.parseToken(options.LicenseExtensionList)
 		if exp.err != nil {
 			// stop processing at first error and return
 			return nil, exp.err
@@ -226,11 +228,11 @@ func (exp *expressionStream) readLicense(licenseExtensionList []string) *token {
 // Generate a token using the normalized form of the license name.
 //
 // License name can be in the form:
-// * a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
-//   examples, but any base license form can have the suffixes described.
-// * a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
-// * a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
-// * a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
+//   - a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
+//     examples, but any base license form can have the suffixes described.
+//   - a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
+//   - a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
+//   - a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
 func (exp *expressionStream) normalizeLicense(license string, licenseExtensionList []string) *token {
 	if token := licenseLookup(license, licenseExtensionList); token != nil {
 		// checks active and exception license lists

@@ -8,32 +8,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestScanWithExtensions(t *testing.T) {
+func TestScan(t *testing.T) {
 	tests := []struct {
-		name          string
-		expression    string
-		extensionList []string
-		tokens        []token
-		err           error
+		name       string
+		expression string
+		options    Options
+		tokens     []token
+		err        error
 	}{
-		{"single license", "MIT", []string{},
+		{"single license", "MIT", Options{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"single license - diff case", "mit", []string{},
+		{"single license - diff case", "mit", Options{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"empty expression", "", []string{}, []token(nil), nil},
-		{"invalid license", "NON-EXISTENT-LICENSE", []string{}, []token(nil),
+		{"empty expression", "", Options{}, []token(nil), nil},
+		{"invalid license", "NON-EXISTENT-LICENSE", Options{}, []token(nil),
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
-		{"two licenses using AND", "MIT AND Apache-2.0", []string{},
+		{"two licenses using AND", "MIT AND Apache-2.0", Options{},
 			[]token{
 				{role: licenseToken, value: "MIT"},
 				{role: operatorToken, value: "AND"},
 				{role: licenseToken, value: "Apache-2.0"},
 			}, nil},
-		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)", []string{},
+		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)", Options{},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -42,7 +42,7 @@ func TestScanWithExtensions(t *testing.T) {
 				{role: operatorToken, value: ")"},
 			}, nil},
 		{"kitchen sink", "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-			[]string{},
+			Options{},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -61,11 +61,11 @@ func TestScanWithExtensions(t *testing.T) {
 				{role: exceptionToken, value: "Bison-exception-2.2"},
 				{role: operatorToken, value: ")"},
 			}, nil},
-		{"extension is expression", "X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang"},
+		{"extension is expression", "X-BSD-3-Clause-Golang", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
 			}, nil},
-		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", []string{"X-BSD-3-Clause-Golang"},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -73,7 +73,7 @@ func TestScanWithExtensions(t *testing.T) {
 				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
 				{role: operatorToken, value: ")"},
 			}, nil},
-		{"extension not in expression", "(MIT OR Apache-2.0)", []string{"X-BSD-3-Clause-Golang"},
+		{"extension not in expression", "(MIT OR Apache-2.0)", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -81,7 +81,8 @@ func TestScanWithExtensions(t *testing.T) {
 				{role: licenseToken, value: "Apache-2.0"},
 				{role: operatorToken, value: ")"},
 			}, nil},
-		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang", []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"},
+		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang",
+			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}},
 			[]token{
 				{role: licenseToken, value: "BSD-3-Clause"},
 				{role: operatorToken, value: "OR"},
@@ -92,7 +93,7 @@ func TestScanWithExtensions(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			tokens, err := scanWithExtensions(test.expression, test.extensionList)
+			tokens, err := scan(test.expression, test.options)
 
 			require.Equal(t, test.err, err)
 			assert.Equal(t, test.tokens, tokens)

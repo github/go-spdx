@@ -48,7 +48,7 @@ type Options struct {
 //	      Options{LicenseExtensionList: []string{“X-BSD-3-Clause-Golang"}} // returns true
 //	    SatisfiesWithExtensions(“X-BSD-3-Clause-Golang”, []string{"MIT", "Apache-2.0"},
 //	      Options{LicenseExtensionList: []string{“X-BSD-3-Clause-Golang"}} // returns false - test license is not in allowed List
-func Satisfies(testExpression string, allowedList []string, options Options) (bool, error) {
+func Satisfies(testExpression string, allowedList []string, options *Options) (bool, error) {
 	options = processOptions(options)
 
 	expressionNode, err := parse(testExpression, options)
@@ -77,15 +77,16 @@ func Satisfies(testExpression string, allowedList []string, options Options) (bo
 	return false, nil
 }
 
-func processOptions(options Options) Options {
-	if options.LicenseExtensionList == nil {
-		options.LicenseExtensionList = []string{}
+func processOptions(options *Options) *Options {
+	if options == nil {
+		options = &Options{}
 	}
+	// LicenseExtensionList defaults to empty []string when var is assigned Options{}
 	return options
 }
 
 // stringsToNodes converts an array of single license strings to to an array of license nodes.
-func stringsToNodes(licenseStrings []string, options Options) ([]*node, error) {
+func stringsToNodes(licenseStrings []string, options *Options) ([]*node, error) {
 	nodes := make([]*node, len(licenseStrings))
 	for i, s := range licenseStrings {
 		node, err := parse(s, options)

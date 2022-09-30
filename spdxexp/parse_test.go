@@ -12,13 +12,13 @@ func TestParse(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
-		options    Options
+		options    *Options
 		node       *node
 		nodestr    string
 		err        error
 	}{
 		{"single license",
-			"MIT", Options{},
+			"MIT", nil,
 			&node{
 				role: licenseNode,
 				exp:  nil,
@@ -30,7 +30,7 @@ func TestParse(t *testing.T) {
 			"MIT", nil},
 
 		{"single license - diff case",
-			"mit", Options{},
+			"mit", nil,
 			&node{
 				role: licenseNode,
 				exp:  nil,
@@ -41,12 +41,12 @@ func TestParse(t *testing.T) {
 			},
 			"MIT", nil},
 
-		{"empty expression", "", Options{}, nil, "", errors.New("parse error - cannot parse empty string")},
+		{"empty expression", "", nil, nil, "", errors.New("parse error - cannot parse empty string")},
 
-		{"invalid license", "NON-EXISTENT-LICENSE", Options{}, nil, "",
+		{"invalid license", "NON-EXISTENT-LICENSE", nil, nil, "",
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
-		{"OR Expression", "MIT OR Apache-2.0", Options{},
+		{"OR Expression", "MIT OR Apache-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -72,7 +72,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
-		{"AND Expression", "MIT AND Apache-2.0", Options{},
+		{"AND Expression", "MIT AND Apache-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -98,7 +98,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT and RIGHT: Apache-2.0 }", nil},
-		{"OR-AND Expression", "MIT OR Apache-2.0 AND GPL-2.0", Options{},
+		{"OR-AND Expression", "MIT OR Apache-2.0 AND GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -145,7 +145,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
-		{"OR(AND) Expression", "MIT OR (Apache-2.0 AND GPL-2.0)", Options{},
+		{"OR(AND) Expression", "MIT OR (Apache-2.0 AND GPL-2.0)", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -192,7 +192,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
-		{"AND-OR Expression", "MIT AND Apache-2.0 OR GPL-2.0", Options{},
+		{"AND-OR Expression", "MIT AND Apache-2.0 OR GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -239,7 +239,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 }", nil},
-		{"AND(OR) Expression", "MIT AND (Apache-2.0 OR GPL-2.0)", Options{},
+		{"AND(OR) Expression", "MIT AND (Apache-2.0 OR GPL-2.0)", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -289,7 +289,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
-		{"OR-AND-OR Expression", "MIT OR ISC AND Apache-2.0 OR GPL-2.0", Options{},
+		{"OR-AND-OR Expression", "MIT OR ISC AND Apache-2.0 OR GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -358,7 +358,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
-		{"(OR)AND(OR) Expression", "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)", Options{},
+		{"(OR)AND(OR) Expression", "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -426,7 +426,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: { LEFT: MIT or RIGHT: ISC } and RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } }", nil},
-		{"OR(AND)OR Expression", "MIT OR (ISC AND Apache-2.0) OR GPL-2.0", Options{},
+		{"OR(AND)OR Expression", "MIT OR (ISC AND Apache-2.0) OR GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -495,7 +495,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: { LEFT: ISC and RIGHT: Apache-2.0 } or RIGHT: GPL-2.0 } }", nil},
-		{"OR-OR-OR Expression", "MIT OR ISC OR Apache-2.0 OR GPL-2.0", Options{},
+		{"OR-OR-OR Expression", "MIT OR ISC OR Apache-2.0 OR GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -563,7 +563,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: { LEFT: ISC or RIGHT: { LEFT: Apache-2.0 or RIGHT: GPL-2.0 } } }", nil},
-		{"AND-OR-AND Expression", "MIT AND ISC OR Apache-2.0 AND GPL-2.0", Options{},
+		{"AND-OR-AND Expression", "MIT AND ISC OR Apache-2.0 AND GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -631,7 +631,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
-		{"(AND)OR(AND) Expression", "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)", Options{},
+		{"(AND)OR(AND) Expression", "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -699,7 +699,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: ISC } or RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } }", nil},
-		{"AND(OR)AND Expression", "MIT AND (ISC OR Apache-2.0) AND GPL-2.0", Options{},
+		{"AND(OR)AND Expression", "MIT AND (ISC OR Apache-2.0) AND GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -769,7 +769,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT and RIGHT: { LEFT: { LEFT: ISC or RIGHT: Apache-2.0 } and RIGHT: GPL-2.0 } }", nil},
-		{"AND-AND-AND Expression", "MIT AND ISC AND Apache-2.0 AND GPL-2.0", Options{},
+		{"AND-AND-AND Expression", "MIT AND ISC AND Apache-2.0 AND GPL-2.0", nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -841,7 +841,7 @@ func TestParse(t *testing.T) {
 			"{ LEFT: MIT and RIGHT: { LEFT: ISC and RIGHT: { LEFT: Apache-2.0 and RIGHT: GPL-2.0 } } }", nil},
 		{"kitchen sink",
 			"   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-			Options{},
+			nil,
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -911,7 +911,7 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: Apache-1.0+ } or RIGHT: { LEFT: DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 or RIGHT: GPL-2.0 with Bison-exception-2.2 } }", nil,
 		},
-		{"extension is expression", "X-BSD-3-Clause-Golang", Options{[]string{"X-BSD-3-Clause-Golang"}},
+		{"extension is expression", "X-BSD-3-Clause-Golang", &Options{[]string{"X-BSD-3-Clause-Golang"}},
 			&node{
 				role: licenseNode,
 				exp:  nil,
@@ -921,7 +921,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"X-BSD-3-Clause-Golang", nil},
-		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", Options{[]string{"X-BSD-3-Clause-Golang"}},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", &Options{[]string{"X-BSD-3-Clause-Golang"}},
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -947,7 +947,7 @@ func TestParse(t *testing.T) {
 				ref: nil,
 			},
 			"{ LEFT: MIT or RIGHT: X-BSD-3-Clause-Golang }", nil},
-		{"extension not in expression", "(MIT OR Apache-2.0)", Options{[]string{"X-BSD-3-Clause-Golang"}},
+		{"extension not in expression", "(MIT OR Apache-2.0)", &Options{[]string{"X-BSD-3-Clause-Golang"}},
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{
@@ -974,7 +974,7 @@ func TestParse(t *testing.T) {
 			},
 			"{ LEFT: MIT or RIGHT: Apache-2.0 }", nil},
 		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang",
-			Options{[]string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}},
+			&Options{[]string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}},
 			&node{
 				role: expressionNode,
 				exp: &expressionNodePartial{

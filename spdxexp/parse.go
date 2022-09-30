@@ -16,8 +16,8 @@ type tokenStream struct {
 	err    error
 }
 
-func parse(source string, options Options) (*node, error) {
-	// NOTE: If parse becomes public, the options will need to be processed with `processOptions(options)`
+func parse(source string, options *Options) (*node, error) {
+	options = processOptions(options)
 
 	if len(source) == 0 {
 		return nil, errors.New("parse error - cannot parse empty string")

@@ -12,111 +12,111 @@ func TestSatisfies(t *testing.T) {
 		name           string
 		repoExpression string
 		allowedList    []string
-		options        Options
+		options        *Options
 		satisfied      bool
 		err            error
 	}{
 		// TODO: Test error conditions (e.g. GPL is an invalid license, Apachie + has invalid + operator)
 		// regression tests from spdx-satisfies.js - comments for satisfies function
 		// TODO: Commented out tests are not yet supported.
-		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, Options{}, true, nil},
-		{"miT satisfies [MIT]", "miT", []string{"MIT"}, Options{}, true, nil},
-		{"MIT satisfies [mit]", "MIT", []string{"mit"}, Options{}, true, nil},
-		{"! MIT satisfies [Apache-2.0]", "MIT", []string{"Apache-2.0"}, Options{}, false, nil},
-		{"err - <empty expression> satisfies MIT", "", []string{"MIT"}, Options{}, false,
+		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, nil, true, nil},
+		{"miT satisfies [MIT]", "miT", []string{"MIT"}, nil, true, nil},
+		{"MIT satisfies [mit]", "MIT", []string{"mit"}, nil, true, nil},
+		{"! MIT satisfies [Apache-2.0]", "MIT", []string{"Apache-2.0"}, nil, false, nil},
+		{"err - <empty expression> satisfies MIT", "", []string{"MIT"}, nil, false,
 			errors.New("parse error - cannot parse empty string")},
-		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, Options{}, false,
+		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, nil, false,
 			errors.New("allowedList requires at least one element, but is empty")},
-		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, Options{}, false,
+		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, nil, false,
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
-		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, Options{}, true, nil},
-		{"MIT OR Apache-2.0 satisfies [MIT]", "MIT OR Apache-2.0", []string{"MIT"}, Options{}, true, nil},
-		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, Options{}, false, nil},
-		{"! MIT OR Apache-2.0 satisfies [GPL-2.0]", "MIT OR Apache-2.0", []string{"GPL-2.0"}, Options{}, false, nil},
+		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, nil, true, nil},
+		{"MIT OR Apache-2.0 satisfies [MIT]", "MIT OR Apache-2.0", []string{"MIT"}, nil, true, nil},
+		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, nil, false, nil},
+		{"! MIT OR Apache-2.0 satisfies [GPL-2.0]", "MIT OR Apache-2.0", []string{"GPL-2.0"}, nil, false, nil},
 
-		{"Apache-2.0 AND MIT satisfies [MIT, APACHE-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "APACHE-2.0"}, Options{}, true, nil},
-		{"apache-2.0 AND mit satisfies [MIT, APACHE-2.0]", "apache-2.0 AND mit", []string{"MIT", "APACHE-2.0"}, Options{}, true, nil},
-		{"Apache-2.0 AND MIT satisfies [MIT, Apache-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}, Options{}, true, nil},
-		{"MIT AND Apache-2.0 satisfies [MIT, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}, Options{}, true, nil},
-		{"! MIT AND Apache-2.0 satisfies [MIT]", "MIT AND Apache-2.0", []string{"MIT"}, Options{}, false, nil},
-		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, Options{}, false, nil},
+		{"Apache-2.0 AND MIT satisfies [MIT, APACHE-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "APACHE-2.0"}, nil, true, nil},
+		{"apache-2.0 AND mit satisfies [MIT, APACHE-2.0]", "apache-2.0 AND mit", []string{"MIT", "APACHE-2.0"}, nil, true, nil},
+		{"Apache-2.0 AND MIT satisfies [MIT, Apache-2.0]", "Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}, nil, true, nil},
+		{"MIT AND Apache-2.0 satisfies [MIT, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}, nil, true, nil},
+		{"! MIT AND Apache-2.0 satisfies [MIT]", "MIT AND Apache-2.0", []string{"MIT"}, nil, false, nil},
+		{"! GPL-2.0 satisfies [MIT, Apache-2.0]", "GPL-2.0", []string{"MIT", "Apache-2.0"}, nil, false, nil},
 
-		{"MIT AND Apache-2.0 satisfies [MIT, Apache-1.0, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}, Options{}, true, nil},
+		{"MIT AND Apache-2.0 satisfies [MIT, Apache-1.0, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}, nil, true, nil},
 
-		{"Apache-1.0+ satisfies [Apache-2.0]", "Apache-1.0+", []string{"Apache-2.0"}, Options{}, true, nil},
-		{"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, Options{}, true, nil}, // TODO: Fails here but passes js
-		{"! Apache-1.0 satisfies [Apache-2.0+]", "Apache-1.0", []string{"Apache-2.0+"}, Options{}, false, nil},
-		{"Apache-2.0 satisfies [Apache-2.0+]", "Apache-2.0", []string{"Apache-2.0+"}, Options{}, true, nil},
-		{"! Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, Options{}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
+		{"Apache-1.0+ satisfies [Apache-2.0]", "Apache-1.0+", []string{"Apache-2.0"}, nil, true, nil},
+		{"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, nil, true, nil}, // TODO: Fails here but passes js
+		{"! Apache-1.0 satisfies [Apache-2.0+]", "Apache-1.0", []string{"Apache-2.0+"}, nil, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0+]", "Apache-2.0", []string{"Apache-2.0+"}, nil, true, nil},
+		{"! Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, nil, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
-		{"! Apache-1.0 satisfies [Apache-2.0-or-later]", "Apache-1.0", []string{"Apache-2.0-or-later"}, Options{}, false, nil},
-		{"Apache-2.0 satisfies [Apache-2.0-or-later]", "Apache-2.0", []string{"Apache-2.0-or-later"}, Options{}, true, nil},
-		{"! Apache-3.0 satisfies [Apache-2.0-or-later]", "Apache-3.0", []string{"Apache-2.0-or-later"}, Options{}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
+		{"! Apache-1.0 satisfies [Apache-2.0-or-later]", "Apache-1.0", []string{"Apache-2.0-or-later"}, nil, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0-or-later]", "Apache-2.0", []string{"Apache-2.0-or-later"}, nil, true, nil},
+		{"! Apache-3.0 satisfies [Apache-2.0-or-later]", "Apache-3.0", []string{"Apache-2.0-or-later"}, nil, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
-		{"! Apache-1.0 satisfies [Apache-2.0-only]", "Apache-1.0", []string{"Apache-2.0-only"}, Options{}, false, nil},
-		{"Apache-2.0 satisfies [Apache-2.0-only]", "Apache-2.0", []string{"Apache-2.0-only"}, Options{}, true, nil},
-		{"! Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, Options{}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
+		{"! Apache-1.0 satisfies [Apache-2.0-only]", "Apache-1.0", []string{"Apache-2.0-only"}, nil, false, nil},
+		{"Apache-2.0 satisfies [Apache-2.0-only]", "Apache-2.0", []string{"Apache-2.0-only"}, nil, true, nil},
+		{"! Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, nil, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
 		// regression tests from spdx-satisfies.js - assert statements in README
 		// TODO: Commented out tests are not yet supported.
-		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, Options{}, true, nil},
+		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, nil, true, nil},
 
-		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, Options{}, true, nil},
-		{"Zlib satisfies [ISC, MIT, Zlib]", "Zlib", []string{"ISC", "MIT", "Zlib"}, Options{}, true, nil},
-		{"! GPL-3.0 satisfies [ISC, MIT]", "GPL-3.0", []string{"ISC", "MIT"}, Options{}, false, nil},
-		{"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, Options{}, true, nil},                 // TODO: Fails here but passes js
-		{"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, Options{}, true, nil}, // TODO: Fails here and js
-		{"GPL-3.0 satisfies [GPL-2.0+]", "GPL-3.0", []string{"GPL-2.0+"}, Options{}, true, nil},
-		{"GPL-1.0-or-later satisfies [GPL-2.0-or-later]", "GPL-1.0-or-later", []string{"GPL-2.0-or-later"}, Options{}, true, nil},
-		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, Options{}, true, nil},
-		{"! GPL-1.0 satisfies [GPL-2.0+]", "GPL-1.0", []string{"GPL-2.0+"}, Options{}, false, nil},
-		{"GPL-2.0-only satisfies [GPL-2.0-only]", "GPL-2.0-only", []string{"GPL-2.0-only"}, Options{}, true, nil},
-		{"GPL-3.0-only satisfies [GPL-2.0+]", "GPL-3.0-only", []string{"GPL-2.0+"}, Options{}, true, nil},
+		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, nil, true, nil},
+		{"Zlib satisfies [ISC, MIT, Zlib]", "Zlib", []string{"ISC", "MIT", "Zlib"}, nil, true, nil},
+		{"! GPL-3.0 satisfies [ISC, MIT]", "GPL-3.0", []string{"ISC", "MIT"}, nil, false, nil},
+		{"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, nil, true, nil},                 // TODO: Fails here but passes js
+		{"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, nil, true, nil}, // TODO: Fails here and js
+		{"GPL-3.0 satisfies [GPL-2.0+]", "GPL-3.0", []string{"GPL-2.0+"}, nil, true, nil},
+		{"GPL-1.0-or-later satisfies [GPL-2.0-or-later]", "GPL-1.0-or-later", []string{"GPL-2.0-or-later"}, nil, true, nil},
+		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, nil, true, nil},
+		{"! GPL-1.0 satisfies [GPL-2.0+]", "GPL-1.0", []string{"GPL-2.0+"}, nil, false, nil},
+		{"GPL-2.0-only satisfies [GPL-2.0-only]", "GPL-2.0-only", []string{"GPL-2.0-only"}, nil, true, nil},
+		{"GPL-3.0-only satisfies [GPL-2.0+]", "GPL-3.0-only", []string{"GPL-2.0+"}, nil, true, nil},
 
 		{"! GPL-2.0 satisfies [GPL-2.0+ WITH Bison-exception-2.2]",
-			"GPL-2.0", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, Options{}, false, nil},
+			"GPL-2.0", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, nil, false, nil},
 		{"GPL-3.0 WITH Bison-exception-2.2 satisfies [GPL-2.0+ WITH Bison-exception-2.2]",
-			"GPL-3.0 WITH Bison-exception-2.2", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, Options{}, true, nil},
+			"GPL-3.0 WITH Bison-exception-2.2", []string{"GPL-2.0+ WITH Bison-exception-2.2"}, nil, true, nil},
 
-		{"(MIT OR GPL-2.0) satisfies [ISC, MIT]", "(MIT OR GPL-2.0)", []string{"ISC", "MIT"}, Options{}, true, nil},
-		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]", "(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, Options{}, true, nil},
+		{"(MIT OR GPL-2.0) satisfies [ISC, MIT]", "(MIT OR GPL-2.0)", []string{"ISC", "MIT"}, nil, true, nil},
+		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]", "(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, nil, true, nil},
 		{"MIT AND GPL-2.0 AND ISC satisfies [MIT, GPL-2.0, ISC]",
-			"MIT AND GPL-2.0 AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, Options{}, true, nil},
+			"MIT AND GPL-2.0 AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, nil, true, nil},
 		{"MIT AND GPL-2.0 AND ISC satisfies [ISC, GPL-2.0, MIT]",
-			"MIT AND GPL-2.0 AND ISC", []string{"ISC", "GPL-2.0", "MIT"}, Options{}, true, nil},
+			"MIT AND GPL-2.0 AND ISC", []string{"ISC", "GPL-2.0", "MIT"}, nil, true, nil},
 		{"(MIT OR GPL-2.0) AND ISC satisfies [MIT, ISC]",
-			"(MIT OR GPL-2.0) AND ISC", []string{"MIT", "ISC"}, Options{}, true, nil},
+			"(MIT OR GPL-2.0) AND ISC", []string{"MIT", "ISC"}, nil, true, nil},
 		{"MIT AND ISC satisfies [MIT, GPL-2.0, ISC]",
-			"MIT AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, Options{}, true, nil},
+			"MIT AND ISC", []string{"MIT", "GPL-2.0", "ISC"}, nil, true, nil},
 		{"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [Apache-2.0, ISC]",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"Apache-2.0", "ISC"}, Options{}, true, nil},
+			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"Apache-2.0", "ISC"}, nil, true, nil},
 		{"(MIT AND GPL-2.0) satisfies [MIT, GPL-2.0]",
-			"(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, Options{}, true, nil},
+			"(MIT AND GPL-2.0)", []string{"MIT", "GPL-2.0"}, nil, true, nil},
 		{"(MIT AND GPL-2.0) satisfies [GPL-2.0, MIT]",
-			"(MIT AND GPL-2.0)", []string{"GPL-2.0", "MIT"}, Options{}, true, nil},
+			"(MIT AND GPL-2.0)", []string{"GPL-2.0", "MIT"}, nil, true, nil},
 		{"MIT satisfies [GPL-2.0, MIT, MIT, ISC]",
-			"MIT", []string{"GPL-2.0", "MIT", "MIT", "ISC"}, Options{}, true, nil},
+			"MIT", []string{"GPL-2.0", "MIT", "MIT", "ISC"}, nil, true, nil},
 		{"MIT AND ICU satisfies [MIT, GPL-2.0, ISC, Apache-2.0, ICU]",
-			"MIT AND ICU", []string{"MIT", "GPL-2.0", "ISC", "Apache-2.0", "ICU"}, Options{}, true, nil}, // TODO: This says true and the js version returns true, but it shouldn't.
+			"MIT AND ICU", []string{"MIT", "GPL-2.0", "ISC", "Apache-2.0", "ICU"}, nil, true, nil}, // TODO: This says true and the js version returns true, but it shouldn't.
 		{"! (MIT AND GPL-2.0) satisfies [ISC, GPL-2.0]",
-			"(MIT AND GPL-2.0)", []string{"ISC", "GPL-2.0"}, Options{}, false, nil},
+			"(MIT AND GPL-2.0)", []string{"ISC", "GPL-2.0"}, nil, false, nil},
 		{"! MIT AND (GPL-2.0 OR ISC) satisfies [MIT]",
-			"MIT AND (GPL-2.0 OR ISC)", []string{"MIT"}, Options{}, false, nil},
+			"MIT AND (GPL-2.0 OR ISC)", []string{"MIT"}, nil, false, nil},
 		{"! (MIT OR Apache-2.0) AND (ISC OR GPL-2.0) satisfies [MIT]",
-			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"MIT"}, Options{}, false, nil},
+			"(MIT OR Apache-2.0) AND (ISC OR GPL-2.0)", []string{"MIT"}, nil, false, nil},
 		{"extension is expression", "X-BSD-3-Clause-Golang",
 			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
-			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
+			&Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
 		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)",
 			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
-			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
+			&Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
 		{"extension not in expression", "(MIT OR Apache-2.0)",
 			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
-			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
+			&Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}}, true, nil},
 		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang",
 			[]string{"MIT", "Apache-2.0", "X-BSD-3-Clause-Golang"},
-			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}}, true, nil},
+			&Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}}, true, nil},
 	}
 
 	for _, test := range tests {

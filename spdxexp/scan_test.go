@@ -12,28 +12,28 @@ func TestScan(t *testing.T) {
 	tests := []struct {
 		name       string
 		expression string
-		options    Options
+		options    *Options
 		tokens     []token
 		err        error
 	}{
-		{"single license", "MIT", Options{},
+		{"single license", "MIT", nil,
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"single license - diff case", "mit", Options{},
+		{"single license - diff case", "mit", nil,
 			[]token{
 				{role: licenseToken, value: "MIT"},
 			}, nil},
-		{"empty expression", "", Options{}, []token(nil), nil},
-		{"invalid license", "NON-EXISTENT-LICENSE", Options{}, []token(nil),
+		{"empty expression", "", nil, []token(nil), nil},
+		{"invalid license", "NON-EXISTENT-LICENSE", nil, []token(nil),
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
-		{"two licenses using AND", "MIT AND Apache-2.0", Options{},
+		{"two licenses using AND", "MIT AND Apache-2.0", nil,
 			[]token{
 				{role: licenseToken, value: "MIT"},
 				{role: operatorToken, value: "AND"},
 				{role: licenseToken, value: "Apache-2.0"},
 			}, nil},
-		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)", Options{},
+		{"two licenses using OR inside paren", "(MIT OR Apache-2.0)", nil,
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -42,7 +42,7 @@ func TestScan(t *testing.T) {
 				{role: operatorToken, value: ")"},
 			}, nil},
 		{"kitchen sink", "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-			Options{},
+			nil,
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -61,11 +61,11 @@ func TestScan(t *testing.T) {
 				{role: exceptionToken, value: "Bison-exception-2.2"},
 				{role: operatorToken, value: ")"},
 			}, nil},
-		{"extension is expression", "X-BSD-3-Clause-Golang", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
+		{"extension is expression", "X-BSD-3-Clause-Golang", &Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
 			}, nil},
-		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
+		{"extension in expression", "(MIT OR X-BSD-3-Clause-Golang)", &Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -73,7 +73,7 @@ func TestScan(t *testing.T) {
 				{role: extensionToken, value: "X-BSD-3-Clause-Golang"},
 				{role: operatorToken, value: ")"},
 			}, nil},
-		{"extension not in expression", "(MIT OR Apache-2.0)", Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
+		{"extension not in expression", "(MIT OR Apache-2.0)", &Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang"}},
 			[]token{
 				{role: operatorToken, value: "("},
 				{role: licenseToken, value: "MIT"},
@@ -82,7 +82,7 @@ func TestScan(t *testing.T) {
 				{role: operatorToken, value: ")"},
 			}, nil},
 		{"extension (one of) in expression", "BSD-3-Clause OR X-BSD-3-Clause-Golang",
-			Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}},
+			&Options{LicenseExtensionList: []string{"X-BSD-3-Clause-Golang", "X-BSD-2-Clause-Golang"}},
 			[]token{
 				{role: licenseToken, value: "BSD-3-Clause"},
 				{role: operatorToken, value: "OR"},

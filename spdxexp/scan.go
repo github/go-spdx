@@ -32,8 +32,8 @@ const (
 )
 
 // Scan scans a string expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
-func scan(expression string, options Options) ([]token, error) {
-	// NOTE: If scan becomes public, the options will need to be processed with `processOptions(options)`
+func scan(expression string, options *Options) ([]token, error) {
+	options = processOptions(options)
 
 	var tokens []token
 	var token *token

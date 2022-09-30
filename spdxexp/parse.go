@@ -16,11 +16,13 @@ type tokenStream struct {
 	err    error
 }
 
-func parse(source string) (*node, error) {
+func parse(source string, options *Options) (*node, error) {
+	options = processOptions(options)
+
 	if len(source) == 0 {
 		return nil, errors.New("parse error - cannot parse empty string")
 	}
-	tokens, err := scan(source)
+	tokens, err := scan(source, options)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +231,7 @@ func (t *tokenStream) parseLicenseRef() *node {
 // an error is returned.  Advances the index if a valid license is found.
 func (t *tokenStream) parseLicense() *node {
 	token := t.peek()
-	if token.role != licenseToken {
+	if token.role != licenseToken && token.role != extensionToken {
 		return nil
 	}
 	t.next()

@@ -28,10 +28,13 @@ const (
 	licenseRefToken
 	licenseToken
 	exceptionToken
+	extensionToken
 )
 
 // Scan scans a string expression gathering valid SPDX expression tokens.  Returns error if any tokens are invalid.
-func scan(expression string) ([]token, error) {
+func scan(expression string, options *Options) ([]token, error) {
+	options = processOptions(options)
+
 	var tokens []token
 	var token *token
 
@@ -43,7 +46,7 @@ func scan(expression string) ([]token, error) {
 			break
 		}
 
-		token = exp.parseToken()
+		token = exp.parseToken(options.LicenseExtensionList)
 		if exp.err != nil {
 			// stop processing at first error and return
 			return nil, exp.err
@@ -65,7 +68,7 @@ func (exp *expressionStream) hasMore() bool {
 }
 
 // Try to read the next token starting at index. Returns error if no token is recognized.
-func (exp *expressionStream) parseToken() *token {
+func (exp *expressionStream) parseToken(licenseExtensionList []string) *token {
 	// Ordering matters
 	op := exp.readOperator()
 	if exp.err != nil {
@@ -91,7 +94,7 @@ func (exp *expressionStream) parseToken() *token {
 		return lref
 	}
 
-	identifier := exp.readLicense()
+	identifier := exp.readLicense(licenseExtensionList)
 	if exp.err != nil {
 		return nil
 	}
@@ -202,7 +205,7 @@ func (exp *expressionStream) readLicenseRef() *token {
 }
 
 // Read a LICENSE/EXCEPTION in expression starting at index if it exists. Raise error if found and id doesn't follow.
-func (exp *expressionStream) readLicense() *token {
+func (exp *expressionStream) readLicense(licenseExtensionList []string) *token {
 	// because readID matches broadly, save the index so it can be reset if an actual license is not found
 	index := exp.index
 
@@ -211,7 +214,7 @@ func (exp *expressionStream) readLicense() *token {
 		return nil
 	}
 
-	if token := exp.normalizeLicense(license); token != nil {
+	if token := exp.normalizeLicense(license, licenseExtensionList); token != nil {
 		return token
 	}
 
@@ -225,13 +228,13 @@ func (exp *expressionStream) readLicense() *token {
 // Generate a token using the normalized form of the license name.
 //
 // License name can be in the form:
-// * a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
-//   examples, but any base license form can have the suffixes described.
-// * a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
-// * a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
-// * a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
-func (exp *expressionStream) normalizeLicense(license string) *token {
-	if token := licenseLookup(license); token != nil {
+//   - a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
+//     examples, but any base license form can have the suffixes described.
+//   - a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
+//   - a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
+//   - a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
+func (exp *expressionStream) normalizeLicense(license string, licenseExtensionList []string) *token {
+	if token := licenseLookup(license, licenseExtensionList); token != nil {
 		// checks active and exception license lists
 		// deprecated list is checked at the end to avoid a deprecated license being used for +
 		// (example: GPL-1.0 is on the deprecated list, but GPL-1.0+ should become GPL-1.0-or-later)
@@ -241,14 +244,14 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 	lenLicense := len(license)
 	if strings.HasSuffix(license, "-only") {
 		adjustedLicense := license[0 : lenLicense-5]
-		if token := licenseLookup(adjustedLicense); token != nil {
+		if token := licenseLookup(adjustedLicense, []string{}); token != nil {
 			// no need to remove the -only from the expression stream; it is ignored
 			return token
 		}
 	}
 	if exp.hasMore() && exp.expression[exp.index:exp.index+1] == "+" {
 		adjustedLicense := license[0:lenLicense] + "-or-later"
-		if token := licenseLookup(adjustedLicense); token != nil {
+		if token := licenseLookup(adjustedLicense, []string{}); token != nil {
 			// need to consume the + to avoid a + operator token being added
 			exp.index++
 			return token
@@ -256,7 +259,7 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 	}
 	if strings.HasSuffix(license, "-or-later") {
 		adjustedLicense := license[0 : lenLicense-9]
-		if token := licenseLookup(adjustedLicense); token != nil {
+		if token := licenseLookup(adjustedLicense, []string{}); token != nil {
 			// replace `-or-later` with `+`
 			newExpression := exp.expression[0:exp.index-len("-or-later")] + "+"
 			if exp.hasMore() {
@@ -276,7 +279,7 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 }
 
 // Lookup license identifier in active and exception lists to determine if it is a supported SPDX id
-func licenseLookup(license string) *token {
+func licenseLookup(license string, licenseExtensionList []string) *token {
 	active, preferredLicense := activeLicense(license)
 	if active {
 		return &token{role: licenseToken, value: preferredLicense}
@@ -284,6 +287,10 @@ func licenseLookup(license string) *token {
 	exception, preferredLicense := exceptionLicense(license)
 	if exception {
 		return &token{role: exceptionToken, value: preferredLicense}
+	}
+	extension, preferredLicense := inLicenseList(licenseExtensionList, license)
+	if extension {
+		return &token{role: extensionToken, value: preferredLicense}
 	}
 	return nil
 }

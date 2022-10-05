@@ -209,6 +209,19 @@ func (nodes *nodePair) licensesAreCompatible() bool {
 	return nodes.licensesExactlyEqual()
 }
 
+func (nodes *nodePair) licenseRefsAreCompatible() bool {
+	if !nodes.firstNode.isLicenseRef() || !nodes.secondNode.isLicenseRef() {
+		return false
+	}
+
+	compatible := *nodes.firstNode.licenseRef() == *nodes.secondNode.licenseRef()
+	compatible = compatible && (nodes.firstNode.hasDocumentRef() == nodes.secondNode.hasDocumentRef())
+	if compatible && nodes.firstNode.hasDocumentRef() {
+		compatible = compatible && (*nodes.firstNode.documentRef() == *nodes.secondNode.documentRef())
+	}
+	return compatible
+}
+
 // Return true if two licenses are compatible in the context of their ranges; otherwise, false.
 func (nodes *nodePair) rangesAreCompatible() bool {
 	if nodes.licensesExactlyEqual() {

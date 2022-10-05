@@ -85,7 +85,7 @@ func isCompatible(expressionPart, allowed []*node) bool {
 		compatible := false
 		for _, allowedLicense := range allowed {
 			nodes := &nodePair{firstNode: expLicense, secondNode: allowedLicense}
-			if nodes.licensesAreCompatible() {
+			if nodes.licensesAreCompatible() || nodes.licenseRefsAreCompatible() {
 				compatible = true
 				break
 			}
@@ -192,7 +192,7 @@ func (n *node) expandAnd() [][]*node {
 // expandAndTerm expands the terms of an AND expression.
 func expandAndTerm(term *node) [][]*node {
 	var result [][]*node
-	if term.isLicense() {
+	if term.isLicense() || term.isLicenseRef() {
 		result = append(result, []*node{term})
 	} else if term.isExpression() {
 		if term.isAndExpression() {

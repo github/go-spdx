@@ -5,7 +5,6 @@ import (
 	"sort"
 )
 
-
 // Checks if given licenses are valid according to spdx
 //
 // Returns all the invalid licenses contained in the `licenses` argument
@@ -22,32 +21,32 @@ func ValidateLicenses(licenses []string) (invalidLicenes []string) {
 // Satisfies determines if test license expression satisfies allowed list of licenses.
 //
 // Examples:
-//   "MIT" satisfies "MIT" is true
 //
-//   "MIT" satisfies ["MIT", "Apache-2.0"] is true
-//   "MIT OR Apache-2.0" satisfies ["MIT"] is true
-//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
-//   "MIT OR Apache-2.0" satisfies ["GPL"] is false
+//	"MIT" satisfies "MIT" is true
 //
-//   "Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
-//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
-//   "MIT AND Apache-2.0" satisfies ["MIT"] is false
-//   "GPL" satisfies ["MIT", "Apache-2.0"] is false
+//	"MIT" satisfies ["MIT", "Apache-2.0"] is true
+//	"MIT OR Apache-2.0" satisfies ["MIT"] is true
+//	"GPL" satisfies ["MIT", "Apache-2.0"] is false
+//	"MIT OR Apache-2.0" satisfies ["GPL"] is false
 //
-//   "MIT AND Apache-2.0" satisfies ["MIT", "Apache-1.0", "Apache-2.0"] is true
+//	"Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
+//	"MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
+//	"MIT AND Apache-2.0" satisfies ["MIT"] is false
+//	"GPL" satisfies ["MIT", "Apache-2.0"] is false
 //
-//   "Apache-1.0" satisfies ["Apache-2.0+"] is false
-//   "Apache-2.0" satisfies ["Apache-2.0+"] is true
-//   "Apache-3.0" satisfies ["Apache-2.0+"] returns error about Apache-3.0 license not existing
+//	"MIT AND Apache-2.0" satisfies ["MIT", "Apache-1.0", "Apache-2.0"] is true
 //
-//   "Apache-1.0" satisfies ["Apache-2.0-or-later"] is false
-//   "Apache-2.0" satisfies ["Apache-2.0-or-later"] is true
-//   "Apache-3.0" satisfies ["Apache-2.0-or-later"] returns error about Apache-3.0 license not existing
+//	"Apache-1.0" satisfies ["Apache-2.0+"] is false
+//	"Apache-2.0" satisfies ["Apache-2.0+"] is true
+//	"Apache-3.0" satisfies ["Apache-2.0+"] returns error about Apache-3.0 license not existing
 //
-//   "Apache-1.0" satisfies ["Apache-2.0-only"] is false
-//   "Apache-2.0" satisfies ["Apache-2.0-only"] is true
-//   "Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
+//	"Apache-1.0" satisfies ["Apache-2.0-or-later"] is false
+//	"Apache-2.0" satisfies ["Apache-2.0-or-later"] is true
+//	"Apache-3.0" satisfies ["Apache-2.0-or-later"] returns error about Apache-3.0 license not existing
 //
+//	"Apache-1.0" satisfies ["Apache-2.0-only"] is false
+//	"Apache-2.0" satisfies ["Apache-2.0-only"] is true
+//	"Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
 func Satisfies(testExpression string, allowedList []string) (bool, error) {
 	expressionNode, err := parse(testExpression)
 	if err != nil {
@@ -117,25 +116,26 @@ func isCompatible(expressionPart, allowed []*node) bool {
 // grouped in an array and ORed licenses each in a separate array.
 //
 // Example:
-//   License node: "MIT" becomes [["MIT"]]
-//   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
-//   AND Expression: "MIT AND Apache-2.0" becomes [["MIT", "Apache-2.0"]]
-//   OR-AND Expression: "MIT OR Apache-2.0 AND GPL-2.0" becomes [["MIT"], ["Apache-2.0", "GPL-2.0"]]
-//   OR(AND) Expression: "MIT OR (Apache-2.0 AND GPL-2.0)" becomes [["MIT"], ["Apache-2.0", "GPL-2.0"]]
-//   AND-OR Expression: "MIT AND Apache-2.0 OR GPL-2.0" becomes [["Apache-2.0", "MIT], ["GPL-2.0"]]
-//   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
-//   OR-AND-OR Expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0" becomes
-//       [["MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0"]]
-//   (OR)AND(OR) Expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)" becomes
-//       [["Apache-2.0", "MIT"], ["GPL-2.0", "MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0", "ISC"]]
-//   OR(AND)OR Expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0" becomes
-//       [["MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0"]]
-//   AND-OR-AND Expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0" becomes
-//       [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
-//   (AND)OR(AND) Expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)" becomes
-//       [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
-//   AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
-//       [["GPL-2.0", "ISC", "MIT"], ["Apache-2.0", "GPL-2.0", "MIT"]]
+//
+//	License node: "MIT" becomes [["MIT"]]
+//	OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
+//	AND Expression: "MIT AND Apache-2.0" becomes [["MIT", "Apache-2.0"]]
+//	OR-AND Expression: "MIT OR Apache-2.0 AND GPL-2.0" becomes [["MIT"], ["Apache-2.0", "GPL-2.0"]]
+//	OR(AND) Expression: "MIT OR (Apache-2.0 AND GPL-2.0)" becomes [["MIT"], ["Apache-2.0", "GPL-2.0"]]
+//	AND-OR Expression: "MIT AND Apache-2.0 OR GPL-2.0" becomes [["Apache-2.0", "MIT], ["GPL-2.0"]]
+//	AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
+//	OR-AND-OR Expression: "MIT OR ISC AND Apache-2.0 OR GPL-2.0" becomes
+//	    [["MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0"]]
+//	(OR)AND(OR) Expression: "(MIT OR ISC) AND (Apache-2.0 OR GPL-2.0)" becomes
+//	    [["Apache-2.0", "MIT"], ["GPL-2.0", "MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0", "ISC"]]
+//	OR(AND)OR Expression: "MIT OR (ISC AND Apache-2.0) OR GPL-2.0" becomes
+//	    [["MIT"], ["Apache-2.0", "ISC"], ["GPL-2.0"]]
+//	AND-OR-AND Expression: "MIT AND ISC OR Apache-2.0 AND GPL-2.0" becomes
+//	    [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
+//	(AND)OR(AND) Expression: "(MIT AND ISC) OR (Apache-2.0 AND GPL-2.0)" becomes
+//	    [["ISC", "MIT"], ["Apache-2.0", "GPL-2.0"]]
+//	AND(OR)AND Expression: "MIT AND (ISC OR Apache-2.0) AND GPL-2.0" becomes
+//	    [["GPL-2.0", "ISC", "MIT"], ["Apache-2.0", "GPL-2.0", "MIT"]]
 func (n *node) expand(withDeepSort bool) [][]*node {
 	if n.isLicense() || n.isLicenseRef() {
 		return [][]*node{{n}}
@@ -157,7 +157,8 @@ func (n *node) expand(withDeepSort bool) [][]*node {
 // expandOr expands the given expression into an equivalent array representing ORed licenses each in a separate array.
 //
 // Example:
-//   OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
+//
+//	OR Expression: "MIT OR Apache-2.0" becomes [["MIT"], ["Apache-2.0"]]
 func (n *node) expandOr() [][]*node {
 	var result [][]*node
 	result = expandOrTerm(n.left(), result)
@@ -186,8 +187,10 @@ func expandOrTerm(term *node, result [][]*node) [][]*node {
 // expressions are combined with the ANDed expressions.
 //
 // Example:
-//   AND Expression: "MIT AND Apache-2.0" becomes [["MIT", "Apache-2.0"]]
-//   AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
+//
+//	AND Expression: "MIT AND Apache-2.0" becomes [["MIT", "Apache-2.0"]]
+//	AND(OR) Expression: "MIT AND (Apache-2.0 OR GPL-2.0)" becomes [["Apache-2.0", "MIT], ["GPL-2.0", "MIT"]]
+//
 // See more examples under func expand.
 func (n *node) expandAnd() [][]*node {
 	left := expandAndTerm(n.left())
@@ -224,8 +227,9 @@ func expandAndTerm(term *node) [][]*node {
 // producing more results than exists in the left or right results.
 //
 // Example:
-//   left: {{"MIT"}} right: {{"ISC"}, {"Apache-2.0"}} becomes
-//     {{"MIT", "ISC"}, {"MIT", "Apache-2.0"}}
+//
+//	left: {{"MIT"}} right: {{"ISC"}, {"Apache-2.0"}} becomes
+//	  {{"MIT", "ISC"}, {"MIT", "Apache-2.0"}}
 func appendTerms(left, right [][]*node) [][]*node {
 	var result [][]*node
 	for _, r := range right {
@@ -243,8 +247,9 @@ func appendTerms(left, right [][]*node) [][]*node {
 // are merged left and right results.
 //
 // Example:
-//   left: {{"MIT"}} right: {{"ISC", "Apache-2.0"}} becomes
-//     {{"MIT", "ISC", "Apache-2.0"}}
+//
+//	left: {{"MIT"}} right: {{"ISC", "Apache-2.0"}} becomes
+//	  {{"MIT", "ISC", "Apache-2.0"}}
 func mergeTerms(left, right [][]*node) [][]*node {
 	results := left
 	for _, r := range right {
@@ -277,8 +282,9 @@ func sortAndDedup(nodes []*node) []*node {
 // Then each array of nodes are sorted relative to the other arrays.
 //
 // Example:
-//   BEFORE {{"MIT", "GPL-2.0"}, {"ISC", "Apache-2.0"}}
-//   AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
+//
+//	BEFORE {{"MIT", "GPL-2.0"}, {"ISC", "Apache-2.0"}}
+//	AFTER  {{"Apache-2.0", "ISC"}, {"GPL-2.0", "MIT"}}
 func deepSort(nodes2d [][]*node) [][]*node {
 	if len(nodes2d) == 0 || len(nodes2d) == 1 && len(nodes2d[0]) <= 1 {
 		return nodes2d

@@ -2,14 +2,14 @@ package spdxexp
 
 import (
 	"errors"
-	"testing"
 	"reflect"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateLicenses(t *testing.T) {
-	someLicenses := []string {"MTI", "Apche-2.0", "0xDEADBEEF", ""}
+	someLicenses := []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}
 	invalidLicenses := ValidateLicenses(someLicenses)
 	assert.True(t, reflect.DeepEqual(someLicenses, invalidLicenses))
 }

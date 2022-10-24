@@ -225,11 +225,11 @@ func (exp *expressionStream) readLicense() *token {
 // Generate a token using the normalized form of the license name.
 //
 // License name can be in the form:
-// * a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
-//   examples, but any base license form can have the suffixes described.
-// * a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
-// * a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
-// * a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
+//   - a_license-2.0, a_license, a_license-ab - there is variability in the form of the base license.  a_license-2.0 is used for these
+//     examples, but any base license form can have the suffixes described.
+//   - a_license-2.0-only - normalizes to a_license-2.0 if the -only form is not specifically in the set of licenses
+//   - a_license-2.0-or-later - normalizes to a_license-2.0+ if the -or-later form is not specifically in the set of licenses
+//   - a_license-2.0+ - normalizes to a_license-2.0-or-later if the -or-later form is specifically in the set of licenses
 func (exp *expressionStream) normalizeLicense(license string) *token {
 	if token := licenseLookup(license); token != nil {
 		// checks active and exception license lists

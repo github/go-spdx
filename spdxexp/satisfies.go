@@ -5,17 +5,18 @@ import (
 	"sort"
 )
 
-// Checks if given licenses are valid according to spdx
+// ValidateLicenses checks if given licenses are valid according to spdx
 //
 // Returns all the invalid licenses contained in the `licenses` argument
-func ValidateLicenses(licenses []string) (invalidLicenes []string) {
+func ValidateLicenses(licenses []string) []string {
+	invalidLicenses := []string{}
 	for _, license := range licenses {
 		_, err := parse(license)
 		if err != nil {
-			invalidLicenes = append(invalidLicenes, license)
+			invalidLicenses = append(invalidLicenses, license)
 		}
 	}
-	return
+	return invalidLicenses
 }
 
 // Satisfies determines if test license expression satisfies allowed list of licenses.

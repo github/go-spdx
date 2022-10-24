@@ -3,9 +3,16 @@ package spdxexp
 import (
 	"errors"
 	"testing"
+	"reflect"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestValidateLicenses(t *testing.T) {
+	someLicenses := []string {"MTI", "Apche-2.0", "0xDEADBEEF", ""}
+	invalidLicenses := ValidateLicenses(someLicenses)
+	assert.True(t, reflect.DeepEqual(someLicenses, invalidLicenses))
+}
 
 func TestSatisfies(t *testing.T) {
 	tests := []struct {
@@ -27,6 +34,8 @@ func TestSatisfies(t *testing.T) {
 		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, false,
 			errors.New("allowedList requires at least one element, but is empty")},
 		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, false,
+			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
+		{"err - invalid license in allowed list", "MIT", []string{"NON-EXISTENT-LICENSE", "Apache-2.0"}, false,
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
 		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},

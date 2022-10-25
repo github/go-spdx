@@ -5,9 +5,9 @@ import (
 	"sort"
 )
 
-// ValidateLicenses checks if given licenses are valid according to spdx
+// ValidateLicenses checks if given licenses are valid according to spdx.
 //
-// Returns all the invalid licenses contained in the `licenses` argument
+// Returns all the invalid licenses contained in the `licenses` argument.
 func ValidateLicenses(licenses []string) (bool, []string) {
 	valid := true
 	invalidLicenses := []string{}

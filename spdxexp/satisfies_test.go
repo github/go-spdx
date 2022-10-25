@@ -2,16 +2,30 @@ package spdxexp
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateLicenses(t *testing.T) {
-	someLicenses := []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}
-	invalidLicenses := ValidateLicenses(someLicenses)
-	assert.True(t, reflect.DeepEqual(someLicenses, invalidLicenses))
+	tests := []struct {
+		name            string
+		inputLicenses   []string
+		allValid        bool
+		invalidLicenses []string
+	}{
+		{"All invalid", []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}, false, []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}},
+		{"All valid", []string{"MIT", "Apache-2.0", "GPL-2.0"}, true, []string{}},
+		{"Some invalid", []string{"MTI", "Apche-2.0", "GPL-2.0"}, false, []string{"MTI", "Apche-2.0"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid, invalidLicenses := ValidateLicenses(test.inputLicenses)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses)
+			assert.Equal(t, test.allValid, valid)
+		})
+	}
 }
 
 func TestSatisfies(t *testing.T) {

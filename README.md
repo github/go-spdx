@@ -4,8 +4,9 @@ Golang implementation of a checker for determining if a set of SPDX IDs satisfie
 
 ## Public API
 
-_NOTE: The public API is initially limited to the Satisfies function.  If there is interest in the
-output of the parser or license checking being public, please submit an issue for consideration._
+_NOTE: The public API is initially limited to the Satisfies and ValidateLicenses functions.  If
+there is interest in the output of the parser or license checking being public, please submit an
+issue for consideration._
 
 ### Function: Satisfies
 
@@ -45,6 +46,10 @@ Example allowedList:
 []string{"GPL-2.0-or-later"}
 ```
 
+**N.B.** If at least one of expressions from `allowedList` is not a valid SPDX expression, the call
+to `Satisfies` will produce an error. Use [`ValidateLicenses`](###-ValidateLicenses) function
+to first check if all of the expressions from `allowedList` are valid.
+
 #### Examples: Satisfies returns true
 
 ```go
@@ -63,6 +68,43 @@ Satisfies("MIT AND Apache-2.0", []string{"MIT", "Apache-2.0", "GPL-2.0"})
 Satisfies("MIT", []string{"Apache-2.0"})
 Satisfies("Apache-1.0", []string{"Apache-2.0+"})
 Satisfies("MIT AND Apache-2.0", []string{"MIT"})
+```
+
+### ValidateLicenses
+
+```go
+func ValidateLicenses(licenses []string) (bool, []string)
+```
+
+Function `ValidateLicenses` is used to determine if any of the provided license expressions is
+invalid.
+
+**parameter: licenses**
+
+Licenses is a slice of strings which must be validated as SPDX expressions.
+
+**returns**
+
+Function `ValidateLicenses` has 2 return values. First is `bool` which equals `true` if all of
+the provided licenses provided are valid, and `false` otherwise.
+
+The second parameter is a slice of all invalid licenses which were provided.
+
+#### Examples: ValidateLicenses returns no invalid licenses
+
+```go
+valid, invalidLicenses := ValidateLicenses([]string{"Apache-2.0"})
+assert.True(valid)
+assert.Empty(invalidLicenses)
+```
+
+#### Examples: ValidateLicenses returns invalid licenses
+
+```go
+valid, invalidLicenses := ValidateLicenses([]string{"NON-EXISTENT-LICENSE", "MIT"})
+assert.False(valid)
+assert.Contains(invalidLicenses, "NON-EXISTENT-LICENSE")
+assert.NotContains(invalidLicenses, "MIT")
 ```
 
 ## Background

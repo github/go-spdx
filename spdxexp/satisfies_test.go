@@ -7,6 +7,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestValidateLicenses(t *testing.T) {
+	tests := []struct {
+		name            string
+		inputLicenses   []string
+		allValid        bool
+		invalidLicenses []string
+	}{
+		{"All invalid", []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}, false, []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}},
+		{"All valid", []string{"MIT", "Apache-2.0", "GPL-2.0"}, true, []string{}},
+		{"Some invalid", []string{"MTI", "Apche-2.0", "GPL-2.0"}, false, []string{"MTI", "Apche-2.0"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid, invalidLicenses := ValidateLicenses(test.inputLicenses)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses)
+			assert.Equal(t, test.allValid, valid)
+		})
+	}
+}
+
 func TestSatisfies(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -27,6 +48,8 @@ func TestSatisfies(t *testing.T) {
 		{"err - MIT satisfies <empty allow list>", "MIT", []string{}, false,
 			errors.New("allowedList requires at least one element, but is empty")},
 		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, false,
+			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
+		{"err - invalid license in allowed list", "MIT", []string{"NON-EXISTENT-LICENSE", "Apache-2.0"}, false,
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
 		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},

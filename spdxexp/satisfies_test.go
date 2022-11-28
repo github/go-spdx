@@ -28,6 +28,21 @@ func TestValidateLicenses(t *testing.T) {
 	}
 }
 
+// TestSatisfiesSingle lets you quickly test a single call to Satisfies with a specific license expression and allowed list of licenses.
+// To test a different expression, change the expression, allowed licenses, and expected result in the function body.
+// TO RUN: go test ./spdxexp -run TestSatisfiesSingle
+func TestSatisfiesSingle(t *testing.T) {
+	// Update these to test a different expression.
+	expression := "BSD-3-Clause AND GPL-2.0"
+	allowedList := []string{"BSD-3-Clause", "GPL-2.0"}
+	expectedResult := true
+
+	// Run the test.
+	actualResult, err := Satisfies(expression, allowedList)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, actualResult)
+}
+
 func TestSatisfies(t *testing.T) {
 	tests := []struct {
 		name           string

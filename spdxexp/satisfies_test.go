@@ -2,6 +2,7 @@ package spdxexp
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -2318,4 +2319,84 @@ func andAndAndExpression() testCaseData {
 			},
 		},
 	}
+}
+
+func ExampleSatisfies_singleLicense() {
+	fmt.Println(Satisfies("MIT", []string{"MIT"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_or() {
+	fmt.Println(Satisfies("MIT OR Apache-2.0", []string{"MIT"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_orNotFound() {
+	fmt.Println(Satisfies("MIT OR Apache-2.0", []string{"GPL-2.0"}))
+	// Output: false <nil>
+}
+
+func ExampleSatisfies_and() {
+	fmt.Println(Satisfies("Apache-2.0 AND MIT", []string{"MIT", "Apache-2.0"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_andNotFound() {
+	fmt.Println(Satisfies("MIT AND Apache-2.0", []string{"MIT"}))
+	// Output: false <nil>
+}
+
+func ExampleSatisfies_plus() {
+	fmt.Println(Satisfies("Apache-2.0", []string{"Apache-1.0+"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_plusNotFound() {
+	fmt.Println(Satisfies("Apache-1.0", []string{"Apache-2.0+"}))
+	// Output: false <nil>
+}
+
+func ExampleSatisfies_orLater() {
+	fmt.Println(Satisfies("Apache-2.0", []string{"Apache-1.0-or-later"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_orLaterNotFound() {
+	fmt.Println(Satisfies("Apache-1.0", []string{"Apache-2.0-or-later"}))
+	// Output: false <nil>
+}
+
+func ExampleSatisfies_only() {
+	fmt.Println(Satisfies("Apache-1.0", []string{"Apache-1.0-only"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_onlyNotFound() {
+	fmt.Println(Satisfies("Apache-2.0", []string{"Apache-1.0-only"}))
+	// Output: false <nil>
+}
+
+func ExampleSatisfies_extraAllowedLicense() {
+	fmt.Println(Satisfies("MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}))
+	// Output: true <nil>
+}
+
+func ExampleSatisfies_errorUnknownLicense() {
+	fmt.Println(Satisfies("GPL", []string{"GPL"}))
+	// Output: false unknown license 'GPL' at offset 0
+}
+
+func ExampleValidateLicenses_allGood() {
+	fmt.Println(ValidateLicenses([]string{"MIT", "Apache-2.0", "GPL-2.0"}))
+	// Output: true []
+}
+
+func ExampleValidateLicenses_oneBad() {
+	fmt.Println(ValidateLicenses([]string{"MIT", "Apache-2.0", "GPL"}))
+	// Output: false [GPL]
+}
+
+func ExampleValidateLicenses_allBad() {
+	fmt.Println(ValidateLicenses([]string{"MTI", "Apache--2.0", "GPL"}))
+	// Output: false [MTI Apache--2.0 GPL]
 }

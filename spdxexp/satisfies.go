@@ -6,7 +6,7 @@ import (
 )
 
 // ValidateLicenses checks if given licenses are valid according to spdx.
-//
+// Returns true if all licenses are valid; otherwise, false.
 // Returns all the invalid licenses contained in the `licenses` argument.
 func ValidateLicenses(licenses []string) (bool, []string) {
 	valid := true
@@ -20,35 +20,9 @@ func ValidateLicenses(licenses []string) (bool, []string) {
 	return valid, invalidLicenses
 }
 
-// Satisfies determines if test license expression satisfies allowed list of licenses.
-//
-// Examples:
-//
-//	"MIT" satisfies "MIT" is true
-//
-//	"MIT" satisfies ["MIT", "Apache-2.0"] is true
-//	"MIT OR Apache-2.0" satisfies ["MIT"] is true
-//	"GPL" satisfies ["MIT", "Apache-2.0"] is false
-//	"MIT OR Apache-2.0" satisfies ["GPL"] is false
-//
-//	"Apache-2.0 AND MIT" satisfies ["MIT", "Apache-2.0"] is true
-//	"MIT AND Apache-2.0" satisfies ["MIT", "Apache-2.0"] is true
-//	"MIT AND Apache-2.0" satisfies ["MIT"] is false
-//	"GPL" satisfies ["MIT", "Apache-2.0"] is false
-//
-//	"MIT AND Apache-2.0" satisfies ["MIT", "Apache-1.0", "Apache-2.0"] is true
-//
-//	"Apache-1.0" satisfies ["Apache-2.0+"] is false
-//	"Apache-2.0" satisfies ["Apache-2.0+"] is true
-//	"Apache-3.0" satisfies ["Apache-2.0+"] returns error about Apache-3.0 license not existing
-//
-//	"Apache-1.0" satisfies ["Apache-2.0-or-later"] is false
-//	"Apache-2.0" satisfies ["Apache-2.0-or-later"] is true
-//	"Apache-3.0" satisfies ["Apache-2.0-or-later"] returns error about Apache-3.0 license not existing
-//
-//	"Apache-1.0" satisfies ["Apache-2.0-only"] is false
-//	"Apache-2.0" satisfies ["Apache-2.0-only"] is true
-//	"Apache-3.0" satisfies ["Apache-2.0-only"] returns error about Apache-3.0 license not existing
+// Satisfies determines if the allowed list of licenses satisfies the test license expression.
+// Returns true if allowed list satisfies test license expression; otherwise, false.
+// Returns error if error occurs during processing.
 func Satisfies(testExpression string, allowedList []string) (bool, error) {
 	expressionNode, err := parse(testExpression)
 	if err != nil {

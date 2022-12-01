@@ -1,4 +1,4 @@
-package expression
+package spdxexp
 
 /* Translation to Go from javascript code: https://github.com/clearlydefined/spdx-expression-parse.js/blob/master/scan.js */
 

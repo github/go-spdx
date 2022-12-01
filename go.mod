@@ -1,4 +1,4 @@
-module github.com/github/go-spdx
+module github.com/github/go-spdx/v2
 
 go 1.18
 

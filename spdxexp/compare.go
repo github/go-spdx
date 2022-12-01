@@ -1,4 +1,4 @@
-package expression
+package spdxexp
 
 func compareGT(first *node, second *node) bool {
 	if !first.isLicense() || !second.isLicense() {

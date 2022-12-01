@@ -2,6 +2,18 @@
 
 Golang implementation of a checker for determining if a set of SPDX IDs satisfies an SPDX Expression.
 
+## Installation
+
+There are several ways to include a go package.  To download and install, you can use `go get`.  The command for that is:
+
+```sh
+go get github.com/github/go-spdx@latest
+```
+
+## Packages
+
+- [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
+
 ## Public API
 
 _NOTE: The public API is initially limited to the Satisfies and ValidateLicenses functions.  If

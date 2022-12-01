@@ -1,4 +1,4 @@
-package expression
+package spdxexp
 
 import (
 	"sort"
@@ -167,7 +167,7 @@ func (n *node) reconstructedLicenseString() *string {
 	return nil
 }
 
-// Sort an array of license and license reference nodes alphebetically based
+// Sort an array of license and license reference nodes alphabetically based
 // on their reconstructedLicenseString() representation.  The sort function does not expect
 // expression nodes, but if one is in the nodes list, it will sort to the end.
 func sortLicenses(nodes []*node) {

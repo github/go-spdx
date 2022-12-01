@@ -1,4 +1,4 @@
-package expression
+package spdxexp
 
 // getLicenseNode is a test helper method that is expected to create a valid
 // license node.  Use this function when the test data is known to be a valid

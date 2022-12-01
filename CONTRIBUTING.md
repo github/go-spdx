@@ -1,8 +1,8 @@
 ## Contributing
 
-[fork]: https://github.com/github/spdx-expression/fork
-[pr]: https://github.com/github/spdx-expression/compare
-[style]: https://github.com/github/spdx-expression/blob/main/.golangci.yaml
+[fork]: https://github.com/github/go-spdx
+[pr]: https://github.com/github/go-spdx/compare
+[style]: https://github.com/github/go-spdx/blob/main/.golangci.yaml
 [code-of-conduct]: CODE_OF_CONDUCT.md
 
 Hi there! We're thrilled that you'd like to contribute to this project. Your help is essential for keeping it great.

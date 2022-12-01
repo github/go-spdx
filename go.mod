@@ -1,4 +1,4 @@
-module github.com/github/spdx-expression
+module github.com/github/go-spdx
 
 go 1.18
 

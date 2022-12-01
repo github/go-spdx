@@ -1,4 +1,4 @@
-# spdx-expression
+# go-spdx
 
 Golang implementation of a checker for determining if a set of SPDX IDs satisfies an SPDX Expression.
 

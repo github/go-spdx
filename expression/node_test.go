@@ -1,4 +1,4 @@
-package spdxexp
+package expression
 
 import (
 	"testing"

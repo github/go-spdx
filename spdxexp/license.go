@@ -425,6 +425,7 @@ func getLicenses() []string {
 		"PolyForm-Small-Business-1.0.0",
 		"PostgreSQL",
 		"Python-2.0",
+		"Python-2.0.1",
 		"QPL-1.0",
 		"Qhull",
 		"RHeCos-1.1",

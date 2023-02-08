@@ -1075,6 +1075,42 @@ func TestParseTokens(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: Apache-1.0+ } or RIGHT: { LEFT: DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 or RIGHT: GPL-2.0 with Bison-exception-2.2 } }", nil,
 		},
+		{"operator error - missing close parenthesis", getMissingEndParenTokens(0),
+			&node{}, "", errors.New("open parenthesis does not have a matching close parenthesis"),
+		},
+		{"operator error - missing open parenthesis", getMissingStartParenTokens(0),
+			&node{}, "", errors.New("close parenthesis does not have a matching open parenthesis"),
+		},
+		{"operator error - missing operator", getMissingOperatorTokens(0),
+			&node{}, "", errors.New("licenses or expressions are not separated by an operator"),
+		},
+		{"operator error - missing license after OR", getMissingSecondLicenseInORTokens(0),
+			&node{}, "", errors.New("expected expression following OR, but found none"),
+		},
+		{"operator error - missing license after AND", getMissingSecondLicenseInANDTokens(0),
+			&node{}, "", errors.New("expected expression following AND, but found none"),
+		},
+		{"operator error - starts with close parenthesis", getStartsWithCloseParenTokens(0),
+			&node{}, "", errors.New("expression starts with close parenthesis"),
+		},
+		{"operator error - starts with OR", getStartsWithORTokens(0),
+			&node{}, "", errors.New("expression starts with OR"),
+		},
+		{"operator error - starts with AND", getStartsWithANDTokens(0),
+			&node{}, "", errors.New("expression starts with AND"),
+		},
+		{"operator error - ends with OR", getEndsWithORTokens(0),
+			&node{}, "", errors.New("expected expression following OR, but found none"),
+		},
+		{"operator error - ends with AND", getEndsWithANDTokens(0),
+			&node{}, "", errors.New("expected expression following AND, but found none"),
+		},
+		{"operator error - OR immediately after operator", getDoubleORTokens(0),
+			&node{}, "", errors.New("expected license or expression, but found OR"),
+		},
+		{"operator error - AND immediately after operator", getDoubleANDTokens(0),
+			&node{}, "", errors.New("expected license or expression, but found AND"),
+		},
 	}
 
 	for _, test := range tests {
@@ -1325,6 +1361,94 @@ func getKitchSinkTokens(index int) *tokenStream {
 	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
 	tokens = append(tokens, token{role: exceptionToken, value: "Bison-exception-2.2"})
 	tokens = append(tokens, token{role: operatorToken, value: ")"})
+	return getTokenStream(tokens, index)
+}
+
+func getMissingOperatorTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	return getTokenStream(tokens, index)
+}
+
+func getMissingSecondLicenseInORTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	return getTokenStream(tokens, index)
+}
+
+func getMissingSecondLicenseInANDTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	return getTokenStream(tokens, index)
+}
+
+func getStartsWithCloseParenTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: operatorToken, value: ")"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	return getTokenStream(tokens, index)
+}
+
+func getStartsWithORTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	return getTokenStream(tokens, index)
+}
+
+func getStartsWithANDTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	return getTokenStream(tokens, index)
+}
+
+func getEndsWithORTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	return getTokenStream(tokens, index)
+}
+
+func getEndsWithANDTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	return getTokenStream(tokens, index)
+}
+
+func getDoubleORTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: operatorToken, value: "OR"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	return getTokenStream(tokens, index)
+}
+
+func getDoubleANDTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: operatorToken, value: "AND"})
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	return getTokenStream(tokens, index)
+}
+
+func getMissingStartParenTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
+	tokens = append(tokens, token{role: operatorToken, value: ")"})
+	return getTokenStream(tokens, index)
+}
+
+func getMissingEndParenTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: operatorToken, value: "("})
+	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
 	return getTokenStream(tokens, index)
 }
 

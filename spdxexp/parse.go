@@ -29,14 +29,44 @@ func parse(source string) (*node, error) {
 }
 
 func (t *tokenStream) parseTokens() *node {
+	if len(t.tokens) == 0 {
+		// malformed with no tokens
+		t.err = errors.New("no tokens to parse")
+		return nil
+	}
+
 	node := t.parseExpression()
 	if t.err != nil {
 		return nil
 	}
-	if node == nil || t.hasMore() {
+
+	if node == nil {
+		// unable to parse expression for unknown reason
+		t.err = errors.New("syntax error")
+		return nil
+	} else if t.hasMore() {
+		// malformed with too many tokens - try to determine the cause
+
+		// check for close parenthesis without matching open parenthesis
+		closeParen := t.parseOperator(")")
+		if closeParen != nil {
+			t.err = errors.New("close parenthesis does not have a matching open parenthesis")
+			return nil
+		}
+
+		// check for licenses without operator
+		lic := t.parseLicense()
+		if lic != nil {
+			t.err = errors.New("licenses or expressions are not separated by an operator")
+			return nil
+		}
+
+		// cannot determine what syntax error occurred
 		t.err = errors.New("syntax error")
 		return nil
 	}
+
+	// all is well
 	return node
 }
 
@@ -75,9 +105,15 @@ func (t *tokenStream) parseParenthesizedExpression() *node {
 		return nil
 	}
 
+	if !t.hasMore() {
+		// no more tokens, so missing closing paren
+		t.err = errors.New("open parenthesis does not have a matching close parenthesis")
+		return nil
+	}
+
 	closeParen := t.parseOperator(")")
 	if closeParen == nil {
-		t.err = errors.New("expected ')'")
+		t.err = errors.New("open parenthesis does not have a matching close parenthesis")
 		return nil
 	}
 
@@ -109,6 +145,44 @@ func (t *tokenStream) parseAtom() *node {
 		return licenseNode
 	}
 
+	// no atom found - try to determine the cause
+	if t.hasMore() {
+		// check for operators
+		operator := t.parseOperator(")")
+		if operator != nil {
+			if t.index == 1 {
+				t.err = errors.New("expression starts with close parenthesis")
+			} else {
+				t.err = errors.New("expected license or expression, but found close parenthesis")
+			}
+			return nil
+		}
+
+		operator = t.parseOperator("OR")
+		if operator != nil {
+			if t.index == 1 {
+				t.err = errors.New("expression starts with OR")
+			} else {
+				t.err = errors.New("expected license or expression, but found OR")
+			}
+			return nil
+		}
+
+		operator = t.parseOperator("AND")
+		if operator != nil {
+			if t.index == 1 {
+				t.err = errors.New("expression starts with AND")
+			} else {
+				t.err = errors.New("expected license or expression, but found AND")
+			}
+			return nil
+		}
+
+		// cannot determine what syntax error occurred
+		t.err = errors.New("syntax error")
+		return nil
+	}
+
 	t.err = errors.New("expected node, but found none")
 	return nil
 }
@@ -132,12 +206,18 @@ func (t *tokenStream) parseExpression() *node {
 	}
 	op := strings.ToLower(*operator)
 
+	if !t.hasMore() {
+		// expression found and no more tokens to process
+		t.err = errors.New("expected expression following OR, but found none")
+		return nil
+	}
+
 	right := t.parseExpression()
 	if t.err != nil {
 		return nil
 	}
 	if right == nil {
-		t.err = errors.New("expected expression, but found none")
+		t.err = errors.New("expected expression following OR, but found none")
 		return nil
 	}
 
@@ -172,12 +252,18 @@ func (t *tokenStream) parseAnd() *node {
 		return left
 	}
 
+	if !t.hasMore() {
+		// expression found and no more tokens to process
+		t.err = errors.New("expected expression following AND, but found none")
+		return nil
+	}
+
 	right := t.parseAnd()
 	if t.err != nil {
 		return nil
 	}
 	if right == nil {
-		t.err = errors.New("expected expression, but found none")
+		t.err = errors.New("expected expression following AND, but found none")
 		return nil
 	}
 

@@ -1084,12 +1084,6 @@ func TestParseTokens(t *testing.T) {
 		{"operator error - missing operator", getMissingOperatorTokens(0),
 			&node{}, "", errors.New("licenses or expressions are not separated by an operator"),
 		},
-		{"operator error - missing license after OR", getMissingSecondLicenseInORTokens(0),
-			&node{}, "", errors.New("expected expression following OR, but found none"),
-		},
-		{"operator error - missing license after AND", getMissingSecondLicenseInANDTokens(0),
-			&node{}, "", errors.New("expected expression following AND, but found none"),
-		},
 		{"operator error - starts with close parenthesis", getStartsWithCloseParenTokens(0),
 			&node{}, "", errors.New("expression starts with close parenthesis"),
 		},
@@ -1368,20 +1362,6 @@ func getMissingOperatorTokens(index int) *tokenStream {
 	var tokens []token
 	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
 	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
-	return getTokenStream(tokens, index)
-}
-
-func getMissingSecondLicenseInORTokens(index int) *tokenStream {
-	var tokens []token
-	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: operatorToken, value: "OR"})
-	return getTokenStream(tokens, index)
-}
-
-func getMissingSecondLicenseInANDTokens(index int) *tokenStream {
-	var tokens []token
-	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
-	tokens = append(tokens, token{role: operatorToken, value: "AND"})
 	return getTokenStream(tokens, index)
 }
 

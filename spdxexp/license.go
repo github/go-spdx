@@ -640,6 +640,13 @@ func getExceptions() []string {
 	}
 }
 
+// licenseRanges returns a list of license ranges.
+//
+// Ranges are organized into groups (referred to as license groups) of the same base license (e.g. GPL).
+// Groups have sub-groups of license versions (referred to as the range) where each member is considered
+// to be the same version (e.g. {GPL-2.0, GPL-2.0-only}). The sub-groups are in ascending order within
+// the license group, such that the first sub-group is considered to be less than the second sub-group,
+// and so on. (e.g. {{GPL-1.0}, {GPL-2.0, GPL-2.0-only}} implies {GPL-1.0} < {GPL-2.0, GPL-2.0-only}).
 func licenseRanges() [][][]string {
 	return [][][]string{
 		{

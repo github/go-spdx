@@ -89,7 +89,7 @@ func (n *node) isLicense() bool {
 	return n.role == licenseNode
 }
 
-// Return the value of the license field.
+// license returns the value of the license field.
 // See also reconstructedLicenseString()
 func (n *node) license() *string {
 	if !n.isLicense() {
@@ -167,7 +167,7 @@ func (n *node) reconstructedLicenseString() *string {
 	return nil
 }
 
-// Sort an array of license and license reference nodes alphabetically based
+// sortLicenses sorts an array of license and license reference nodes alphabetically based
 // on their reconstructedLicenseString() representation.  The sort function does not expect
 // expression nodes, but if one is in the nodes list, it will sort to the end.
 func sortLicenses(nodes []*node) {
@@ -186,29 +186,51 @@ func sortLicenses(nodes []*node) {
 
 // ---------------------- Comparator Methods ----------------------
 
-// Return true if two licenses are compatible; otherwise, false.
+// licensesAreCompatible returns true if two licenses are compatible; otherwise, false.
+// Two licenses are compatible if they are the same license or if they are in the same
+// license group and they meet one of the following rules:
+//
+// * both licenses have the `hasPlus` flag set to true
+// * the first license has the `hasPlus` flag and the second license is in the first license's range or greater
+// * the second license has the `hasPlus` flag and the first license is in the second license's range or greater
+// * both licenses are in the same range
 func (nodes *nodePair) licensesAreCompatible() bool {
+	// checking ranges is expensive, so check for simple cases first
 	if !nodes.firstNode.isLicense() || !nodes.secondNode.isLicense() {
 		return false
 	}
+	if !nodes.exceptionsAreCompatible() {
+		return false
+	}
+	if nodes.licensesExactlyEqual() {
+		return true
+	}
+
+	// simple cases don't apply, so check license ranges
+	// NOTE: Ranges are organized into groups (referred to as license groups) of the same base license (e.g. GPL).
+	//       Groups have sub-groups of license versions (referred to as the range) where each member is considered
+	//       to be the same version (e.g. {GPL-2.0, GPL-2.0-only}). The sub-groups are in ascending order within
+	//       the license group, such that the first sub-group is considered to be less than the second sub-group,
+	//       and so on. (e.g. {{GPL-1.0}, {GPL-2.0, GPL-2.0-only}} implies {GPL-1.0} < {GPL-2.0, GPL-2.0-only}).
 	if nodes.secondNode.hasPlus() {
 		if nodes.firstNode.hasPlus() {
-			// first+, second+
+			// first+, second+ just need to be in same range group
 			return nodes.rangesAreCompatible()
 		}
-		// first, second+
+		// first, second+ requires first to be in range of second
 		return nodes.identifierInRange()
 	}
 	// else secondNode does not have plus
 	if nodes.firstNode.hasPlus() {
-		// first+, second
+		// first+, second requires second to be in range of first
 		revNodes := &nodePair{firstNode: nodes.secondNode, secondNode: nodes.firstNode}
 		return revNodes.identifierInRange()
 	}
-	// first, second
-	return nodes.licensesExactlyEqual()
+	// first, second requires both to be in same range group
+	return nodes.rangesEqual()
 }
 
+// licenseRefsAreCompatible returns true if two license references are compatible; otherwise, false.
 func (nodes *nodePair) licenseRefsAreCompatible() bool {
 	if !nodes.firstNode.isLicenseRef() || !nodes.secondNode.isLicenseRef() {
 		return false
@@ -222,13 +244,9 @@ func (nodes *nodePair) licenseRefsAreCompatible() bool {
 	return compatible
 }
 
-// Return true if two licenses are compatible in the context of their ranges; otherwise, false.
+// licenseRefsAreCompatible returns true if two licenses are in the same license group (e.g. all "GPL" licenses are in the same
+// license group); otherwise, false.
 func (nodes *nodePair) rangesAreCompatible() bool {
-	if nodes.licensesExactlyEqual() {
-		// licenses specify ranges exactly the same (e.g. Apache-1.0+, Apache-1.0+)
-		return true
-	}
-
 	firstNode := *nodes.firstNode
 	secondNode := *nodes.secondNode
 
@@ -238,7 +256,7 @@ func (nodes *nodePair) rangesAreCompatible() bool {
 	// When both licenses allow later versions (i.e. hasPlus==true), being in the same license
 	// group is sufficient for compatibility, as long as, any exception is also compatible
 	// Example: All Apache licenses (e.g. Apache-1.0, Apache-2.0) are in the same license group
-	return sameLicenseGroup(firstRange, secondRange) && nodes.exceptionsAreCompatible()
+	return sameLicenseGroup(firstRange, secondRange)
 }
 
 // identifierInRange returns true if the (first) simple license is in range of the (second)
@@ -247,14 +265,7 @@ func (nodes *nodePair) identifierInRange() bool {
 	simpleLicense := nodes.firstNode
 	plusLicense := nodes.secondNode
 
-	if !compareGT(simpleLicense, plusLicense) && !compareEQ(simpleLicense, plusLicense) {
-		return false
-	}
-
-	// With simpleLicense >= plusLicense, licenses are compatible, as long as, any exception
-	// is also compatible
-	return nodes.exceptionsAreCompatible()
-
+	return compareGT(simpleLicense, plusLicense) || compareEQ(simpleLicense, plusLicense)
 }
 
 // exceptionsAreCompatible returns true if neither license has an exception or they have
@@ -274,10 +285,15 @@ func (nodes *nodePair) exceptionsAreCompatible() bool {
 	}
 
 	return *nodes.firstNode.exception() == *nodes.secondNode.exception()
-
 }
 
-// Return true if the licenses are the same; otherwise, false
+// rangesEqual returns true if the licenses are in the same range; otherwise, false
+// (e.g. GPL-2.0-only == GPL-2.0)
+func (nodes *nodePair) rangesEqual() bool {
+	return compareEQ(nodes.firstNode, nodes.secondNode)
+}
+
+// licensesExactlyEqual returns true if the licenses are the same; otherwise, false
 func (nodes *nodePair) licensesExactlyEqual() bool {
 	return strings.EqualFold(*nodes.firstNode.reconstructedLicenseString(), *nodes.secondNode.reconstructedLicenseString())
 }

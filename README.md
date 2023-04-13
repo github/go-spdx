@@ -121,6 +121,15 @@ assert.Contains(invalidLicenses, "NON-EXISTENT-LICENSE")
 assert.NotContains(invalidLicenses, "MIT")
 ```
 
+#### Examples: ValidateLicenses works with SPDX expressions
+
+```go
+valid, invalidLicenses := ValidateLicenses([]string{"MIT AND APACHE-2.0"})
+assert.True(valid)
+assert.NotContains(invalidLicenses, "MIT AND APACHE-2.0")
+```
+
+
 ## Background
 
 This package was developed to support testing whether a repository's license requirements are met by an allowed-list of licenses.

@@ -20,6 +20,12 @@ func TestValidateLicenses(t *testing.T) {
 		{"Some invalid", []string{"MTI", "Apche-2.0", "GPL-2.0"}, false, []string{"MTI", "Apche-2.0"}},
 		{"GPL-2.0", []string{"GPL-2.0"}, true, []string{}},
 		{"GPL-2.0-only", []string{"GPL-2.0-only"}, true, []string{}},
+		{"SPDX Expressions are valid", []string{
+			"MIT AND APACHE-2.0",
+			"MIT AND APCHE-2.0",
+			"LGPL-2.1-only OR MIT OR BSD-3-Clause",
+			"GPL-2.0-or-later WITH Bison-exception-2.2",
+		}, false, []string{"MIT AND APCHE-2.0"}},
 	}
 
 	for _, test := range tests {

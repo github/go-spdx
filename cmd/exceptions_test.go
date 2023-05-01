@@ -10,21 +10,21 @@ import (
 )
 
 func TestExtractExceptionLicenseIDs(t *testing.T) {
-	// Test 2: Test that the function can open and read the exceptions.json file.
+	// Test 1: Test that the function can open and read the exceptions.json file.
 	file, err := os.Open("exceptions.json")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	defer file.Close()
 
-	// Test 3: Test that the function can unmarshal the exception data from the JSON file.
+	// Test 2: Test that the function can unmarshal the exception data from the JSON file.
 	var exceptionData ExceptionData
 	err = json.NewDecoder(file).Decode(&exceptionData)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Test 4: Test that the function extracts only the non-deprecated exception license IDs.
+	// Test 3: Test that the function extracts only the non-deprecated exception license IDs.
 	var nonDeprecatedExceptionLicenseIDs []string
 	for _, e := range exceptionData.Exceptions {
 		if !e.IsDeprecated {
@@ -32,7 +32,7 @@ func TestExtractExceptionLicenseIDs(t *testing.T) {
 		}
 	}
 
-	// Test 5: Test that the function writes the non-deprecated license IDs to exception_ids.json.
+	// Test 4: Test that the function writes the non-deprecated license IDs to exception_ids.json.
 	err = extractExceptionLicenseIDs()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -53,7 +53,7 @@ func TestExtractExceptionLicenseIDs(t *testing.T) {
 		t.Errorf("generated IDs do not match original IDs:\n%v\n%v", fileIDs, nonDeprecatedExceptionLicenseIDs)
 	}
 
-	// Test 6: Test that the function writes the non-deprecated license IDs to exception_ids.txt.
+	// Test 5: Test that the function writes the non-deprecated license IDs to exception_ids.txt.
 	err = extractExceptionLicenseIDs()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

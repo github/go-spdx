@@ -919,7 +919,7 @@ func TestParse(t *testing.T) {
 			require.Equal(t, test.err, err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *node = nil
+				var nilNode *node
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
@@ -1115,7 +1115,7 @@ func TestParseTokens(t *testing.T) {
 			require.Equal(t, test.err, test.tokens.err)
 			if test.err != nil {
 				// when error, check that returned node is nil
-				var nilNode *node = nil
+				var nilNode *node
 				assert.Equal(t, nilNode, startNode, "Expected nil node when error occurs.")
 				return
 			}
@@ -1257,7 +1257,7 @@ func TestParseWith(t *testing.T) {
 			require.Equal(t, test.err, test.tokens.err)
 			if test.expectNil {
 				// exception license is nil when error occurs or WITH operator is not found
-				var nilString *string = nil
+				var nilString *string
 				assert.Equal(t, nilString, exceptionLicense)
 				return
 			}

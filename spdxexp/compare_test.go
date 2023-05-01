@@ -20,9 +20,12 @@ func TestCompareGT(t *testing.T) {
 		{"expect greater than: AGPL-3.0 > AGPL-1.0", getLicenseNode("AGPL-3.0", false), getLicenseNode("AGPL-1.0", false), true},
 		{"expect equal: GPL-2.0-or-later > GPL-2.0-only", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0-only", false), false},
 		{"expect equal: GPL-2.0-or-later > GPL-2.0", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0", false), false},
+		{"expect equal: GPL-2.0-only > GPL-2.0", getLicenseNode("GPL-2.0-only", false), getLicenseNode("GPL-2.0", false), false},
 		{"expect equal: GPL-3.0 > GPL-3.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-3.0", false), false},
+		{"expect equal: MIT > MIT", getLicenseNode("MIT", false), getLicenseNode("MIT", false), false},
 		{"expect less than: MPL-1.0 > MPL-2.0", getLicenseNode("MPL-1.0", false), getLicenseNode("MPL-2.0", false), false},
 		{"incompatible: MIT > ISC", getLicenseNode("MIT", false), getLicenseNode("ISC", false), false},
+		{"incompatible: MIT > GPL-2.0-only", getLicenseNode("MIT", false), getLicenseNode("GPL-2.0-only", false), false},
 		{"incompatible: OSL-1.0 > OPL-1.0", getLicenseNode("OSL-1.0", false), getLicenseNode("OPL-1.0", false), false},
 		{"not simple license: (MIT OR ISC) > GPL-3.0", getLicenseNode("(MIT OR ISC)", false), getLicenseNode("GPL-3.0", false), false}, // TODO: should it raise error?
 	}
@@ -49,9 +52,12 @@ func TestCompareEQ(t *testing.T) {
 		{"expect greater than: AGPL-3.0 == AGPL-1.0", getLicenseNode("AGPL-3.0", false), getLicenseNode("AGPL-1.0", false), false},
 		{"expect equal: GPL-2.0-or-later > GPL-2.0-only", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0-only", false), true},
 		{"expect equal: GPL-2.0-or-later > GPL-2.0", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0", false), true},
+		{"expect equal: GPL-2.0-only == GPL-2.0", getLicenseNode("GPL-2.0-only", false), getLicenseNode("GPL-2.0", false), true},
 		{"expect equal: GPL-3.0 == GPL-3.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-3.0", false), true},
+		{"expect equal: MIT == MIT", getLicenseNode("MIT", false), getLicenseNode("MIT", false), true},
 		{"expect less than: MPL-1.0 == MPL-2.0", getLicenseNode("MPL-1.0", false), getLicenseNode("MPL-2.0", false), false},
 		{"incompatible: MIT == ISC", getLicenseNode("MIT", false), getLicenseNode("ISC", false), false},
+		{"incompatible: MIT == GPL-2.0-only", getLicenseNode("MIT", false), getLicenseNode("GPL-2.0-only", false), false},
 		{"incompatible: OSL-1.0 == OPL-1.0", getLicenseNode("OSL-1.0", false), getLicenseNode("OPL-1.0", false), false},
 		{"not simple license: (MIT OR ISC) == GPL-3.0", getLicenseNode("(MIT OR ISC)", false), getLicenseNode("GPL-3.0", false), false}, // TODO: should it raise error?
 	}
@@ -78,9 +84,12 @@ func TestCompareLT(t *testing.T) {
 		{"expect greater than: AGPL-3.0 < AGPL-1.0", getLicenseNode("AGPL-3.0", false), getLicenseNode("AGPL-1.0", false), false},
 		{"expect greater than: GPL-2.0-or-later < GPL-2.0-only", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0-only", false), false},
 		{"expect greater than: GPL-2.0-or-later == GPL-2.0", getLicenseNode("GPL-2.0-or-later", true), getLicenseNode("GPL-2.0", false), false},
+		{"expect equal: GPL-2.0-only < GPL-2.0", getLicenseNode("GPL-2.0-only", false), getLicenseNode("GPL-2.0", false), false},
 		{"expect equal: GPL-3.0 < GPL-3.0", getLicenseNode("GPL-3.0", false), getLicenseNode("GPL-3.0", false), false},
+		{"expect equal: MIT < MIT", getLicenseNode("MIT", false), getLicenseNode("MIT", false), false},
 		{"expect less than: MPL-1.0 < MPL-2.0", getLicenseNode("MPL-1.0", false), getLicenseNode("MPL-2.0", false), true},
 		{"incompatible: MIT < ISC", getLicenseNode("MIT", false), getLicenseNode("ISC", false), false},
+		{"incompatible: MIT < GPL-2.0-only", getLicenseNode("MIT", false), getLicenseNode("GPL-2.0-only", false), false},
 		{"incompatible: OSL-1.0 < OPL-1.0", getLicenseNode("OSL-1.0", false), getLicenseNode("OPL-1.0", false), false},
 		{"not simple license: (MIT OR ISC) < GPL-3.0", getLicenseNode("(MIT OR ISC)", false), getLicenseNode("GPL-3.0", false), false}, // TODO: should it raise error?
 	}

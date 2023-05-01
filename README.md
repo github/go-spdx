@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.1.2/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.1.2/spdxexp)
+
 # go-spdx
 
 Golang implementation of a checker for determining if a set of SPDX IDs satisfies an SPDX Expression.
@@ -118,6 +120,15 @@ assert.False(valid)
 assert.Contains(invalidLicenses, "NON-EXISTENT-LICENSE")
 assert.NotContains(invalidLicenses, "MIT")
 ```
+
+#### Examples: ValidateLicenses works with SPDX expressions
+
+```go
+valid, invalidLicenses := ValidateLicenses([]string{"MIT AND APACHE-2.0"})
+assert.True(valid)
+assert.NotContains(invalidLicenses, "MIT AND APACHE-2.0")
+```
+
 
 ## Background
 

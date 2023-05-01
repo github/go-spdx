@@ -269,10 +269,8 @@ func (exp *expressionStream) normalizeLicense(license string) *token {
 			return token
 		}
 	}
-	if token := deprecatedLicenseLookup(license); token != nil {
-		return token
-	}
-	return nil
+
+	return deprecatedLicenseLookup(license)
 }
 
 // Lookup license identifier in active and exception lists to determine if it is a supported SPDX id

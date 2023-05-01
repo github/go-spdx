@@ -18,6 +18,14 @@ func TestValidateLicenses(t *testing.T) {
 		{"All invalid", []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}, false, []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}},
 		{"All valid", []string{"MIT", "Apache-2.0", "GPL-2.0"}, true, []string{}},
 		{"Some invalid", []string{"MTI", "Apche-2.0", "GPL-2.0"}, false, []string{"MTI", "Apche-2.0"}},
+		{"GPL-2.0", []string{"GPL-2.0"}, true, []string{}},
+		{"GPL-2.0-only", []string{"GPL-2.0-only"}, true, []string{}},
+		{"SPDX Expressions are valid", []string{
+			"MIT AND APACHE-2.0",
+			"MIT AND APCHE-2.0",
+			"LGPL-2.1-only OR MIT OR BSD-3-Clause",
+			"GPL-2.0-or-later WITH Bison-exception-2.2",
+		}, false, []string{"MIT AND APCHE-2.0"}},
 	}
 
 	for _, test := range tests {
@@ -110,6 +118,8 @@ func TestSatisfies(t *testing.T) {
 		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, true, nil},
 		{"! GPL-1.0 satisfies [GPL-2.0+]", "GPL-1.0", []string{"GPL-2.0+"}, false, nil},
 		{"GPL-2.0-only satisfies [GPL-2.0-only]", "GPL-2.0-only", []string{"GPL-2.0-only"}, true, nil},
+		{"GPL-2.0 satisfies [GPL-2.0-only]", "GPL-2.0", []string{"GPL-2.0-only"}, true, nil},
+		{"GPL-2.0 AND GPL-2.0-only satisfies [GPL-2.0-only]", "GPL-2.0 AND GPL-2.0-only", []string{"GPL-2.0-only"}, true, nil},
 		{"GPL-3.0-only satisfies [GPL-2.0+]", "GPL-3.0-only", []string{"GPL-2.0+"}, true, nil},
 
 		{"! GPL-2.0 satisfies [GPL-2.0+ WITH Bison-exception-2.2]",

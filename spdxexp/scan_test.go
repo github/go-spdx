@@ -127,7 +127,7 @@ func TestParseToken(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// token is nil when error occurs or token is not recognized
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, tokn)
 				return
 			}
@@ -298,7 +298,7 @@ func TestReadDocumentRef(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// ref should be nil when error occurs or a ref is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, ref, "Expected nil token when error occurs.")
 				return
 			}
@@ -331,7 +331,7 @@ func TestReadLicenseRef(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// ref should be nil when error occurs or a ref is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, ref)
 				return
 			}
@@ -371,7 +371,7 @@ func TestReadLicense(t *testing.T) {
 			require.Equal(t, test.err, test.exp.err)
 			if test.err != nil {
 				// license should be nil when error occurs or a license is not found
-				var nilToken *token = nil
+				var nilToken *token
 				assert.Equal(t, nilToken, license)
 				return
 			}

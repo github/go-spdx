@@ -66,6 +66,8 @@ to first check if all of the expressions from `allowedList` are valid.
 
 #### Examples: Satisfies returns true
 
+[Go Playground for Satisfies](https://go.dev/play/p/Ul8H15hyEpQ)
+
 ```go
 Satisfies("MIT", []string{"MIT"})
 Satisfies("MIT", []string{"MIT", "Apache-2.0"})

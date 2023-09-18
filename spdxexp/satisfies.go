@@ -51,6 +51,7 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 }
 
 // ExtractLicenses extracts licenses from the given expression without duplicates.
+// Returns an array of licenses or error if error occurs during processing.
 func ExtractLicenses(expression string) ([]string, error) {
 	node, err := parse(expression)
 	if err != nil {

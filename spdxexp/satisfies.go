@@ -50,26 +50,6 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 	return false, nil
 }
 
-// ExtractLicenses extracts licenses from the given expression without duplicates.
-// Returns an array of licenses or error if error occurs during processing.
-func ExtractLicenses(expression string) ([]string, error) {
-	node, err := parse(expression)
-	if err != nil {
-		return nil, err
-	}
-
-	expanded := node.expand(true)
-	licenses := make([]string, 0)
-	allLicenses := flatten(expanded)
-	for _, license := range allLicenses {
-		licenses = append(licenses, license.lic.license)
-	}
-
-	licenses = removeDuplicates(licenses)
-
-	return licenses, nil
-}
-
 // stringsToNodes converts an array of single license strings to to an array of license nodes.
 func stringsToNodes(licenseStrings []string) ([]*node, error) {
 	nodes := make([]*node, len(licenseStrings))

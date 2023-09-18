@@ -10,10 +10,10 @@ func flatten[T any](lists [][]T) []T {
 	return res
 }
 
-// removeDuplicates will remove all duplicates from a slice
-func removeDuplicates[T string](sliceList []T) []T {
-	allKeys := make(map[T]bool)
-	list := []T{}
+// removeDuplicateStrings will remove all duplicates from a slice
+func removeDuplicateStrings(sliceList []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
 	for _, item := range sliceList {
 		if _, value := allKeys[item]; !value {
 			allKeys[item] = true

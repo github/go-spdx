@@ -147,7 +147,7 @@ Function `ExtractLicenses` is used to extract licenses from the given expression
 
 Function `ExtractLicenses` has 2 return values. First is `[]string` which contains all of the SPDX licenses without duplicates.
 
-The second return value is a `error` which is not `nil` if the given expression is not a valid SPDX expression.
+The second return value is an `error` which is not `nil` if the given expression is not a valid SPDX expression.
 
 #### Example
 

@@ -131,6 +131,30 @@ assert.True(valid)
 assert.NotContains(invalidLicenses, "MIT AND APACHE-2.0")
 ```
 
+### ExtractLicenses
+
+```go
+func ExtractLicenses(expression string) ([]string, error)
+```
+
+Function `ExtractLicenses` is used to extract licenses from the given expression without duplicates.
+
+**parameter: expression**
+
+`expression` is an SPDX expression string.
+
+**returns**
+
+Function `ExtractLicenses` has 2 return values. First is `[]string` which contains all of the SPDX licenses without duplicates.
+
+The second return value is a `error` which is not `nil` if the given expression is not a valid SPDX expression.
+
+#### Example
+
+```go
+licenses, err := ExtractLicenses("(MIT AND APACHE-2.0) OR (APACHE-2.0)")
+assert.Equal(licenses, []string{"MIT", "Apache-2.0"})
+```
 
 ## Background
 

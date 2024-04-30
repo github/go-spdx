@@ -1095,14 +1095,6 @@ func licenseRanges() [][][]string {
 		},
 		{
 			{
-				"HP-1986",
-			},
-			{
-				"HP-1989",
-			},
-		},
-		{
-			{
 				"LAL-1.2",
 			},
 			{
@@ -1300,29 +1292,10 @@ func licenseRanges() [][][]string {
 		},
 		{
 			{
-				"Spencer-86",
-			},
-			{
-				"Spencer-94",
-			},
-			{
-				"Spencer-99",
-			},
-		},
-		{
-			{
 				"TU-Berlin-1.0",
 			},
 			{
 				"TU-Berlin-2.0",
-			},
-		},
-		{
-			{
-				"Unicode-DFS-2015",
-			},
-			{
-				"Unicode-DFS-2016",
 			},
 		},
 		{

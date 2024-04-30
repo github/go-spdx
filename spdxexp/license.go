@@ -878,6 +878,14 @@ func licenseRanges() [][][]string {
 		},
 		{
 			{
+				"bzip2-1.0.5",
+			},
+			{
+				"bzip2-1.0.6",
+			},
+		},
+		{
+			{
 				"CC-BY-1.0",
 			},
 			{
@@ -1014,6 +1022,14 @@ func licenseRanges() [][][]string {
 			},
 			{
 				"CERN-OHL-1.2",
+			},
+		},
+		{
+			{
+				"copyleft-next-0.3.0",
+			},
+			{
+				"copyleft-next-0.3.1",
 			},
 		},
 		{
@@ -1214,10 +1230,19 @@ func licenseRanges() [][][]string {
 				"OLDAP-2.0",
 			},
 			{
+				"OLDAP-2.0.1",
+			},
+			{
 				"OLDAP-2.1",
 			},
 			{
 				"OLDAP-2.2",
+			},
+			{
+				"OLDAP-2.2.1",
+			},
+			{
+				"OLDAP-2.2.2",
 			},
 			{
 				"OLDAP-2.3",
@@ -1257,10 +1282,26 @@ func licenseRanges() [][][]string {
 		},
 		{
 			{
+				"Parity-6.0.0",
+			},
+			{
+				"Parity-7.0.0",
+			},
+		},
+		{
+			{
 				"PHP-3.0",
 			},
 			{
 				"PHP-3.01",
+			},
+		},
+		{
+			{
+				"Python-2.0",
+			},
+			{
+				"Python-2.0.1",
 			},
 		},
 		{

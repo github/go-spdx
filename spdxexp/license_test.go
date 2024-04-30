@@ -128,7 +128,7 @@ func TestGetLicenseRange(t *testing.T) {
 			location: map[uint8]int{licenseGroup: 2, versionGroup: 2, licenseIndex: 0}}},
 		{"multi-element ranges", "GFDL-1.2-only", &licenseRange{
 			licenses: []string{"GFDL-1.2", "GFDL-1.2-only"},
-			location: map[uint8]int{licenseGroup: 22, versionGroup: 1, licenseIndex: 1}}},
+			location: map[uint8]int{licenseGroup: 24, versionGroup: 1, licenseIndex: 1}}},
 		{"no range", "Bison-exception-2.2", nil},
 	}
 

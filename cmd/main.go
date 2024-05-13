@@ -53,6 +53,7 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Done!")
+			fmt.Println("---------------------------")
 		}
 	default:
 		writeHelpMessage()

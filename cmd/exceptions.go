@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -42,34 +41,31 @@ func extractExceptionLicenseIDs() error {
 	}
 
 	// create slice of exception license IDs that are not deprecated
-	var nonDeprecatedExceptionLicenseIDs []string
+	var exceptionLicenseIDs []string
 	for _, e := range exceptionData.Exceptions {
 		if !e.IsDeprecated {
-			nonDeprecatedExceptionLicenseIDs = append(nonDeprecatedExceptionLicenseIDs, e.LicenseID)
+			exceptionLicenseIDs = append(exceptionLicenseIDs, e.LicenseID)
 		}
 	}
 
-	// save non-deprecated license IDs followed by a comma with one per line in file license_ids.txt
-	nonDeprecatedExceptionLicenseIDsTxt := []byte{}
-	for _, id := range nonDeprecatedExceptionLicenseIDs {
-		nonDeprecatedExceptionLicenseIDsTxt = append(nonDeprecatedExceptionLicenseIDsTxt, []byte("		\"")...)
-		nonDeprecatedExceptionLicenseIDsTxt = append(nonDeprecatedExceptionLicenseIDsTxt, []byte(id)...)
-		nonDeprecatedExceptionLicenseIDsTxt = append(nonDeprecatedExceptionLicenseIDsTxt, []byte("\",")...)
-		nonDeprecatedExceptionLicenseIDsTxt = append(nonDeprecatedExceptionLicenseIDsTxt, []byte("\n")...)
+	// generate the GetExceptions() function in get_exceptions.go
+	getExceptionsContents := []byte(`package spdxlicenses
+
+	func GetExceptions() []string {
+		return []string{	
+	`)
+	for _, id := range exceptionLicenseIDs {
+		getExceptionsContents = append(getExceptionsContents, `		"`+id+`",
+`...)
 	}
-	err = ioutil.WriteFile("exception_ids.txt", nonDeprecatedExceptionLicenseIDsTxt, 0600)
+	getExceptionsContents = append(getExceptionsContents, `	}
+}
+`...)
+
+	err = os.WriteFile("../spdxexp/spdxlicenses/get_exceptions.go", getExceptionsContents, 0600)
 	if err != nil {
 		return err
 	}
 
-	// save non-deprecated license IDs to json array in file exception_ids.json
-	nonDeprecatedExceptionLicenseIDsJSON, err := json.Marshal(nonDeprecatedExceptionLicenseIDs)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("exception_ids.json", nonDeprecatedExceptionLicenseIDsJSON, 0600)
-	if err != nil {
-		return err
-	}
 	return nil
 }

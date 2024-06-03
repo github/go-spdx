@@ -13,3 +13,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Ignore path setup by fetch-licenses workflow
+spdx-license-list-data/

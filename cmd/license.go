@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -43,61 +42,54 @@ func extractLicenseIDs() error {
 		return err
 	}
 
-	// create two slices of license IDs, one for deprecated and one for not deprecated
+	// create two slices of license IDs, one for deprecated and one for active
+	var activeLicenseIDs []string
 	var deprecatedLicenseIDs []string
-	var nonDeprecatedLicenseIDs []string
 	for _, l := range licenseData.Licenses {
 		if l.IsDeprecated {
 			deprecatedLicenseIDs = append(deprecatedLicenseIDs, l.LicenseID)
 		} else {
-			nonDeprecatedLicenseIDs = append(nonDeprecatedLicenseIDs, l.LicenseID)
+			activeLicenseIDs = append(activeLicenseIDs, l.LicenseID)
 		}
 	}
 
-	// save deprecated license IDs followed by a comma with one per line in file deprecated_license_ids.txt
-	deprecatedLicenseIDsTxt := []byte{}
+	// generate the GetLicenses() function in get_licenses.go
+	getLicensesContents := []byte(`package spdxlicenses
+
+	func GetLicenses() []string {
+		return []string{	
+	`)
+	for _, id := range activeLicenseIDs {
+		getLicensesContents = append(getLicensesContents, `		"`+id+`",
+`...)
+	}
+	getLicensesContents = append(getLicensesContents, `	}
+}
+`...)
+
+	err = os.WriteFile("../spdxexp/spdxlicenses/get_licenses.go", getLicensesContents, 0600)
+	if err != nil {
+		return err
+	}
+
+	// generate the GetDeprecated() function in get_deprecated.go
+	getDeprecatedContents := []byte(`package spdxlicenses
+
+	func GetDeprecated() []string {
+		return []string{	
+	`)
 	for _, id := range deprecatedLicenseIDs {
-		deprecatedLicenseIDsTxt = append(deprecatedLicenseIDsTxt, []byte("		\"")...)
-		deprecatedLicenseIDsTxt = append(deprecatedLicenseIDsTxt, []byte(id)...)
-		deprecatedLicenseIDsTxt = append(deprecatedLicenseIDsTxt, []byte("\",")...)
-		deprecatedLicenseIDsTxt = append(deprecatedLicenseIDsTxt, []byte("\n")...)
+		getDeprecatedContents = append(getDeprecatedContents, `		"`+id+`",
+`...)
 	}
-	err = ioutil.WriteFile("deprecated_license_ids.txt", deprecatedLicenseIDsTxt, 0600)
+	getDeprecatedContents = append(getDeprecatedContents, `	}
+}
+`...)
+
+	err = os.WriteFile("../spdxexp/spdxlicenses/get_deprecated.go", getDeprecatedContents, 0600)
 	if err != nil {
 		return err
 	}
 
-	// save deprecated license IDs to json array in file deprecated_license_ids.json
-	deprecatedLicenseIDsJSON, err := json.Marshal(deprecatedLicenseIDs)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("deprecated_license_ids.json", deprecatedLicenseIDsJSON, 0600)
-	if err != nil {
-		return err
-	}
-
-	// save non-deprecated license IDs followed by a comma with one per line in file license_ids.txt
-	nonDeprecatedLicenseIDsTxt := []byte{}
-	for _, id := range nonDeprecatedLicenseIDs {
-		nonDeprecatedLicenseIDsTxt = append(nonDeprecatedLicenseIDsTxt, []byte("		\"")...)
-		nonDeprecatedLicenseIDsTxt = append(nonDeprecatedLicenseIDsTxt, []byte(id)...)
-		nonDeprecatedLicenseIDsTxt = append(nonDeprecatedLicenseIDsTxt, []byte("\",")...)
-		nonDeprecatedLicenseIDsTxt = append(nonDeprecatedLicenseIDsTxt, []byte("\n")...)
-	}
-	err = ioutil.WriteFile("license_ids.txt", nonDeprecatedLicenseIDsTxt, 0600)
-	if err != nil {
-		return err
-	}
-
-	// save non-deprecated license IDs to json array in file license_ids.json
-	nonDeprecatedLicenseIDsJSON, err := json.Marshal(nonDeprecatedLicenseIDs)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile("license_ids.json", nonDeprecatedLicenseIDsJSON, 0600)
-	if err != nil {
-		return err
-	}
 	return nil
 }

@@ -56,9 +56,9 @@ func extractLicenseIDs() error {
 	// generate the GetLicenses() function in get_licenses.go
 	getLicensesContents := []byte(`package spdxlicenses
 
-	func GetLicenses() []string {
-		return []string{	
-	`)
+func GetLicenses() []string {
+	return []string{
+`)
 	for _, id := range activeLicenseIDs {
 		getLicensesContents = append(getLicensesContents, `		"`+id+`",
 `...)
@@ -71,13 +71,14 @@ func extractLicenseIDs() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Writing `../spdxexp/spdxlicenses/get_licenses.go`... COMPLETE")
 
 	// generate the GetDeprecated() function in get_deprecated.go
 	getDeprecatedContents := []byte(`package spdxlicenses
 
-	func GetDeprecated() []string {
-		return []string{	
-	`)
+func GetDeprecated() []string {
+	return []string{
+`)
 	for _, id := range deprecatedLicenseIDs {
 		getDeprecatedContents = append(getDeprecatedContents, `		"`+id+`",
 `...)
@@ -90,6 +91,7 @@ func extractLicenseIDs() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Writing `../spdxexp/spdxlicenses/get_deprecated.go`... COMPLETE")
 
 	return nil
 }

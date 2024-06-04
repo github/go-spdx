@@ -51,9 +51,9 @@ func extractExceptionLicenseIDs() error {
 	// generate the GetExceptions() function in get_exceptions.go
 	getExceptionsContents := []byte(`package spdxlicenses
 
-	func GetExceptions() []string {
-		return []string{	
-	`)
+func GetExceptions() []string {
+	return []string{
+`)
 	for _, id := range exceptionLicenseIDs {
 		getExceptionsContents = append(getExceptionsContents, `		"`+id+`",
 `...)

@@ -15,4 +15,4 @@
 # vendor/
 
 # Ignore path setup by fetch-licenses workflow
-spdx-license-list-data/
+official-spdx-licenses/

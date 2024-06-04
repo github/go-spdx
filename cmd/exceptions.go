@@ -66,6 +66,7 @@ func extractExceptionLicenseIDs() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Writing `../spdxexp/spdxlicenses/get_exceptions.go`... COMPLETE")
 
 	return nil
 }

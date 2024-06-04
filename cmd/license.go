@@ -71,6 +71,7 @@ func extractLicenseIDs() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Writing `../spdxexp/spdxlicenses/get_licenses.go`... COMPLETE")
 
 	// generate the GetDeprecated() function in get_deprecated.go
 	getDeprecatedContents := []byte(`package spdxlicenses
@@ -90,6 +91,7 @@ func extractLicenseIDs() error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Writing `../spdxexp/spdxlicenses/get_deprecated.go`... COMPLETE")
 
 	return nil
 }

@@ -70,10 +70,26 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"ASWF-Digital-Assets-1.0",
+			},
+			{
+				"ASWF-Digital-Assets-1.1",
+			},
+		},
+		{
+			{
 				"BitTorrent-1.0",
 			},
 			{
 				"BitTorrent-1.1",
+			},
+		},
+		{
+			{
+				"Brian-Gladman-2-Clause",
+			},
+			{
+				"Brian-Gladman-3-Clause",
 			},
 		},
 		{
@@ -199,6 +215,14 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"DRL-1.0",
+			},
+			{
+				"DRL-1.1",
+			},
+		},
+		{
+			{
 				"ECL-1.0",
 			},
 			{
@@ -261,6 +285,14 @@ func LicenseRanges() [][][]string {
 				"GPL-3.0",
 				"GPL-3.0-only",
 				"GPL-3.0-or-later",
+			},
+		},
+		{
+			{
+				"HP-1986",
+			},
+			{
+				"HP-1989",
 			},
 		},
 		{

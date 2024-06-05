@@ -9,8 +9,6 @@ on:
                 default: 'false'
     schedule:
         - cron: '5 4 * * *' # Runs at 0405 UTC (0605 CET, 0005 ET, 2105 PT)
-    push:
-        branches: [elr/update-licenses]
 
 jobs:
     fetch-licenses:

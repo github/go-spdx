@@ -21,10 +21,10 @@ jobs:
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
     
             - name: Checkout this repository's auto-update-licenses branch
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
 
             - name: Checkout official SPDX Repository
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   repository: spdx/license-list-data
                   path: official-spdx-licenses # creates a tmp dir to hold the SPDX licenses from the official repo

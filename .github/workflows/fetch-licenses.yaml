@@ -66,7 +66,7 @@ jobs:
 
             - name: Create Pull Request
               if: ${{ env.HAS_CHANGES == 'true' || github.event.inputs.force_run == 'true' }}
-              uses: peter-evans/create-pull-request@v6
+              uses: peter-evans/create-pull-request@v7
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   commit-message: Add updated license files

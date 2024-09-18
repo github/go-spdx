@@ -34,6 +34,7 @@ func GetDeprecated() []string {
 		"LGPL-2.1+",
 		"LGPL-3.0",
 		"LGPL-3.0+",
+		"Net-SNMP",
 		"Nunit",
 		"StandardML-NJ",
 		"wxWindows",

@@ -544,6 +544,7 @@ func GetLicenses() []string {
 		"SchemeReport",
 		"Sendmail",
 		"Sendmail-8.23",
+		"Sendmail-Open-Source-1.1",
 		"SGI-B-1.0",
 		"SGI-B-1.1",
 		"SGI-B-2.0",

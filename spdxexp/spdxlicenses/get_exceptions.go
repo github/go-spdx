@@ -43,6 +43,7 @@ func GetExceptions() []string {
 		"GPL-CC-1.0",
 		"GStreamer-exception-2005",
 		"GStreamer-exception-2008",
+		"harbour-exception",
 		"i2p-gpl-java-exception",
 		"KiCad-libraries-exception",
 		"LGPL-3.0-linking-exception",

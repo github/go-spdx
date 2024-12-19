@@ -13,13 +13,16 @@ on:
 jobs:
     fetch-licenses:
         runs-on: ubuntu-latest
+        permissions:
+          contents: write
+          pull-requests: write
 
         steps:
             - name: Setup Git
               run: |
                   git config --global user.name "GitHub Actions"
                   git config --global user.email "github-actions[bot]@users.noreply.github.com"
-    
+
             - name: Checkout this repository
               uses: actions/checkout@v4
 
@@ -37,7 +40,7 @@ jobs:
             - name: Get date
               id: date
               run: echo "DT_STAMP"=$(date +'%Y-%m-%d %H:%M UTC') >> $GITHUB_ENV
-    
+
             - name: Check for changes
               id: changes
               run: |
@@ -54,7 +57,7 @@ jobs:
                     fi
                   fi
                   echo "HAS_CHANGES"=$has_changes >> $GITHUB_ENV
-                
+
             - name: Run license extraction
               if: ${{ env.HAS_CHANGES == 'true' || github.event.inputs.force_run == 'true' }}
               run: |
@@ -66,7 +69,7 @@ jobs:
 
             - name: Create Pull Request
               if: ${{ env.HAS_CHANGES == 'true' || github.event.inputs.force_run == 'true' }}
-              uses: peter-evans/create-pull-request@v7
+              uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
                   commit-message: Add updated license files

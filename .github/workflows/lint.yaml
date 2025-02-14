@@ -21,7 +21,7 @@ jobs:
           go-version: "1.18.5"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae
+        uses: golangci/golangci-lint-action@0adbc47a5910e47adb692df88187ec8c73c76778
         with:
           version: v1.47.3
           args: --verbose --config .golangci.yaml

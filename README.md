@@ -172,7 +172,7 @@ This project is licensed under the terms of the MIT open source license. Please 
 ## Maintainers
 
 - @elrayle
-- @ajhenry
+- @dangoor
 
 ## Support
 

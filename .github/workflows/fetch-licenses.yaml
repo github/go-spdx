@@ -55,7 +55,7 @@ jobs:
                       exit 0
                     fi
                   fi
-                  echo "src_changed"=$src_changed >> $GITHUB_ENV
+                  echo "src_changed=$src_changed" >> $GITHUB_ENV
 
             - name: Run license extraction
               if: ${{ env.src_changed == 'true' || github.event.inputs.force_run == 'true' }}

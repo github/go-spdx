@@ -55,10 +55,10 @@ jobs:
                       exit 0
                     fi
                   fi
-                  echo "src_changed=$src_changed" >> $GITHUB_ENV
+                  echo "SRC_CHANGED=$src_changed" >> $GITHUB_ENV
 
             - name: Run license extraction
-              if: ${{ env.src_changed == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.SRC_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
               run: |
                   cd cmd
                   echo "Current branch: $(git branch)"
@@ -82,10 +82,10 @@ jobs:
                       exit 0
                     fi
                   fi
-                  echo "genfiles_changed=$genfiles_changed" >> $GITHUB_ENV
+                  echo "GENFILES_CHANGED=$genfiles_changed" >> $GITHUB_ENV
 
             - name: Create Pull Request
-              if: ${{ env.genfiles_changed == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.GENFILES_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
               uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}

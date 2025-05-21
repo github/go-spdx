@@ -41,25 +41,24 @@ jobs:
               id: date
               run: echo "DT_STAMP"=$(date +'%Y-%m-%d %H:%M UTC') >> $GITHUB_ENV
 
-            - name: Check for changes
-              id: changes
+            - name: Check for changes in SPDX json files
+              id: src-changes
               run: |
-                  has_changes=true
+                  src_changed=true
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
-                  # exiting with anything other than 0 implies the command failed and the command following && will not execute leaving has_changes set to true
-                  # exiting with 0 implies the command was successful and the command following && will be executed setting has_changes to false
-                  git diff --quiet -- cmd/licenses.json cmd/exceptions.json && has_changes=false
-                  if [ $has_changes != 'true' ]; then
+                  git diff --quiet -- cmd/licenses.json cmd/exceptions.json && src_changed=false
+                  if [ $src_changed != 'true' ]; then
                     if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
-                      echo -e '***************\nNo changes, but skipping abort due to force run\n***************'
+                      echo -e '***************\nNo changes in spdx json, but skipping abort due to force run\n***************'
                     else
-                      echo -e '***************\nABORTING: No changes to license data\n***************'
+                      echo -e '***************\nABORTING: No changes to spdx json data\n***************'
+                      exit 0
                     fi
                   fi
-                  echo "HAS_CHANGES"=$has_changes >> $GITHUB_ENV
+                  echo "src_changed"=$src_changed >> $GITHUB_ENV
 
             - name: Run license extraction
-              if: ${{ env.HAS_CHANGES == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.src_changed == 'true' || github.event.inputs.force_run == 'true' }}
               run: |
                   cd cmd
                   echo "Current branch: $(git branch)"
@@ -67,8 +66,26 @@ jobs:
                   cd ..
                   git log --oneline -n 5
 
+            - name: Check for changes in generated files
+              id: genfiles-changes
+              run: |
+                  genfiles_changed=true
+                  # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
+                  git diff --quiet -- spdxexp/spdxlicenses/*.go && genfiles_changed=false
+                  if [ $genfiles_changed != 'true' ]; then
+                    if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
+                      echo -e '***************\nNo changes to generated files, but skipping abort due to force run\n***************'
+                    else
+                      # This happens when the generated files are already up to date 
+                      # or the only changes in the source json are data not included in the generated files (e.g. IDs)
+                      echo -e '***************\nABORTING: No changes to license data in generated files\n***************'
+                      exit 0
+                    fi
+                  fi
+                  echo "genfiles_changed"=$genfiles_changed >> $GITHUB_ENV
+
             - name: Create Pull Request
-              if: ${{ env.HAS_CHANGES == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.genfiles_changed == 'true' || github.event.inputs.force_run == 'true' }}
               uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}

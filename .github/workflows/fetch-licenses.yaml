@@ -82,7 +82,7 @@ jobs:
                       exit 0
                     fi
                   fi
-                  echo "genfiles_changed"=$genfiles_changed >> $GITHUB_ENV
+                  echo "genfiles_changed=$genfiles_changed" >> $GITHUB_ENV
 
             - name: Create Pull Request
               if: ${{ env.genfiles_changed == 'true' || github.event.inputs.force_run == 'true' }}

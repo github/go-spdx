@@ -1,5 +1,5 @@
 <sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.3.4/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.3.4/spdxexp) spdxexp</sub> <br>
-<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.3.4/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.3.4/spdxlicenses) spdxlicenses</sub>
+<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.3.4/spdxexp/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.3.4/spdxexp/spdxlicenses) spdxlicenses</sub>
 
 # go-spdx
 

@@ -342,6 +342,7 @@ func GetLicenses() []string {
 		"HPND-UC",
 		"HPND-UC-export-US",
 		"HTMLTIDY",
+		"hyphen-bulgarian",
 		"IBM-pibs",
 		"ICU",
 		"IEC-Code-Components-EULA",

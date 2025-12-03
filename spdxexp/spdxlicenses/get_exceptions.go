@@ -76,6 +76,7 @@ func GetExceptions() []string {
 		"SANE-exception",
 		"SHL-2.0",
 		"SHL-2.1",
+		"Simple-Library-Usage-exception",
 		"stunnel-exception",
 		"SWI-exception",
 		"Swift-exception",

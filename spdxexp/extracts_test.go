@@ -18,8 +18,9 @@ func TestExtractLicenses(t *testing.T) {
 		{"ONLY modifiers", "LGPL-2.1-only OR MIT OR BSD-3-Clause", []string{"MIT", "BSD-3-Clause", "LGPL-2.1-only"}},
 		{"WITH modifiers", "GPL-2.0-or-later WITH Bison-exception-2.2", []string{"GPL-2.0-or-later WITH Bison-exception-2.2"}},
 		{"Invalid SPDX expression", "MIT OR INVALID", nil},
-		{"+ operator in GPL", "GPL-2.0-Or-later", []string{"GPL-2.0-or-later"}},
+		{"-or-later suffix with mixed case", "GPL-2.0-Or-later", []string{"GPL-2.0-or-later"}},
 		{"+ operator in Apache", "APACHE-2.0+", []string{"Apache-2.0+"}},
+		{"+ operator in GPL", "GPL-2.0+", []string{"GPL-2.0-or-later"}},
 	}
 
 	for _, test := range tests {

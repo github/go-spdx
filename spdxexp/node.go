@@ -150,7 +150,7 @@ func (n *node) reconstructedLicenseString() *string {
 	switch n.role {
 	case licenseNode:
 		license := *n.license()
-		if n.hasPlus() {
+		if n.hasPlus() && !strings.HasSuffix(strings.ToLower(license), "-or-later") {
 			license += "+"
 		}
 		if n.hasException() {

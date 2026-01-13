@@ -26,6 +26,22 @@ jobs:
             - name: Checkout this repository
               uses: actions/checkout@v6
 
+            - name: Determine baseline branch for diffs
+              id: baseline
+              run: |
+                  set -euo pipefail
+
+                  if git ls-remote --exit-code --heads origin auto-update-licenses >/dev/null 2>&1; then
+                    echo "Update Licenses PR exists, so diff against its branch origin/auto-update-licenses."
+                    base_ref="origin/auto-update-licenses"
+                  else
+                    echo "Update Licenses PR does NOT exists, so diff against branch origin/main"
+                    base_ref="origin/main"
+                  fi
+
+                  echo "BASE_REF=$base_ref" >> "$GITHUB_ENV"
+                  echo "Baseline ref: $base_ref"
+
             - name: Checkout official SPDX Repository
               uses: actions/checkout@v6
               with:
@@ -46,7 +62,7 @@ jobs:
               run: |
                   src_changed=true
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
-                  git diff --quiet -- cmd/licenses.json cmd/exceptions.json && src_changed=false
+                  git diff --quiet "$BASE_REF" -- cmd/licenses.json cmd/exceptions.json && src_changed=false
                   if [ $src_changed != 'true' ]; then
                     if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
                       echo -e '***************\nNo changes in spdx json, but skipping abort due to force run\n***************'
@@ -61,7 +77,7 @@ jobs:
               if: ${{ env.SRC_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
               run: |
                   cd cmd
-                  echo "Current branch: $(git branch)"
+                  echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
                   go run . extract -l -e
                   cd ..
                   git log --oneline -n 5
@@ -71,7 +87,7 @@ jobs:
               run: |
                   genfiles_changed=true
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
-                  git diff --quiet -- spdxexp/spdxlicenses/*.go && genfiles_changed=false
+                  git diff --quiet "$BASE_REF" -- spdxexp/spdxlicenses/*.go && genfiles_changed=false
                   if [ $genfiles_changed != 'true' ]; then
                     if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
                       echo -e '***************\nNo changes to generated files, but skipping abort due to force run\n***************'
@@ -84,7 +100,7 @@ jobs:
                   fi
                   echo "GENFILES_CHANGED=$genfiles_changed" >> $GITHUB_ENV
 
-            - name: Create Pull Request
+            - name: Create/Update Pull Request
               if: ${{ env.GENFILES_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
               uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412
               with:

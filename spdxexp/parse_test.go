@@ -1246,6 +1246,7 @@ func TestParseWith(t *testing.T) {
 		{"WITH followed by EXCEPTION", getWithClauseTokens(1), "Bison-exception-2.2", false, 2, nil},
 		{"WITH not followed by EXCEPTION", getInvalidWithClauseTokens(1), "", true, 2, errors.New("expected exception after 'WITH'")},
 		{"not with", getOrClauseTokens(1), "", true, 1, nil},
+		{"WITH not followed by any tokens", getMalformedWithClauseTokens(1), "", true, 2, errors.New("expected exception after 'WITH'")},
 	}
 
 	for _, test := range tests {
@@ -1289,6 +1290,13 @@ func getInvalidWithClauseTokens(index int) *tokenStream {
 	tokens = append(tokens, token{role: licenseToken, value: "MIT"})
 	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
 	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	return getTokenStream(tokens, index)
+}
+
+func getMalformedWithClauseTokens(index int) *tokenStream {
+	var tokens []token
+	tokens = append(tokens, token{role: licenseToken, value: "Apache-2.0"})
+	tokens = append(tokens, token{role: operatorToken, value: "WITH"})
 	return getTokenStream(tokens, index)
 }
 

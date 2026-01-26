@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 
 		// Round to 2 significant digits to match the practical precision of these
 		// measurements (e.g. 9597 -> 9600, 843 -> 840).
-		rounded := ratio
+		rounded := 0.0
 		if ratio >= 10 {
 			magnitude := math.Pow(10, math.Floor(math.Log10(ratio))-1) // keep 2 sig digits
 			rounded = math.Round(ratio/magnitude) * magnitude
@@ -160,9 +160,12 @@ func BenchmarkValidateLicensesMIT(b *testing.B) {
 func BenchmarkStringEqualityMIT(b *testing.B) {
 	b.ReportAllocs()
 
+	v1 := "MIT"
+	v2 := "MIT"
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if "MIT" != "MIT" {
+		if v1 != v2 {
 			b.Fatal("unexpected string inequality")
 		}
 	}

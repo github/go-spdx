@@ -25,14 +25,19 @@ func TestMain(m *testing.M) {
 	// This is separate from the `go test -bench ...` results (which are printed
 	// above), but it gives a concrete, machine-specific ratio to show at a glance.
 	eq := testing.Benchmark(BenchmarkStringEqualityMIT)
+	act := testing.Benchmark(BenchmarkActiveLicenseMIT)
 	val := testing.Benchmark(BenchmarkValidateLicensesMIT)
 
 	// Prefer a floating-point ns/op average for display so sub-nanosecond results
 	// don't get rounded to 0.
 	eqNsAvg := 0.0
+	actNsAvg := 0.0
 	valNsAvg := 0.0
 	if eq.N > 0 {
 		eqNsAvg = float64(eq.T.Nanoseconds()) / float64(eq.N)
+	}
+	if act.N > 0 {
+		actNsAvg = float64(act.T.Nanoseconds()) / float64(act.N)
 	}
 	if val.N > 0 {
 		valNsAvg = float64(val.T.Nanoseconds()) / float64(val.N)
@@ -73,29 +78,32 @@ func TestMain(m *testing.M) {
 		return fmt.Sprintf("~%.1fx", rounded)
 	}
 	nsOpEq := formatNsAvg(eqNsAvg)
+	nsOpAct := formatNsAvg(actNsAvg)
 	nsOpVal := formatNsAvg(valNsAvg)
+	scaleAct := formatScale(actNsAvg, eqNsAvg)
 	scaleVal := formatScale(valNsAvg, eqNsAvg)
 
 	fmt.Fprintln(os.Stdout, "\nScalability summary (at a glance)")
 
-	col1 := 28
-	col2 := 14
-	col3 := 44
+	col1 := 22
+	col2 := 12
+	col3 := 20
+	col4 := 28
 
 	line := func() {
-		fmt.Fprintf(os.Stdout, "+-%s-+-%s-+-%s-+\n", strings.Repeat("-", col1), strings.Repeat("-", col2), strings.Repeat("-", col3))
+		fmt.Fprintf(os.Stdout, "+-%s-+-%s-+-%s-+-%s-+\n", strings.Repeat("-", col1), strings.Repeat("-", col2), strings.Repeat("-", col3), strings.Repeat("-", col4))
 	}
-	row := func(c1, c2, c3 string) {
-		fmt.Fprintf(os.Stdout, "| %-*s | %-*s | %-*s |\n", col1, c1, col2, c2, col3, c3)
+	row := func(c1, c2, c3, c4 string) {
+		fmt.Fprintf(os.Stdout, "| %-*s | %-*s | %-*s | %-*s |\n", col1, c1, col2, c2, col3, c3, col4, c4)
 	}
 
 	line()
-	row("Characteristic", "MIT==MIT", "ValidateLicenses([\"MIT\"]) ")
+	row("Characteristic", "MIT==MIT", "activeLicense(\"MIT\")", "ValidateLicenses([\"MIT\"])")
 	line()
-	row("ns/op average", nsOpEq, nsOpVal)
-	row("Scale", "1x", scaleVal)
-	row("Time per check", "O(1)", "~O(M*L) (parse each of M licenses)")
-	row("Memory per check", "O(1)", "~O(M) allocs (see B/op, allocs/op)")
+	row("ns/op average", nsOpEq, nsOpAct, nsOpVal)
+	row("Scale", "1x", scaleAct, scaleVal)
+	row("Time per check", "O(1)", "~O(N*L)", "~O(M*L)")
+	row("Memory per check", "O(1)", "~O(N) bytes", "~O(M) allocs")
 	line()
 	fmt.Fprintln(os.Stdout, "")
 	fmt.Fprintln(os.Stdout, "Measurement tip: for strict comparisons, keep ops/run equal (-benchtime=1000x) and increase repeats (-count=10+) then compare with benchstat.")
@@ -128,6 +136,11 @@ func formatWithCommas(n int64) string {
 // already-in-memory short string literals. This is O(1) time, ~0 allocations,
 // and scales linearly only with how many comparisons you do.
 //
+// BenchmarkActiveLicenseMIT measures checking whether a license ID exists in the
+// SPDX active license list via a linear scan with a case-insensitive comparison.
+// This is ~O(N*L) time (N = number of license IDs, L = average ID length).
+// Note: the generated GetLicenses() currently allocates on each call; see B/op.
+//
 // BenchmarkValidateLicensesMIT measures SPDX license validation via parsing.
 // Even for a single license, this is substantially heavier because it creates
 // parser structures and does work proportional to the license string length.
@@ -153,6 +166,20 @@ func BenchmarkValidateLicensesMIT(b *testing.B) {
 		valid, invalid := spdxexp.ValidateLicenses(licenses)
 		if !valid || len(invalid) != 0 {
 			b.Fatalf("expected MIT to be valid; valid=%v invalid=%v", valid, invalid)
+		}
+	}
+}
+
+func BenchmarkActiveLicenseMIT(b *testing.B) {
+	b.ReportAllocs()
+
+	id := "MIT"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ok, matched := spdxexp.ActiveLicense(id)
+		if !ok || matched != "MIT" {
+			b.Fatalf("expected MIT to be active; ok=%v matched=%q", ok, matched)
 		}
 	}
 }

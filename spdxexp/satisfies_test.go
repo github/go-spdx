@@ -15,6 +15,9 @@ func TestValidateLicenses(t *testing.T) {
 		allValid        bool
 		invalidLicenses []string
 	}{
+		{"MIT shortcut test", []string{"MIT"}, true, []string{}},
+		{"mit shortcut test", []string{"mit"}, true, []string{}},
+		{"Apache-2.0 active shortcut test", []string{"Apache-2.0"}, true, []string{}},
 		{"All invalid", []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}, false, []string{"MTI", "Apche-2.0", "0xDEADBEEF", ""}},
 		{"All valid", []string{"MIT", "Apache-2.0", "GPL-2.0"}, true, []string{}},
 		{"Some invalid", []string{"MTI", "Apche-2.0", "GPL-2.0"}, false, []string{"MTI", "Apche-2.0"}},
@@ -26,6 +29,7 @@ func TestValidateLicenses(t *testing.T) {
 			"LGPL-2.1-only OR MIT OR BSD-3-Clause",
 			"GPL-2.0-or-later WITH Bison-exception-2.2",
 		}, false, []string{"MIT AND APCHE-2.0"}},
+		{"Empty string is invalid", []string{""}, false, []string{""}},
 	}
 
 	for _, test := range tests {
@@ -73,7 +77,7 @@ func TestSatisfies(t *testing.T) {
 			errors.New("allowedList requires at least one element, but is empty")},
 		{"err - invalid license", "NON-EXISTENT-LICENSE", []string{"MIT", "Apache-2.0"}, false,
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
-		{"err - invalid license in allowed list", "MIT", []string{"NON-EXISTENT-LICENSE", "Apache-2.0"}, false,
+		{"err - invalid license in allowed list", "Apache-1.0", []string{"NON-EXISTENT-LICENSE", "Apache-2.0"}, false,
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
 		{"MIT satisfies [MIT, Apache-2.0]", "MIT", []string{"MIT", "Apache-2.0"}, true, nil},

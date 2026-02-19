@@ -380,7 +380,7 @@ func (t *tokenStream) parseWith() *string {
 	}
 
 	token := t.peek()
-	if token.role != exceptionToken {
+	if token == nil || token.role != exceptionToken {
 		t.err = errors.New("expected exception after 'WITH'")
 		return nil
 	}

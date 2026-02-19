@@ -3,12 +3,26 @@ package spdxexp
 import (
 	"errors"
 	"sort"
+	"strings"
 )
 
 // ValidateLicenses checks if given licenses are valid according to spdx.
 // Returns true if all licenses are valid; otherwise, false.
 // Returns all the invalid licenses contained in the `licenses` argument.
 func ValidateLicenses(licenses []string) (bool, []string) {
+	// simple check for MIT covers the most common case and avoids the overhead of parsing for valid licenses
+	if len(licenses) == 1 && strings.EqualFold(licenses[0], "MIT") {
+		return true, []string{}
+	}
+
+	// if only one license, check for active license first since that is the next most common case
+	if len(licenses) == 1 {
+		if ok, _ := ActiveLicense(licenses[0]); ok {
+			return true, []string{}
+		}
+	}
+
+	// handle all other cases with parsing, which will cover both single and multiple licenses and expressions
 	valid := true
 	invalidLicenses := []string{}
 	for _, license := range licenses {
@@ -24,12 +38,35 @@ func ValidateLicenses(licenses []string) (bool, []string) {
 // Returns true if allowed list satisfies test license expression; otherwise, false.
 // Returns error if error occurs during processing.
 func Satisfies(testExpression string, allowedList []string) (bool, error) {
+	if len(allowedList) == 0 {
+		return false, errors.New("allowedList requires at least one element, but is empty")
+	}
+
+	// simple check for MIT covers the most common case and avoids the overhead of parsing the testExpression
+	if strings.EqualFold(testExpression, "MIT") {
+		for _, allowed := range allowedList {
+			if strings.EqualFold(allowed, "MIT") {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+
+	// if only one license in the test expression, check for active license first to avoid the overhead of parsing
+	if !strings.Contains(testExpression, " ") {
+		if ok, _ := ActiveLicense(testExpression); ok {
+			for _, allowed := range allowedList {
+				if strings.EqualFold(allowed, testExpression) {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	// handle all other cases with parsing, which will cover both single and multiple licenses and expressions
 	expressionNode, err := parse(testExpression)
 	if err != nil {
 		return false, err
-	}
-	if len(allowedList) == 0 {
-		return false, errors.New("allowedList requires at least one element, but is empty")
 	}
 	allowedNodes, err := stringsToNodes(allowedList)
 	if err != nil {

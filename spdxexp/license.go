@@ -11,6 +11,11 @@ func activeLicense(id string) (bool, string) {
 	return inLicenseList(spdxlicenses.GetLicenses(), id)
 }
 
+// ActiveLicense returns true if the id is an active license.
+func ActiveLicense(id string) (bool, string) {
+	return activeLicense(id)
+}
+
 // deprecatedLicense returns true if the id is a deprecated license.
 func deprecatedLicense(id string) (bool, string) {
 	return inLicenseList(spdxlicenses.GetDeprecated(), id)

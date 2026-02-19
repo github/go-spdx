@@ -73,6 +73,7 @@ func GetExceptions() []string {
 		"Qwt-exception-1.0",
 		"romic-exception",
 		"RRDtool-FLOSS-exception-2.0",
+		"rsync-linking-exception",
 		"SANE-exception",
 		"SHL-2.0",
 		"SHL-2.1",

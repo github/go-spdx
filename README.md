@@ -17,6 +17,53 @@ go get github.com/github/go-spdx@latest
 
 - [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
 
+## CLI: spdx-validate
+
+`spdx-validate` is a command-line tool that validates SPDX license expressions.
+
+### Building
+
+```sh
+go build -o spdx-validate ./cmd/spdx-validate/
+```
+
+### Usage
+
+**Validate a single expression on stdin:**
+
+```sh
+echo "MIT" | ./spdx-validate
+echo "Apache-2.0 OR MIT" | ./spdx-validate
+```
+
+The tool exits with code 0 if the expression is valid, or code 1 (with an error message on stderr) if it is invalid.
+
+```sh
+$ echo "BOGUS" | ./spdx-validate
+invalid SPDX expression: "BOGUS"
+$ echo $?
+1
+```
+
+**Validate a file of expressions with `-f`/`--file`:**
+
+```sh
+./spdx-validate -f licenses.txt
+```
+
+The file should contain one SPDX expression per line. Blank lines are skipped. The tool reports each invalid expression to stderr, prints a summary, and exits with code 0 if all pass or code 1 if any fail.
+
+```sh
+$ cat licenses.txt
+MIT
+NOT-A-LICENSE
+Apache-2.0
+
+$ ./spdx-validate -f licenses.txt
+line 2: invalid SPDX expression: "NOT-A-LICENSE"
+1 of 3 expressions failed validation
+```
+
 ## Public API
 
 _NOTE: The public API is initially limited to the Satisfies and ValidateLicenses functions.  If

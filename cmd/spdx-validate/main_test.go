@@ -192,7 +192,7 @@ func TestValidateExpressions_FromTempFile(t *testing.T) {
 	path := filepath.Join(dir, "licenses.txt")
 
 	content := "MIT\nApache-2.0\nBSD-2-Clause\n"
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
@@ -217,7 +217,7 @@ func TestValidateExpressions_FromTempFileWithFailures(t *testing.T) {
 	path := filepath.Join(dir, "licenses.txt")
 
 	content := "MIT\nINVALID-1\nApache-2.0\nINVALID-2\nBSD-2-Clause\n"
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 

@@ -29,29 +29,30 @@ go build -o spdx-validate ./cmd/spdx-validate/
 
 ### Usage
 
-**Validate a single expression on stdin:**
+**Validate expressions on stdin:**
+
+Stdin is read as a stream of newline-separated expressions:
 
 ```sh
 echo "MIT" | ./spdx-validate
-echo "Apache-2.0 OR MIT" | ./spdx-validate
+printf "MIT\nApache-2.0\nBSD-3-Clause\n" | ./spdx-validate
 ```
 
-The tool exits with code 0 if the expression is valid, or code 1 (with an error message on stderr) if it is invalid.
+Exits with code 0 if all expressions are valid, or code 1 (with error messages on stderr) if any are invalid.
 
 ```sh
-$ echo "BOGUS" | ./spdx-validate
-invalid SPDX expression: "BOGUS"
-$ echo $?
-1
+$ printf "MIT\nBOGUS\nApache-2.0\n" | ./spdx-validate
+line 2: invalid SPDX expression: "BOGUS"
+1 of 3 expressions failed validation
 ```
 
-**Validate a file of expressions with `-f`/`--file`:**
+**Validate from a file with `-f`/`--file`:**
 
 ```sh
 ./spdx-validate -f licenses.txt
 ```
 
-The file should contain one SPDX expression per line. Blank lines are skipped. The tool reports each invalid expression to stderr, prints a summary, and exits with code 0 if all pass or code 1 if any fail.
+The file should contain one SPDX expression per line. Blank lines are skipped.
 
 ```sh
 $ cat licenses.txt

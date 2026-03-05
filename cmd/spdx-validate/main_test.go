@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-// --- Tests for validateSingleExpression (stdin path) ---
+// --- Tests for single expression on stdin ---
 
-func TestValidateSingleExpression_Valid(t *testing.T) {
+func TestValidateExpressions_SingleValid(t *testing.T) {
 	tests := []string{
 		"MIT",
 		"Apache-2.0",
@@ -23,7 +23,7 @@ func TestValidateSingleExpression_Valid(t *testing.T) {
 		t.Run(expr, func(t *testing.T) {
 			r := strings.NewReader(expr + "\n")
 			var w bytes.Buffer
-			ok, err := validateSingleExpression(r, &w)
+			ok, err := validateExpressions(r, &w)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -37,7 +37,7 @@ func TestValidateSingleExpression_Valid(t *testing.T) {
 	}
 }
 
-func TestValidateSingleExpression_Invalid(t *testing.T) {
+func TestValidateExpressions_SingleInvalid(t *testing.T) {
 	tests := []string{
 		"BOGUS-LICENSE",
 		"NOT-A-REAL-ID",
@@ -47,9 +47,9 @@ func TestValidateSingleExpression_Invalid(t *testing.T) {
 		t.Run(expr, func(t *testing.T) {
 			r := strings.NewReader(expr + "\n")
 			var w bytes.Buffer
-			ok, err := validateSingleExpression(r, &w)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			ok, err := validateExpressions(r, &w)
+			if err == nil {
+				t.Fatal("expected error for single invalid expression, got nil")
 			}
 			if ok {
 				t.Error("expected invalid, got valid")
@@ -64,37 +64,7 @@ func TestValidateSingleExpression_Invalid(t *testing.T) {
 	}
 }
 
-func TestValidateSingleExpression_EmptyInput(t *testing.T) {
-	r := strings.NewReader("")
-	var w bytes.Buffer
-	ok, err := validateSingleExpression(r, &w)
-	if err == nil {
-		t.Fatal("expected error for empty input, got nil")
-	}
-	if ok {
-		t.Error("expected ok=false for empty input")
-	}
-	if !strings.Contains(err.Error(), "no input provided") {
-		t.Errorf("expected 'no input provided' error, got: %v", err)
-	}
-}
-
-func TestValidateSingleExpression_BlankLine(t *testing.T) {
-	r := strings.NewReader("   \n")
-	var w bytes.Buffer
-	ok, err := validateSingleExpression(r, &w)
-	if err == nil {
-		t.Fatal("expected error for blank input, got nil")
-	}
-	if ok {
-		t.Error("expected ok=false for blank input")
-	}
-	if !strings.Contains(err.Error(), "empty input") {
-		t.Errorf("expected 'empty input' error, got: %v", err)
-	}
-}
-
-// --- Tests for validateExpressions (file path) ---
+// --- Tests for multiple expressions ---
 
 func TestValidateExpressions_AllValid(t *testing.T) {
 	input := "MIT\nApache-2.0\nBSD-3-Clause OR MIT\n"

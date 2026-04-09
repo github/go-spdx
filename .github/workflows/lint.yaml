@@ -10,19 +10,17 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.18.5"
+          go-version: "1.24.7"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837
         with:
-          version: v1.47.3
+          version: v2.11.4
           args: --verbose --config .golangci.yaml
           skip-cache: true

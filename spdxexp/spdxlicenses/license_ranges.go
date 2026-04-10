@@ -1,6 +1,6 @@
 package spdxlicenses
 
-// licenseRanges returns a list of license ranges.
+// LicenseRanges returns a list of license ranges.
 //
 // Ranges are organized into groups (referred to as license groups) of the same base license (e.g. GPL).
 // Groups have sub-groups of license versions (referred to as the range) where each member is considered

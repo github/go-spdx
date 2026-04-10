@@ -1,3 +1,4 @@
+// Package main validates newline-separated SPDX expressions from stdin or a file.
 package main
 
 import (
@@ -26,14 +27,17 @@ Examples:
   echo "MIT" | spdx-validate
   printf "MIT\nApache-2.0\n" | spdx-validate
   spdx-validate -f licenses.txt`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		var r io.Reader = os.Stdin
 		if filePath != "" {
+			// #nosec G304 -- file path is an explicit CLI input for this command.
 			f, err := os.Open(filePath)
 			if err != nil {
 				return fmt.Errorf("unable to open file: %w", err)
 			}
-			defer f.Close()
+			defer func() {
+				_ = f.Close()
+			}()
 			r = f
 		}
 		ok, err := validateExpressions(r, os.Stderr)
@@ -71,7 +75,7 @@ func validateExpressions(r io.Reader, w io.Writer) (bool, error) {
 		valid, _ := spdxexp.ValidateLicenses([]string{line})
 		if !valid {
 			failures++
-			fmt.Fprintf(w, "line %d: invalid SPDX expression: %q\n", lineNum, line)
+			_, _ = fmt.Fprintf(w, "line %d: invalid SPDX expression: %q\n", lineNum, line)
 		}
 	}
 
@@ -84,7 +88,7 @@ func validateExpressions(r io.Reader, w io.Writer) (bool, error) {
 	}
 
 	if failures > 0 {
-		fmt.Fprintf(w, "%d of %d expressions failed validation\n", failures, lineNum)
+		_, _ = fmt.Fprintf(w, "%d of %d expressions failed validation\n", failures, lineNum)
 		return false, nil
 	}
 

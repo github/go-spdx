@@ -91,7 +91,7 @@ func TestExtractLicensesLongExpressionDoesNotHang(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// #nosec G204 this is only run as part of tests
+	// #nosec G204 G702 -- safe in tests: re-executes current test binary with fixed arg
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run", "^TestExtractLicensesLongExpressionDoesNotHang$")
 	cmd.Env = append(os.Environ(), "GO_SPDX_EXTRACT_LICENSES_LONG_CHILD=1")
 	output, err := cmd.CombinedOutput()

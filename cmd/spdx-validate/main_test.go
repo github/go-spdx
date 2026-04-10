@@ -166,11 +166,14 @@ func TestValidateExpressions_FromTempFile(t *testing.T) {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
+	// #nosec G304 -- path is created within t.TempDir for this test.
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatalf("failed to open temp file: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	var w bytes.Buffer
 	ok, err := validateExpressions(f, &w)
@@ -191,11 +194,14 @@ func TestValidateExpressions_FromTempFileWithFailures(t *testing.T) {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
+	// #nosec G304 -- path is created within t.TempDir for this test.
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatalf("failed to open temp file: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	var w bytes.Buffer
 	ok, err := validateExpressions(f, &w)

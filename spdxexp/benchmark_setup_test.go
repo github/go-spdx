@@ -41,10 +41,10 @@ func TestMain(m *testing.M) {
 			_ = benchFlag.Value.Set("$^")
 		}
 
-		fmt.Fprintln(os.Stdout, "Benchmark summary tables:")
-		fmt.Fprintln(os.Stdout, "- ns/op average: average time per operation")
-		fmt.Fprintln(os.Stdout, "- Scale: relative to a fixed baseline per table")
-		fmt.Fprintln(os.Stdout, "")
+		_, _ = fmt.Fprintln(os.Stdout, "Benchmark summary tables:")
+		_, _ = fmt.Fprintln(os.Stdout, "- ns/op average: average time per operation")
+		_, _ = fmt.Fprintln(os.Stdout, "- Scale: relative to a fixed baseline per table")
+		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
 	code := m.Run()
@@ -148,10 +148,10 @@ func printBenchmarkTable(w *os.File, title string, rows []benchmarkTableRow, ben
 	}
 
 	line := func() {
-		fmt.Fprintf(w, "+-%s-+-%s-+-%s-+\n", strings.Repeat("-", col1), strings.Repeat("-", col2), strings.Repeat("-", col3))
+		_, _ = fmt.Fprintf(w, "+-%s-+-%s-+-%s-+\n", strings.Repeat("-", col1), strings.Repeat("-", col2), strings.Repeat("-", col3))
 	}
 	row := func(c1, c2, c3 string) {
-		fmt.Fprintf(w, "| %-*s | %-*s | %-*s |\n", col1, c1, col2, c2, col3, c3)
+		_, _ = fmt.Fprintf(w, "| %-*s | %-*s | %-*s |\n", col1, c1, col2, c2, col3, c3)
 	}
 
 	line()
@@ -162,7 +162,7 @@ func printBenchmarkTable(w *os.File, title string, rows []benchmarkTableRow, ben
 		row(r.label, ns, r.scale)
 	}
 	line()
-	fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "")
 }
 
 func nsNumberString(ns float64) string {

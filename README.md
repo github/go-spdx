@@ -1,5 +1,5 @@
-<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.3.6/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.3.6/spdxexp) spdxexp</sub> <br>
-<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.3.6/spdxexp/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.3.6/spdxexp/spdxlicenses) spdxlicenses</sub>
+<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.4.0/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.4.0/spdxexp) spdxexp</sub> <br>
+<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.4.0/spdxexp/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.4.0/spdxexp/spdxlicenses) spdxlicenses</sub>
 
 # go-spdx
 
@@ -16,6 +16,54 @@ go get github.com/github/go-spdx@latest
 ## Packages
 
 - [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
+
+## CLI: spdx-validate
+
+`spdx-validate` is a command-line tool that validates SPDX license expressions.
+
+### Building
+
+```sh
+go build -o spdx-validate ./cmd/spdx-validate/
+```
+
+### Usage
+
+**Validate expressions on stdin:**
+
+Stdin is read as a stream of newline-separated expressions:
+
+```sh
+echo "MIT" | ./spdx-validate
+printf "MIT\nApache-2.0\nBSD-3-Clause\n" | ./spdx-validate
+```
+
+Exits with code 0 if all expressions are valid, or code 1 (with error messages on stderr) if any are invalid.
+
+```sh
+$ printf "MIT\nBOGUS\nApache-2.0\n" | ./spdx-validate
+line 2: invalid SPDX expression: "BOGUS"
+1 of 3 expressions failed validation
+```
+
+**Validate from a file with `-f`/`--file`:**
+
+```sh
+./spdx-validate -f licenses.txt
+```
+
+The file should contain one SPDX expression per line. Blank lines are skipped.
+
+```sh
+$ cat licenses.txt
+MIT
+NOT-A-LICENSE
+Apache-2.0
+
+$ ./spdx-validate -f licenses.txt
+line 2: invalid SPDX expression: "NOT-A-LICENSE"
+1 of 3 expressions failed validation
+```
 
 ## Public API
 

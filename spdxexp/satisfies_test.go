@@ -41,6 +41,153 @@ func TestValidateLicenses(t *testing.T) {
 	}
 }
 
+func TestValidateLicensesWithOptions_FailComplexExpressions(t *testing.T) {
+	tests := []struct {
+		name            string
+		inputLicenses   []string
+		options         ValidateLicensesOptions
+		allValid        bool
+		invalidLicenses []string
+	}{
+		{
+			name:          "Expressions rejected",
+			inputLicenses: []string{"MIT AND Apache-2.0"},
+			options:       ValidateLicensesOptions{FailComplexExpressions: true},
+			allValid:      false,
+			invalidLicenses: []string{
+				"MIT AND Apache-2.0",
+			},
+		},
+		{
+			name:          "Mixed list rejects only expressions",
+			inputLicenses: []string{"MIT", "Apache-2.0", "LGPL-2.1-only OR MIT"},
+			options:       ValidateLicensesOptions{FailComplexExpressions: true},
+			allValid:      false,
+			invalidLicenses: []string{
+				"LGPL-2.1-only OR MIT",
+			},
+		},
+		{
+			name:            "WITH exception is not treated as complex expression",
+			inputLicenses:   []string{"GPL-2.0-or-later WITH Bison-exception-2.2"},
+			options:         ValidateLicensesOptions{FailComplexExpressions: true},
+			allValid:        true,
+			invalidLicenses: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid, invalidLicenses := ValidateLicensesWithOptions(test.inputLicenses, test.options)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses)
+			assert.Equal(t, test.allValid, valid)
+		})
+	}
+}
+
+func TestValidateLicensesWithOptions_FailDeprecatedLicenses(t *testing.T) {
+	// eCos-2.0 is a known deprecated SPDX license ID (see TestDeprecatedLicense).
+	license := "eCos-2.0"
+
+	valid, invalidLicenses := ValidateLicensesWithOptions([]string{license}, ValidateLicensesOptions{})
+	assert.True(t, valid)
+	assert.Empty(t, invalidLicenses)
+
+	valid, invalidLicenses = ValidateLicensesWithOptions(
+		[]string{license},
+		ValidateLicensesOptions{FailDeprecatedLicenses: true},
+	)
+	assert.False(t, valid)
+	assert.EqualValues(t, []string{license}, invalidLicenses)
+}
+
+func TestValidateLicensesWithOptions_AllOptions(t *testing.T) {
+	documentRef := "DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"
+	licenseRef := "LicenseRef-MIT-Style-1"
+	deprecated := "eCos-2.0"
+	expression := "MIT AND Apache-2.0"
+	licenseWithException := "GPL-2.0-or-later WITH Bison-exception-2.2"
+
+	tests := []struct {
+		name            string
+		licenses        []string
+		options         ValidateLicensesOptions
+		valid           bool
+		invalidLicenses []string
+	}{
+		{
+			name:            "Defaults allow deprecated, refs, and expressions",
+			licenses:        []string{" MIT ", deprecated, licenseRef, documentRef, expression, licenseWithException},
+			options:         ValidateLicensesOptions{},
+			valid:           true,
+			invalidLicenses: []string{},
+		},
+		{
+			name:            "FailDeprecatedLicenses rejects deprecated IDs",
+			licenses:        []string{deprecated, "Apache-2.0"},
+			options:         ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			valid:           false,
+			invalidLicenses: []string{deprecated},
+		},
+		{
+			name:            "FailComplexExpressions rejects conjunction expressions",
+			licenses:        []string{expression, licenseWithException},
+			options:         ValidateLicensesOptions{FailComplexExpressions: true},
+			valid:           false,
+			invalidLicenses: []string{expression},
+		},
+		{
+			name:            "FailComplexExpressions does not duplicate invalid entries",
+			licenses:        []string{"MIT AND APCHE-2.0"},
+			options:         ValidateLicensesOptions{FailComplexExpressions: true},
+			valid:           false,
+			invalidLicenses: []string{"MIT AND APCHE-2.0"},
+		},
+		{
+			name:            "FailAllLicenseRefs rejects LicenseRef but allows DocumentRef",
+			licenses:        []string{licenseRef, documentRef},
+			options:         ValidateLicensesOptions{FailAllLicenseRefs: true},
+			valid:           false,
+			invalidLicenses: []string{licenseRef},
+		},
+		{
+			name:            "FailAllDocumentRefs rejects DocumentRef but allows LicenseRef",
+			licenses:        []string{documentRef, licenseRef},
+			options:         ValidateLicensesOptions{FailAllDocumentRefs: true},
+			valid:           false,
+			invalidLicenses: []string{documentRef},
+		},
+		{
+			name:            "FailAllLicenseRefs and FailAllDocumentRefs rejects any non-active atomic ref",
+			licenses:        []string{licenseRef, documentRef, "CustomRef-foo"},
+			options:         ValidateLicensesOptions{FailAllLicenseRefs: true, FailAllDocumentRefs: true},
+			valid:           false,
+			invalidLicenses: []string{licenseRef, documentRef, "CustomRef-foo"},
+		},
+		{
+			name:     "All flags together",
+			licenses: []string{deprecated, licenseRef, documentRef, expression, licenseWithException, "Apache-2.0"},
+			options: ValidateLicensesOptions{
+				FailComplexExpressions: true,
+				FailDeprecatedLicenses: true,
+				FailAllLicenseRefs:     true,
+				FailAllDocumentRefs:    true,
+			},
+			valid:           false,
+			invalidLicenses: []string{deprecated, licenseRef, documentRef, expression},
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			valid, invalidLicenses := ValidateLicensesWithOptions(test.licenses, test.options)
+			assert.Equal(t, test.valid, valid)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses)
+		})
+	}
+}
+
 // TestSatisfiesSingle lets you quickly test a single call to Satisfies with a specific license expression and allowed list of licenses.
 // To test a different expression, change the expression, allowed licenses, and expected result in the function body.
 // TO RUN: go test ./expression -run TestSatisfiesSingle
@@ -56,6 +203,81 @@ func TestSatisfiesSingle(t *testing.T) {
 	assert.Equal(t, expectedResult, actualResult)
 }
 
+func TestSatisfies_FastPathValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		repoExpression string
+		allowedList    []string
+		satisfied      bool
+		expectErr      bool
+		expectedErr   string
+	}{
+		{
+			name:           "MIT trims whitespace",
+			repoExpression: "  MIT \t",
+			allowedList:    []string{"MIT"},
+			satisfied:      true,
+		},
+		{
+			name:           "Atomic deprecated license matches allowed list",
+			repoExpression: " eCos-2.0 ",
+			allowedList:    []string{"ECOS-2.0"},
+			satisfied:      true,
+		},
+		{
+			name:           "Atomic deprecated license not in allowed list",
+			repoExpression: "eCos-2.0",
+			allowedList:    []string{"MIT"},
+			satisfied:      false,
+		},
+		{
+			name:           "Single license WITH exception exact match",
+			repoExpression: "GPL-2.0-or-later WITH Bison-exception-2.2",
+			allowedList:    []string{"GPL-2.0-or-later WITH Bison-exception-2.2"},
+			satisfied:      true,
+		},
+		{
+			name:           "Single license WITH exception not in allowed list",
+			repoExpression: "GPL-2.0-or-later WITH Bison-exception-2.2",
+			allowedList:    []string{"MIT"},
+			satisfied:      false,
+		},
+		{
+			name:           "Single license WITH exception matches allow list ignoring case",
+			repoExpression: "gpl-2.0-or-later with bison-exception-2.2",
+			allowedList:    []string{"GPL-2.0-or-later WITH Bison-exception-2.2"},
+			satisfied:      true,
+		},
+		{
+			name:           "Single license WITH invalid exception returns error",
+			repoExpression: "GPL-2.0-or-later WITH NOT-A-REAL-EXCEPTION",
+			allowedList:    []string{"GPL-2.0-or-later WITH NOT-A-REAL-EXCEPTION"},
+			expectErr:      true,
+			expectedErr:    "unknown license 'NOT-A-REAL-EXCEPTION' at offset 22",
+		},
+		{
+			name:           "Single license WITH invalid license part returns error",
+			repoExpression: "NOT-A-REAL-LICENSE WITH Bison-exception-2.2",
+			allowedList:    []string{"NOT-A-REAL-LICENSE WITH Bison-exception-2.2"},
+			expectErr:      true,
+			expectedErr:    "unknown license 'NOT-A-REAL-LICENSE' at offset 0",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			actualResult, err := Satisfies(test.repoExpression, test.allowedList)
+			if test.expectErr {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, test.satisfied, actualResult)
+		})
+	}
+}
+
 func TestSatisfies(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -66,7 +288,6 @@ func TestSatisfies(t *testing.T) {
 	}{
 		// TODO: Test error conditions (e.g. GPL is an invalid license, Apachie + has invalid + operator)
 		// regression tests from spdx-satisfies.js - comments for satisfies function
-		// TODO: Commented out tests are not yet supported.
 		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
 		{"miT satisfies [MIT]", "miT", []string{"MIT"}, true, nil},
 		{"MIT satisfies [mit]", "MIT", []string{"mit"}, true, nil},
@@ -109,7 +330,6 @@ func TestSatisfies(t *testing.T) {
 		{"! Apache-3.0 satisfies [Apache-2.0-only]", "Apache-3.0", []string{"Apache-2.0-only"}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
 
 		// regression tests from spdx-satisfies.js - assert statements in README
-		// TODO: Commented out tests are not yet supported.
 		{"MIT satisfies [MIT]", "MIT", []string{"MIT"}, true, nil},
 
 		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, true, nil},
@@ -319,7 +539,51 @@ func TestExpandOr(t *testing.T) {
 		// 		lic: nil,
 		// 		ref: nil,
 		// 	},
-		// 	[][]string{{"MIT", "Apache-1.0+"}, {"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}, {"GPL-2.0 with Bison-exception-2.2"}}},
+		// 	// [][]string{{"MIT", "Apache-1.0+"}, {"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}, {"GPL-2.0 with Bison-exception-2.2"}}},
+		//     [][]*node{
+		// 		{
+		// 			{
+		// 				role: licenseNode,
+		// 				exp:  nil,
+		// 				lic: &licenseNodePartial{
+		// 					license: "MIT", hasPlus: false,
+		// 					hasException: false, exception: ""},
+		// 				ref: nil,
+		// 			},
+		// 			{
+		// 				role: licenseNode,
+		// 				exp:  nil,
+		// 				lic: &licenseNodePartial{
+		// 					license: "Apache-1.0", hasPlus: true,
+		// 					hasException: false, exception: ""},
+		// 				ref: nil,
+		// 			},
+		// 		},
+		// 		{
+		// 			{
+		// 				role: licenseRefNode,
+		// 				exp:  nil,
+		// 				lic:  nil,
+		// 				ref: &referenceNodePartial{
+		// 					hasDocumentRef: true,
+		// 					documentRef:    "spdx-tool-1.2",
+		// 					licenseRef:     "MIT-Style-2",
+		// 				},
+		// 			},
+		// 			{
+		// 				role: licenseNode,
+		// 				exp:  nil,
+		// 				lic: &licenseNodePartial{
+		// 					license:      "GPL-2.0",
+		// 					hasPlus:      false,
+		// 					hasException: true,
+		// 					exception:    "Bison-exception-2.2",
+		// 				},
+		// 				ref: nil,
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 
 	for _, test := range tests {

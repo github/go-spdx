@@ -2679,8 +2679,8 @@ func ExampleValidateLicenses_allBad() {
 	// Output: false [MTI Apache--2.0 GPL]
 }
 
-// TestValidateLicenses_BenchmarkExamples is a safety check to ensure benchmark emprovements are not due 
-// to changes behavior of ValidateLicenses function.
+// TestValidateLicenses_BenchmarkExamples is a safety check to ensure benchmark improvements are not due
+// to changes in behavior of the ValidateLicenses function.
 func TestValidateLicenses_BenchmarkExamples(t *testing.T) {
 	// This test is used to verify that the test expressions used in the benchmarks return expected results.
 	// If any of the test expressions are invalid, then there is likely an issue with the benchmark results and investigation would be needed.

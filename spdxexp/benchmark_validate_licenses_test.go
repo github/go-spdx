@@ -13,7 +13,8 @@ type validateLicensesBenchmarkScenario struct {
 var validateLicensesBenchmarkScenarios = []validateLicensesBenchmarkScenario{
 	// Scenario order is used as-is in the summary table.
 	{"MIT--exact", []string{"MIT"}},
-	{"mit--caseinsensitive", []string{" mit  "}},
+	{"mit--caseinsensitive", []string{"mit"}},
+	{"mit--extra-space", []string{" MIT  "}},
 	{"Apache-2.0--active-early", []string{"Apache-2.0"}},
 	{"Zed--active-end", []string{"Zed"}},
 	{"MIT AND Apache-2.0--complex", []string{"MIT", "Apache-2.0"}},

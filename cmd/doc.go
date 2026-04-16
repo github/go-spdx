@@ -10,7 +10,7 @@ spdxexp/license.go file.
 
 Command to run all extractions (run command from the /cmd directory):
 
-    cd cmd
+	cd cmd
 	go run . extract -l -e
 
 Usage options:

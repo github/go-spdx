@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type LicenseData struct {
@@ -69,6 +70,21 @@ func GetLicenses() []string {
 	}
 	getLicensesContents = append(getLicensesContents, `	}
 }
+
+`...)
+
+	getLicensesContents = append(getLicensesContents, `var licensesMap = map[string]string{
+`...)
+	for _, id := range activeLicenseIDs {
+		getLicensesContents = append(getLicensesContents, `		"`+strings.ToUpper(id)+`": "`+id+`",
+`...)
+	}
+	getLicensesContents = append(getLicensesContents, `}
+
+// GetLicensesMap returns a map of active license IDs keyed by uppercase ID.
+func GetLicensesMap() map[string]string {
+	return licensesMap
+}
 `...)
 
 	err = os.WriteFile("../spdxexp/spdxlicenses/get_licenses.go", getLicensesContents, 0600)
@@ -92,6 +108,21 @@ func GetDeprecated() []string {
 `...)
 	}
 	getDeprecatedContents = append(getDeprecatedContents, `	}
+}
+
+`...)
+
+	getDeprecatedContents = append(getDeprecatedContents, `var deprecatedMap = map[string]string{
+`...)
+	for _, id := range deprecatedLicenseIDs {
+		getDeprecatedContents = append(getDeprecatedContents, `		"`+strings.ToUpper(id)+`": "`+id+`",
+`...)
+	}
+	getDeprecatedContents = append(getDeprecatedContents, `}
+
+// GetDeprecatedMap returns a map of deprecated license IDs keyed by uppercase ID.
+func GetDeprecatedMap() map[string]string {
+	return deprecatedMap
 }
 `...)
 

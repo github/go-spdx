@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type ExceptionData struct {
@@ -63,6 +64,21 @@ func GetExceptions() []string {
 `...)
 	}
 	getExceptionsContents = append(getExceptionsContents, `	}
+}
+
+`...)
+
+	getExceptionsContents = append(getExceptionsContents, `var exceptionsMap = map[string]string{
+`...)
+	for _, id := range exceptionLicenseIDs {
+		getExceptionsContents = append(getExceptionsContents, `		"`+strings.ToUpper(id)+`": "`+id+`",
+`...)
+	}
+	getExceptionsContents = append(getExceptionsContents, `}
+
+// GetExceptionsMap returns a map of exception license IDs keyed by uppercase ID.
+func GetExceptionsMap() map[string]string {
+	return exceptionsMap
 }
 `...)
 

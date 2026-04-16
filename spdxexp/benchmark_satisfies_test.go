@@ -13,7 +13,7 @@ type satisfiesBenchmarkScenario struct {
 var satisfiesBenchmarkScenarios = []satisfiesBenchmarkScenario{
 	// Scenario order is used as-is in the summary table.
 	{"MIT--exact", "MIT"},
-	{"mit--caseinsensitive", "mit"},
+	{"mit--caseinsensitive", " mit  "},
 	{"Apache-2.0--active-early", "Apache-2.0"},
 	{"Zed--active-end", "Zed"},
 	{"MIT AND Apache-2.0--complex", "MIT AND Apache-2.0"},

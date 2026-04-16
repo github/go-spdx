@@ -12,14 +12,17 @@ type validateLicensesBenchmarkScenario struct {
 
 var validateLicensesBenchmarkScenarios = []validateLicensesBenchmarkScenario{
 	// Scenario order is used as-is in the summary table.
-	{"MIT", []string{"MIT"}},
-	{"mit", []string{"mit"}},
-	{"Apache-2.0", []string{"Apache-2.0"}},
-	{"Zed", []string{"Zed"}},
-	{"MIT AND Apache-2.0", []string{"MIT", "Apache-2.0"}},
-	{"MIT AND Apache-2.0 OR Zed", []string{"MIT", "Apache-2.0", "Zed"}},
-	{"GPL-2.0-or-later", []string{"GPL-2.0-or-later"}},
-	{"GPL-2.0+", []string{"GPL-2.0+"}},
+	{"MIT--exact", []string{"MIT"}},
+	{"mit--caseinsensitive", []string{"mit"}},
+	{"Apache-2.0--active-early", []string{"Apache-2.0"}},
+	{"Zed--active-end", []string{"Zed"}},
+	{"MIT AND Apache-2.0--complex", []string{"MIT", "Apache-2.0"}},
+	{"MIT AND Apache-2.0 OR Zed--complex", []string{"MIT", "Apache-2.0", "Zed"}},
+	{"BSD-2-Clause-FreeBSD--deprecated", []string{"BSD-2-Clause-FreeBSD"}},
+	{"GPL-2.0-or-later--range", []string{"GPL-2.0-or-later"}},
+	{"Apache-1.0+--plus-range", []string{"Apache-1.0+"}},
+	{"LicenseRef-scancode-adobe-postscript", []string{"LicenseRef-scancode-adobe-postscript"}},
+	{"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", []string{"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}},
 }
 
 func BenchmarkValidateLicenses(b *testing.B) {

@@ -58,10 +58,9 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 					valid = false
 					invalidLicenses = append(invalidLicenses, license)
 					continue
-				} else {
-					// if not failing deprecated licenses, then consider it valid and continue
-					continue
 				}
+				// if FailDeprecatedLicenses is false, then consider the deprecated license valid and continue
+				continue
 			}
 
 			if options.FailAllLicenseRefs {

@@ -85,9 +85,14 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 		if !isAtomic {
 			if hasException, licensePart, exceptionPart := isLicenseWithException(license); hasException {
 				// matches pattern "licensePart WITH exceptionPart", so validate both parts separately
-				if ok, _ := activeLicense(licensePart); ok {
-					if ok, _ := exceptionLicense(exceptionPart); ok {
+				if ok, _ := exceptionLicense(exceptionPart); ok {
+					if ok, _ := activeLicense(licensePart); ok {
 						continue
+					}
+					if !options.FailDeprecatedLicenses {
+						if ok, _ := deprecatedLicense(licensePart); ok {
+							continue
+					}
 					}
 				}
 				valid = false

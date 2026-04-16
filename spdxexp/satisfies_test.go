@@ -87,18 +87,58 @@ func TestValidateLicensesWithOptions_FailComplexExpressions(t *testing.T) {
 
 func TestValidateLicensesWithOptions_FailDeprecatedLicenses(t *testing.T) {
 	// eCos-2.0 is a known deprecated SPDX license ID (see TestDeprecatedLicense).
-	license := "eCos-2.0"
+	deprecatedLicense := "eCos-2.0"
 
-	valid, invalidLicenses := ValidateLicensesWithOptions([]string{license}, ValidateLicensesOptions{})
-	assert.True(t, valid)
-	assert.Empty(t, invalidLicenses)
+	tests := []struct {
+		name            string
+		inputLicenses   []string
+		options         ValidateLicensesOptions
+		allValid        bool
+		invalidLicenses []string
+	}{
+		{
+			name:          "Deprecated license rejected",
+			inputLicenses: []string{deprecatedLicense},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			allValid:      false,
+			invalidLicenses: []string{
+				deprecatedLicense,
+			},
+		},
+		{
+			name:          "Mixed list rejects only deprecated licenses",
+			inputLicenses: []string{"MIT", "Apache-2.0", deprecatedLicense},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			allValid:      false,
+			invalidLicenses: []string{
+				deprecatedLicense,
+			},
+		},
+		{
+			name:            "WITH exception rejects deprecated license if FailDeprecatedLicenses is true",
+			inputLicenses:   []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+			options:         ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			allValid:        false,
+			invalidLicenses: []string{
+				deprecatedLicense + " WITH Bison-exception-2.2",
+			},
+		},
+		{
+			name:            "WITH exception allows deprecated license if FailDeprecatedLicenses is false",
+			inputLicenses:   []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+			options:         ValidateLicensesOptions{FailDeprecatedLicenses: false},
+			allValid:        true,
+			invalidLicenses: []string{},
+		},
+	}
 
-	valid, invalidLicenses = ValidateLicensesWithOptions(
-		[]string{license},
-		ValidateLicensesOptions{FailDeprecatedLicenses: true},
-	)
-	assert.False(t, valid)
-	assert.EqualValues(t, []string{license}, invalidLicenses)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid, invalidLicenses := ValidateLicensesWithOptions(test.inputLicenses, test.options)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses)
+			assert.Equal(t, test.allValid, valid)
+		})
+	}
 }
 
 func TestValidateLicensesWithOptions_AllOptions(t *testing.T) {

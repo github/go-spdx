@@ -238,7 +238,7 @@ func isAtomicLicense(testExpression string) bool {
 // negatives (e.g. " MIT " would not be considered a single license).
 func isLicenseWithException(testExpression string) (bool, string, string) {
 	// split by " " and check if there are exactly 3 parts and the middle part is "WITH"
-	parts := strings.Split(testExpression, " ")
+	parts := strings.Fields(testExpression)
 	if len(parts) == 3 && strings.EqualFold(parts[1], "WITH") {
 		return true, parts[0], parts[2]
 	}

@@ -60,14 +60,6 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 				}
 			}
 
-			if options.FailAllLicenseRefs && options.FailAllDocumentRefs {
-				// if failing all LicenseRefs and DocumentRefs, then no need to continue processing as there
-				// are no other atomic license types that would be valid
-				valid = false
-				invalidLicenses = append(invalidLicenses, license)
-				continue
-			}
-
 			if options.FailAllLicenseRefs {
 				if strings.HasPrefix(license, "LicenseRef-") {
 					valid = false
@@ -239,6 +231,7 @@ func isLicenseWithException(testExpression string) (bool, string, string) {
 	}
 	return false, "", ""
 }
+
 
 // isCompatible checks if expressionPart is compatible with allowed list.
 // Expression part is an array of licenses that are ANDed together.

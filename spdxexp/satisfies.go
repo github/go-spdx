@@ -37,6 +37,7 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 	valid := true
 	invalidLicenses := []string{}
 	for _, license := range licenses {
+		// MIT is the most common license, so check for it first before doing any processing to optimize for this case.
 		// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
 		// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
 		// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
@@ -127,9 +128,11 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 		return false, errors.New("allowedList requires at least one element, but is empty")
 	}
 
-	testExpression = strings.TrimSpace(testExpression)
-
-	// simple check for MIT covers the most common case and avoids the overhead of parsing the testExpression
+	// MIT is the most common license, so check for it first before doing any processing to optimize for this case.
+	// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
+	// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
+	// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
+	// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
 	if isMIT(testExpression) {
 		for _, allowed := range allowedList {
 			if strings.EqualFold(allowed, "MIT") {
@@ -138,6 +141,8 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 		}
 		return false, nil
 	}
+
+	testExpression = strings.TrimSpace(testExpression)
 
 	if isAtomicLicense(testExpression) {
 		// if only one license in the test expression, check for active license to avoid the overhead of parsing
@@ -213,7 +218,7 @@ func stringsToNodes(licenseStrings []string) ([]*node, error) {
 	return nodes, nil
 }
 
-// isMIT checks if the test expression is MIT, ignoring case and leading/trailing whitespace.
+// isMIT checks if the test expression is MIT, ignoring case.
 // NOTE: Caller should trim the test expression before calling this function to avoid false
 // negatives (e.g. " MIT " would not match "MIT").
 func isMIT(testExpression string) bool {

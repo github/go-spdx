@@ -37,11 +37,15 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 	valid := true
 	invalidLicenses := []string{}
 	for _, license := range licenses {
-		license = strings.TrimSpace(license)
-
+		// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
+		// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
+		// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
+		// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
 		if isMIT(license) {
 			continue
 		}
+
+		license = strings.TrimSpace(license)
 
 		isAtomic := isAtomicLicense(license)
 		if isAtomic {

@@ -12,14 +12,18 @@ type satisfiesBenchmarkScenario struct {
 
 var satisfiesBenchmarkScenarios = []satisfiesBenchmarkScenario{
 	// Scenario order is used as-is in the summary table.
-	{"MIT", "MIT"},
-	{"mit", "mit"},
-	{"Apache-2.0", "Apache-2.0"},
-	{"Zed", "Zed"},
-	{"MIT AND Apache-2.0", "MIT AND Apache-2.0"},
-	{"MIT AND Apache-2.0 OR Zed", "MIT AND Apache-2.0 OR Zed"},
-	{"GPL-2.0-or-later", "GPL-2.0-or-later"},
-	{"GPL-2.0+", "GPL-2.0+"},
+	{"MIT--exact", "MIT"},
+	{"mit--caseinsensitive", "mit"},
+	{"mit--extra-space", " MIT  "},
+	{"Apache-2.0--active-early", "Apache-2.0"},
+	{"Zed--active-end", "Zed"},
+	{"MIT AND Apache-2.0--complex", "MIT AND Apache-2.0"},
+	{"MIT AND Apache-2.0 OR Zed--complex", "MIT AND Apache-2.0 OR Zed"},
+	{"BSD-2-Clause-FreeBSD--deprecated", "BSD-2-Clause-FreeBSD"},
+	{"GPL-2.0-or-later--range", "GPL-2.0-or-later"},
+	{"Apache-1.0+--plus-range", "Apache-1.0+"},
+	{"LicenseRef-scancode-adobe-postscript", "LicenseRef-scancode-adobe-postscript"},
+	{"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2", "DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"},
 }
 
 func BenchmarkSatisfies(b *testing.B) {

@@ -10,22 +10,108 @@ import (
 // Returns true if all licenses are valid; otherwise, false.
 // Returns all the invalid licenses contained in the `licenses` argument.
 func ValidateLicenses(licenses []string) (bool, []string) {
-	// simple check for MIT covers the most common case and avoids the overhead of parsing for valid licenses
-	if len(licenses) == 1 && strings.EqualFold(licenses[0], "MIT") {
-		return true, []string{}
-	}
+	return ValidateLicensesWithOptions(licenses, ValidateLicensesOptions{})
+}
 
-	// if only one license, check for active license first since that is the next most common case
-	if len(licenses) == 1 {
-		if ok, _ := ActiveLicense(licenses[0]); ok {
-			return true, []string{}
-		}
-	}
+// ValidateLicensesOptions controls how ValidateLicensesWithOptions validates input.
+type ValidateLicensesOptions struct {
+	// FailComplexExpressions rejects SPDX license expressions (e.g. "MIT AND Apache-2.0").
+	// Single license identifiers (including those with a WITH exception) are still allowed.
+	FailComplexExpressions bool
 
+	// FailDeprecatedLicenses rejects deprecated SPDX license identifiers (e.g. "eCos-2.0").
+	FailDeprecatedLicenses bool
+
+	// FailAllLicenseRefs rejects all SPDX license references (e.g. "LicenseRef-MyLicense").
+	FailAllLicenseRefs bool
+
+	// FailAllDocumentRefs rejects all SPDX document references (e.g. "DocumentRef-MyDocument").
+	FailAllDocumentRefs bool
+}
+
+// ValidateLicensesWithOptions checks if given licenses are valid according to SPDX.
+// Returns true if all licenses are valid; otherwise, false.
+// Returns all the invalid licenses contained in the `licenses` argument.
+func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOptions) (bool, []string) {
 	// handle all other cases with parsing, which will cover both single and multiple licenses and expressions
 	valid := true
 	invalidLicenses := []string{}
 	for _, license := range licenses {
+		// MIT is the most common license, so check for it first before doing any processing to optimize for this case.
+		// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
+		// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
+		// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
+		// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
+		if isMIT(license) {
+			continue
+		}
+
+		license = strings.TrimSpace(license)
+
+		isAtomic := isAtomicLicense(license)
+		if isAtomic {
+			if ok, _ := activeLicense(license); ok {
+				continue
+			}
+
+			if ok, _ := deprecatedLicense(license); ok {
+				if options.FailDeprecatedLicenses {
+					valid = false
+					invalidLicenses = append(invalidLicenses, license)
+					continue
+				}
+				// if FailDeprecatedLicenses is false, then consider the deprecated license valid and continue
+				continue
+			}
+
+			if options.FailAllLicenseRefs {
+				if strings.HasPrefix(license, "LicenseRef-") {
+					valid = false
+					invalidLicenses = append(invalidLicenses, license)
+					continue
+				}
+			}
+
+			if options.FailAllDocumentRefs {
+				if strings.HasPrefix(license, "DocumentRef-") {
+					valid = false
+					invalidLicenses = append(invalidLicenses, license)
+					continue
+				}
+			}
+
+			// need to let this pass through to allow parsing LicenseRef and DocumentRef if either are allowed types
+		}
+
+		if !isAtomic {
+			if hasException, licensePart, exceptionPart := isLicenseWithException(license); hasException {
+				// matches pattern "licensePart WITH exceptionPart", so validate both parts separately
+				if ok, _ := exceptionLicense(exceptionPart); ok {
+					if ok, _ := activeLicense(licensePart); ok {
+						continue
+					}
+					if !options.FailDeprecatedLicenses {
+						if ok, _ := deprecatedLicense(licensePart); ok {
+							continue
+						}
+					}
+				}
+				valid = false
+				invalidLicenses = append(invalidLicenses, license)
+				continue
+			}
+		}
+
+		// all other non-atomic expressions are complex expressions with conjunctions (e.g. "MIT AND Apache-2.0"),
+		// so fail if complex expressions are not allowed
+		if options.FailComplexExpressions && !isAtomic {
+			valid = false
+			invalidLicenses = append(invalidLicenses, license)
+			continue
+		}
+
+		// need to parse if allowing any of LicenseRef, DocumentRef, or complex expressions to be able to determine
+		// whether the license expression is valid
 		if _, err := parse(license); err != nil {
 			valid = false
 			invalidLicenses = append(invalidLicenses, license)
@@ -42,8 +128,12 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 		return false, errors.New("allowedList requires at least one element, but is empty")
 	}
 
-	// simple check for MIT covers the most common case and avoids the overhead of parsing the testExpression
-	if strings.EqualFold(testExpression, "MIT") {
+	// MIT is the most common license, so check for it first before doing any processing to optimize for this case.
+	// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
+	// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
+	// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
+	// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
+	if isMIT(testExpression) {
 		for _, allowed := range allowedList {
 			if strings.EqualFold(allowed, "MIT") {
 				return true, nil
@@ -52,12 +142,37 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 		return false, nil
 	}
 
-	// if only one license in the test expression, check for active license first to avoid the overhead of parsing
-	if !strings.Contains(testExpression, " ") {
-		if ok, _ := ActiveLicense(testExpression); ok {
+	testExpression = strings.TrimSpace(testExpression)
+
+	if isAtomicLicense(testExpression) {
+		// if only one license in the test expression, check for active license to avoid the overhead of parsing
+		if ok, _ := activeLicense(testExpression); ok {
 			for _, allowed := range allowedList {
 				if strings.EqualFold(allowed, testExpression) {
 					return true, nil
+				}
+			}
+		}
+
+		// if only one license in the test expression, check for deprecated license to avoid the overhead of parsing
+		if ok, _ := deprecatedLicense(testExpression); ok {
+			for _, allowed := range allowedList {
+				if strings.EqualFold(allowed, testExpression) {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	// if test expression is a single license with exception, check it now to avoid the overhead of parsing
+	if hasException, licensePart, exceptionPart := isLicenseWithException(testExpression); hasException {
+		// matches pattern "licensePart WITH exceptionPart", so validate both parts separately
+		if ok, _ := activeLicense(licensePart); ok {
+			if ok, _ := exceptionLicense(exceptionPart); ok {
+				for _, allowed := range allowedList {
+					if strings.EqualFold(allowed, testExpression) {
+						return true, nil
+					}
 				}
 			}
 		}
@@ -101,6 +216,33 @@ func stringsToNodes(licenseStrings []string) ([]*node, error) {
 		nodes[i] = node
 	}
 	return nodes, nil
+}
+
+// isMIT checks if the test expression is MIT, ignoring case.
+// NOTE: Caller should trim the test expression before calling this function to avoid false
+// negatives (e.g. " MIT " would not match "MIT").
+func isMIT(testExpression string) bool {
+	return strings.EqualFold(testExpression, "MIT")
+}
+
+// isAtomicLicense checks if the test expression is a single license identifier (e.g. "MIT").
+// NOTE: Caller should trim the test expression before calling this function to avoid false
+// negatives (e.g. " MIT " would not be considered a single license).
+func isAtomicLicense(testExpression string) bool {
+	return !strings.Contains(testExpression, " ")
+}
+
+// isException checks if the test expression contains two licenses separated by WITH
+// (e.g. "GPL-2.0-or-later WITH Bison-exception-2.2").
+// NOTE: Caller should trim the test expression before calling this function to avoid false
+// negatives (e.g. " MIT " would not be considered a single license).
+func isLicenseWithException(testExpression string) (bool, string, string) {
+	// split by " " and check if there are exactly 3 parts and the middle part is "WITH"
+	parts := strings.Fields(testExpression)
+	if len(parts) == 3 && strings.EqualFold(parts[1], "WITH") {
+		return true, parts[0], parts[2]
+	}
+	return false, "", ""
 }
 
 // isCompatible checks if expressionPart is compatible with allowed list.

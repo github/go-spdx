@@ -93,7 +93,7 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 					if !options.FailDeprecatedLicenses {
 						if ok, _ := deprecatedLicense(licensePart); ok {
 							continue
-					}
+						}
 					}
 				}
 				valid = false
@@ -244,7 +244,6 @@ func isLicenseWithException(testExpression string) (bool, string, string) {
 	}
 	return false, "", ""
 }
-
 
 // isCompatible checks if expressionPart is compatible with allowed list.
 // Expression part is an array of licenses that are ANDed together.

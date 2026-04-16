@@ -8,7 +8,7 @@ import (
 
 // activeLicense returns true if the id is an active license.
 func activeLicense(id string) (bool, string) {
-	return inLicenseList(spdxlicenses.GetLicensesMap(), id)
+	return spdxlicenses.IsActiveLicense(id)
 }
 
 // ActiveLicense returns true if the id is an active license.
@@ -18,21 +18,12 @@ func ActiveLicense(id string) (bool, string) {
 
 // deprecatedLicense returns true if the id is a deprecated license.
 func deprecatedLicense(id string) (bool, string) {
-	return inLicenseList(spdxlicenses.GetDeprecatedMap(), id)
+	return spdxlicenses.IsDeprecatedLicense(id)
 }
 
 // exceptionLicense returns true if the id is an exception license.
 func exceptionLicense(id string) (bool, string) {
-	return inLicenseList(spdxlicenses.GetExceptionsMap(), id)
-}
-
-// inLicenseList looks for id in the list of licenses.  The check is case-insensitive (e.g. "mit" will match "MIT").
-func inLicenseList(licenses map[string]string, id string) (bool, string) {
-	foundID, ok := licenses[strings.ToUpper(id)]
-	if ok {
-		return true, foundID
-	}
-	return false, id
+	return spdxlicenses.IsException(id)
 }
 
 const (

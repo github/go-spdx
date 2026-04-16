@@ -115,10 +115,10 @@ func TestValidateLicensesWithOptions_FailDeprecatedLicenses(t *testing.T) {
 			},
 		},
 		{
-			name:            "WITH exception rejects deprecated license if FailDeprecatedLicenses is true",
-			inputLicenses:   []string{deprecatedLicense + " WITH Bison-exception-2.2"},
-			options:         ValidateLicensesOptions{FailDeprecatedLicenses: true},
-			allValid:        false,
+			name:          "WITH exception rejects deprecated license if FailDeprecatedLicenses is true",
+			inputLicenses: []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			allValid:      false,
 			invalidLicenses: []string{
 				deprecatedLicense + " WITH Bison-exception-2.2",
 			},
@@ -250,7 +250,7 @@ func TestSatisfies_FastPathValidation(t *testing.T) {
 		allowedList    []string
 		satisfied      bool
 		expectErr      bool
-		expectedErr   string
+		expectedErr    string
 	}{
 		{
 			name:           "MIT trims whitespace",

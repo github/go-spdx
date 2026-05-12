@@ -34,8 +34,36 @@ type ValidateLicensesOptions struct {
 // Returns all the invalid licenses contained in the `licenses` argument.
 func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOptions) (bool, []string) {
 	// handle all other cases with parsing, which will cover both single and multiple licenses and expressions
-	valid := true
-	invalidLicenses := []string{}
+	_, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(licenses, options)
+	return len(invalidLicenses) == 0, invalidLicenses
+}
+
+// ValidateAndNormalizeLicensesWithOptions checks if given licenses are valid according to SPDX.
+// Supports validation options as defined in ValidateLicensesOptions.
+// Returns all validated licenses in their normalized form as the first return value.
+// Returns any invalid licenses as the second return value.
+func ValidateAndNormalizeLicensesWithOptions(licenses []string, options ValidateLicensesOptions) (normalizedLicenses, invalidLicenses []string) {
+	normalizedLicenses = []string{}
+	invalidLicenses = []string{}
+	seenNormalized := make(map[string]struct{}, len(licenses))
+	seenInvalid := make(map[string]struct{}, len(licenses))
+
+	addNormalized := func(license string) {
+		if _, ok := seenNormalized[license]; ok {
+			return
+		}
+		seenNormalized[license] = struct{}{}
+		normalizedLicenses = append(normalizedLicenses, license)
+	}
+
+	addInvalid := func(license string) {
+		if _, ok := seenInvalid[license]; ok {
+			return
+		}
+		seenInvalid[license] = struct{}{}
+		invalidLicenses = append(invalidLicenses, license)
+	}
+
 	for _, license := range licenses {
 		// MIT is the most common license, so check for it first before doing any processing to optimize for this case.
 		// By putting the isMIT check here, we can avoid the overhead of parsing for the most common case of MIT.
@@ -43,6 +71,7 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 		// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
 		// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
 		if isMIT(license) {
+			addNormalized("MIT")
 			continue
 		}
 
@@ -50,32 +79,31 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 
 		isAtomic := isAtomicLicense(license)
 		if isAtomic {
-			if ok, _ := activeLicense(license); ok {
+			if ok, normalizedLicense := activeLicense(license); ok {
+				addNormalized(normalizedLicense)
 				continue
 			}
 
-			if ok, _ := deprecatedLicense(license); ok {
+			if ok, normalizedLicense := deprecatedLicense(license); ok {
 				if options.FailDeprecatedLicenses {
-					valid = false
-					invalidLicenses = append(invalidLicenses, license)
+					addInvalid(license)
 					continue
 				}
+				addNormalized(normalizedLicense)
 				// if FailDeprecatedLicenses is false, then consider the deprecated license valid and continue
 				continue
 			}
 
 			if options.FailAllLicenseRefs {
 				if strings.HasPrefix(license, "LicenseRef-") {
-					valid = false
-					invalidLicenses = append(invalidLicenses, license)
+					addInvalid(license)
 					continue
 				}
 			}
 
 			if options.FailAllDocumentRefs {
 				if strings.HasPrefix(license, "DocumentRef-") {
-					valid = false
-					invalidLicenses = append(invalidLicenses, license)
+					addInvalid(license)
 					continue
 				}
 			}
@@ -86,18 +114,19 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 		if !isAtomic {
 			if hasException, licensePart, exceptionPart := isLicenseWithException(license); hasException {
 				// matches pattern "licensePart WITH exceptionPart", so validate both parts separately
-				if ok, _ := exceptionLicense(exceptionPart); ok {
-					if ok, _ := activeLicense(licensePart); ok {
+				if ok, normalizedException := exceptionLicense(exceptionPart); ok {
+					if ok, normalizedLicense := activeLicense(licensePart); ok {
+						addNormalized(normalizedLicense + " WITH " + normalizedException)
 						continue
 					}
 					if !options.FailDeprecatedLicenses {
-						if ok, _ := deprecatedLicense(licensePart); ok {
+						if ok, normalizedLicense := deprecatedLicense(licensePart); ok {
+							addNormalized(normalizedLicense + " WITH " + normalizedException)
 							continue
 						}
 					}
 				}
-				valid = false
-				invalidLicenses = append(invalidLicenses, license)
+				addInvalid(license)
 				continue
 			}
 		}
@@ -105,19 +134,22 @@ func ValidateLicensesWithOptions(licenses []string, options ValidateLicensesOpti
 		// all other non-atomic expressions are complex expressions with conjunctions (e.g. "MIT AND Apache-2.0"),
 		// so fail if complex expressions are not allowed
 		if options.FailComplexExpressions && !isAtomic {
-			valid = false
-			invalidLicenses = append(invalidLicenses, license)
+			addInvalid(license)
 			continue
 		}
 
 		// need to parse if allowing any of LicenseRef, DocumentRef, or complex expressions to be able to determine
 		// whether the license expression is valid
-		if _, err := parse(license); err != nil {
-			valid = false
-			invalidLicenses = append(invalidLicenses, license)
+		var parsedLicense *node
+		var err error
+		if parsedLicense, err = parse(license); err != nil {
+			addInvalid(license)
+		} else {
+			normalizedLicense := *parsedLicense.reconstructedLicenseString()
+			addNormalized(normalizedLicense)
 		}
 	}
-	return valid, invalidLicenses
+	return normalizedLicenses, invalidLicenses
 }
 
 // Satisfies determines if the allowed list of licenses satisfies the test license expression.

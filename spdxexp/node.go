@@ -145,7 +145,7 @@ func (n *node) hasDocumentRef() bool {
 	return n.ref.hasDocumentRef
 }
 
-// reconstructedLicenseString returns the string representation of the license or license ref.
+// reconstructedLicenseString returns the string representation of a license, license ref, or expression.
 // TODO: Original had "NOASSERTION".  Does that still apply?
 func (n *node) reconstructedLicenseString() *string {
 	switch n.role {

@@ -46,7 +46,6 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 	normalizedLicenses = []string{}
 	invalidLicenses = []string{}
 	seenNormalized := make(map[string]struct{}, len(licenses))
-	seenInvalid := make(map[string]struct{}, len(licenses))
 
 	addNormalized := func(license string) {
 		if _, ok := seenNormalized[license]; ok {
@@ -54,14 +53,6 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 		}
 		seenNormalized[license] = struct{}{}
 		normalizedLicenses = append(normalizedLicenses, license)
-	}
-
-	addInvalid := func(license string) {
-		if _, ok := seenInvalid[license]; ok {
-			return
-		}
-		seenInvalid[license] = struct{}{}
-		invalidLicenses = append(invalidLicenses, license)
 	}
 
 	for _, license := range licenses {
@@ -86,7 +77,7 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 
 			if ok, normalizedLicense := deprecatedLicense(license); ok {
 				if options.FailDeprecatedLicenses {
-					addInvalid(license)
+					invalidLicenses = append(invalidLicenses, license)
 					continue
 				}
 				addNormalized(normalizedLicense)
@@ -96,14 +87,14 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 
 			if options.FailAllLicenseRefs {
 				if strings.HasPrefix(license, "LicenseRef-") {
-					addInvalid(license)
+					invalidLicenses = append(invalidLicenses, license)
 					continue
 				}
 			}
 
 			if options.FailAllDocumentRefs {
 				if strings.HasPrefix(license, "DocumentRef-") {
-					addInvalid(license)
+					invalidLicenses = append(invalidLicenses, license)
 					continue
 				}
 			}
@@ -126,7 +117,7 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 						}
 					}
 				}
-				addInvalid(license)
+				invalidLicenses = append(invalidLicenses, license)
 				continue
 			}
 		}
@@ -134,7 +125,7 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 		// all other non-atomic expressions are complex expressions with conjunctions (e.g. "MIT AND Apache-2.0"),
 		// so fail if complex expressions are not allowed
 		if options.FailComplexExpressions && !isAtomic {
-			addInvalid(license)
+			invalidLicenses = append(invalidLicenses, license)
 			continue
 		}
 
@@ -143,7 +134,7 @@ func ValidateAndNormalizeLicensesWithOptions(licenses []string, options Validate
 		var parsedLicense *node
 		var err error
 		if parsedLicense, err = parse(license); err != nil {
-			addInvalid(license)
+			invalidLicenses = append(invalidLicenses, license)
 		} else {
 			normalizedLicense := *parsedLicense.reconstructedLicenseString()
 			addNormalized(normalizedLicense)

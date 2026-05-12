@@ -45,6 +45,10 @@ func TestReconstructedLicenseString(t *testing.T) {
 					licenseRef:     "MIT-Style-2",
 				},
 			}, "DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"},
+		{"Expression node - AND", getParsedNode("MIT AND Apache-2.0"), "MIT AND Apache-2.0"},
+		{"Expression node - parentheses required (OR under AND)", getParsedNode("(MIT OR Apache-2.0) AND BSD-3-Clause"), "(MIT OR Apache-2.0) AND BSD-3-Clause"},
+		{"Expression node - parentheses required (OR on right)", getParsedNode("MIT AND (Apache-2.0 OR BSD-3-Clause)"), "MIT AND (Apache-2.0 OR BSD-3-Clause)"},
+		{"Expression node - precedence (AND under OR)", getParsedNode("MIT OR Apache-2.0 AND BSD-3-Clause"), "MIT OR Apache-2.0 AND BSD-3-Clause"},
 	}
 
 	for _, test := range tests {

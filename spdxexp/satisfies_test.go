@@ -228,6 +228,200 @@ func TestValidateLicensesWithOptions_AllOptions(t *testing.T) {
 	}
 }
 
+func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testing.T) {
+	tests := []struct {
+		name               string
+		inputLicenses      []string
+		options            ValidateLicensesOptions
+		invalidLicenses    []string
+		normalizedLicenses []string
+	}{
+		{
+			name:          "Expressions rejected",
+			inputLicenses: []string{"MIT AND Apache-2.0"},
+			options:       ValidateLicensesOptions{FailComplexExpressions: true},
+			invalidLicenses: []string{
+				"MIT AND Apache-2.0",
+			},
+			normalizedLicenses: []string{},
+		},
+		{
+			name:          "Mixed list rejects only expressions",
+			inputLicenses: []string{"mit", "apache-2.0", "LGPL-2.1-only OR MIT"},
+			options:       ValidateLicensesOptions{FailComplexExpressions: true},
+			invalidLicenses: []string{
+				"LGPL-2.1-only OR MIT",
+			},
+			normalizedLicenses: []string{"MIT", "Apache-2.0"},
+		},
+		{
+			name:               "WITH exception is not treated as complex expression",
+			inputLicenses:      []string{"gpl-2.0-or-later WITH Bison-exception-2.2"},
+			options:            ValidateLicensesOptions{FailComplexExpressions: true},
+			invalidLicenses:    []string{},
+			normalizedLicenses: []string{"GPL-2.0-or-later WITH Bison-exception-2.2"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
+			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
+		})
+	}
+}
+
+func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testing.T) {
+	// eCos-2.0 is a known deprecated SPDX license ID (see TestDeprecatedLicense).
+	deprecatedLicense := "eCos-2.0"
+
+	tests := []struct {
+		name               string
+		inputLicenses      []string
+		options            ValidateLicensesOptions
+		invalidLicenses    []string
+		normalizedLicenses []string
+	}{
+		{
+			name:          "Deprecated license rejected",
+			inputLicenses: []string{deprecatedLicense},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			invalidLicenses: []string{
+				deprecatedLicense,
+			},
+			normalizedLicenses: []string{},
+		},
+		{
+			name:          "Mixed list rejects only deprecated licenses",
+			inputLicenses: []string{"MIT", "Apache-2.0", deprecatedLicense},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			invalidLicenses: []string{
+				deprecatedLicense,
+			},
+			normalizedLicenses: []string{"MIT", "Apache-2.0"},
+		},
+		{
+			name:          "WITH exception rejects deprecated license if FailDeprecatedLicenses is true",
+			inputLicenses: []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			invalidLicenses: []string{
+				deprecatedLicense + " WITH Bison-exception-2.2",
+			},
+			normalizedLicenses: []string{},
+		},
+		{
+			name:               "WITH exception allows deprecated license if FailDeprecatedLicenses is false",
+			inputLicenses:      []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+			options:            ValidateLicensesOptions{FailDeprecatedLicenses: false},
+			invalidLicenses:    []string{},
+			normalizedLicenses: []string{deprecatedLicense + " WITH Bison-exception-2.2"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
+			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
+		})
+	}
+}
+
+func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
+	documentRef := "DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"
+	licenseRef := "LicenseRef-MIT-Style-1"
+	deprecated := "eCos-2.0"
+	expression := "MIT AND Apache-2.0"
+	licenseWithException := "GPL-2.0-or-later WITH Bison-exception-2.2"
+
+	tests := []struct {
+		name               string
+		inputLicenses      []string
+		options            ValidateLicensesOptions
+		invalidLicenses    []string
+		normalizedLicenses []string
+	}{
+		{
+			name:               "Dedups",
+			inputLicenses:      []string{" MIT ", "MIT", "mit"},
+			options:            ValidateLicensesOptions{},
+			invalidLicenses:    []string{},
+			normalizedLicenses: []string{"MIT"},
+		},
+		{
+			name:               "Defaults allow deprecated, refs, and expressions",
+			inputLicenses:      []string{" MIT ", deprecated, "licenseref-mine-MyLicense", licenseRef, documentRef, expression, licenseWithException},
+			options:            ValidateLicensesOptions{},
+			invalidLicenses:    []string{"licenseref-mine-MyLicense"},
+			normalizedLicenses: []string{"MIT", deprecated, licenseRef, documentRef, expression, licenseWithException},
+		},
+		{
+			name:               "FailDeprecatedLicenses rejects deprecated IDs",
+			inputLicenses:      []string{deprecated, "Apache-2.0"},
+			options:            ValidateLicensesOptions{FailDeprecatedLicenses: true},
+			invalidLicenses:    []string{deprecated},
+			normalizedLicenses: []string{"Apache-2.0"},
+		},
+		{
+			name:               "FailComplexExpressions rejects conjunction expressions",
+			inputLicenses:      []string{expression, licenseWithException},
+			options:            ValidateLicensesOptions{FailComplexExpressions: true},
+			invalidLicenses:    []string{expression},
+			normalizedLicenses: []string{licenseWithException},
+		},
+		{
+			name:               "FailComplexExpressions does not duplicate invalid entries",
+			inputLicenses:      []string{"MIT AND APCHE-2.0"},
+			options:            ValidateLicensesOptions{FailComplexExpressions: true},
+			invalidLicenses:    []string{"MIT AND APCHE-2.0"},
+			normalizedLicenses: []string{},
+		},
+		{
+			name:               "FailAllLicenseRefs rejects LicenseRef but allows DocumentRef",
+			inputLicenses:      []string{licenseRef, documentRef},
+			options:            ValidateLicensesOptions{FailAllLicenseRefs: true},
+			invalidLicenses:    []string{licenseRef},
+			normalizedLicenses: []string{documentRef},
+		},
+		{
+			name:               "FailAllDocumentRefs rejects DocumentRef but allows LicenseRef",
+			inputLicenses:      []string{documentRef, licenseRef},
+			options:            ValidateLicensesOptions{FailAllDocumentRefs: true},
+			invalidLicenses:    []string{documentRef},
+			normalizedLicenses: []string{licenseRef},
+		},
+		{
+			name:               "FailAllLicenseRefs and FailAllDocumentRefs rejects any non-active atomic ref",
+			inputLicenses:      []string{licenseRef, documentRef, "CustomRef-foo"},
+			options:            ValidateLicensesOptions{FailAllLicenseRefs: true, FailAllDocumentRefs: true},
+			invalidLicenses:    []string{licenseRef, documentRef, "CustomRef-foo"},
+			normalizedLicenses: []string{},
+		},
+		{
+			name:          "All flags together",
+			inputLicenses: []string{deprecated, licenseRef, documentRef, expression, licenseWithException, "Apache-2.0"},
+			options: ValidateLicensesOptions{
+				FailComplexExpressions: true,
+				FailDeprecatedLicenses: true,
+				FailAllLicenseRefs:     true,
+				FailAllDocumentRefs:    true,
+			},
+			invalidLicenses:    []string{deprecated, licenseRef, documentRef, expression},
+			normalizedLicenses: []string{licenseWithException, "Apache-2.0"},
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
+			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
+			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
+		})
+	}
+}
+
 // TestSatisfiesSingle lets you quickly test a single call to Satisfies with a specific license expression and allowed list of licenses.
 // To test a different expression, change the expression, allowed licenses, and expected result in the function body.
 // TO RUN: go test ./expression -run TestSatisfiesSingle

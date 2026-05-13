@@ -1,6 +1,7 @@
 package spdxexp
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -144,10 +145,12 @@ func (n *node) hasDocumentRef() bool {
 	return n.ref.hasDocumentRef
 }
 
-// reconstructedLicenseString returns the string representation of the license or license ref.
+// reconstructedLicenseString returns the string representation of a license, license ref, or expression.
 // TODO: Original had "NOASSERTION".  Does that still apply?
 func (n *node) reconstructedLicenseString() *string {
 	switch n.role {
+	case expressionNode:
+		return n.reconstructedExpressionString()
 	case licenseNode:
 		license := *n.license()
 		if n.hasPlus() && !strings.HasSuffix(strings.ToLower(license), "-or-later") {
@@ -165,6 +168,69 @@ func (n *node) reconstructedLicenseString() *string {
 		return &license
 	}
 	return nil
+}
+
+func (n *node) reconstructedExpressionString() *string {
+	if n == nil || !n.isExpression() {
+		return nil
+	}
+
+	left := n.left()
+	right := n.right()
+	if left == nil || right == nil {
+		return nil
+	}
+
+	leftStr := left.reconstructedLicenseString()
+	rightStr := right.reconstructedLicenseString()
+	if leftStr == nil || rightStr == nil {
+		return nil
+	}
+
+	conj := n.conjunction()
+	if conj == nil {
+		return nil
+	}
+
+	operator := strings.ToUpper(*conj)
+	if operator != "AND" && operator != "OR" {
+		return nil
+	}
+
+	parentPrec := nodePrecedence(n)
+	leftRendered := *leftStr
+	if left.isExpression() && nodePrecedence(left) < parentPrec {
+		leftRendered = "(" + leftRendered + ")"
+	}
+	rightRendered := *rightStr
+	if right.isExpression() && nodePrecedence(right) < parentPrec {
+		rightRendered = "(" + rightRendered + ")"
+	}
+
+	s := fmt.Sprintf("%s %s %s", leftRendered, operator, rightRendered)
+	return &s
+}
+
+func nodePrecedence(n *node) int {
+	if n == nil {
+		return 0
+	}
+	if !n.isExpression() {
+		// atomic (license/licenseRef)
+		return 3
+	}
+	conj := n.conjunction()
+	if conj == nil {
+		return 0
+	}
+	switch strings.ToLower(*conj) {
+	case "and":
+		return 2
+	case "or":
+		return 1
+	default:
+		return 0
+	}
 }
 
 // sortLicenses sorts an array of license and license reference nodes alphabetically based

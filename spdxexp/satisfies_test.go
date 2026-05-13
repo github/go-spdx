@@ -233,7 +233,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 		name               string
 		inputLicenses      []string
 		options            ValidateLicensesOptions
-		allValid           bool
 		invalidLicenses    []string
 		normalizedLicenses []string
 	}{
@@ -241,7 +240,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 			name:          "Expressions rejected",
 			inputLicenses: []string{"MIT AND Apache-2.0"},
 			options:       ValidateLicensesOptions{FailComplexExpressions: true},
-			allValid:      false,
 			invalidLicenses: []string{
 				"MIT AND Apache-2.0",
 			},
@@ -251,7 +249,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 			name:          "Mixed list rejects only expressions",
 			inputLicenses: []string{"mit", "apache-2.0", "LGPL-2.1-only OR MIT"},
 			options:       ValidateLicensesOptions{FailComplexExpressions: true},
-			allValid:      false,
 			invalidLicenses: []string{
 				"LGPL-2.1-only OR MIT",
 			},
@@ -261,7 +258,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 			name:               "WITH exception is not treated as complex expression",
 			inputLicenses:      []string{"gpl-2.0-or-later WITH Bison-exception-2.2"},
 			options:            ValidateLicensesOptions{FailComplexExpressions: true},
-			allValid:           true,
 			invalidLicenses:    []string{},
 			normalizedLicenses: []string{"GPL-2.0-or-later WITH Bison-exception-2.2"},
 		},
@@ -272,7 +268,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
 			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
 			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
-			assert.Equal(t, test.allValid, len(invalidLicenses) == 0)
 		})
 	}
 }
@@ -285,7 +280,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 		name               string
 		inputLicenses      []string
 		options            ValidateLicensesOptions
-		allValid           bool
 		invalidLicenses    []string
 		normalizedLicenses []string
 	}{
@@ -293,7 +287,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 			name:          "Deprecated license rejected",
 			inputLicenses: []string{deprecatedLicense},
 			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
-			allValid:      false,
 			invalidLicenses: []string{
 				deprecatedLicense,
 			},
@@ -303,7 +296,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 			name:          "Mixed list rejects only deprecated licenses",
 			inputLicenses: []string{"MIT", "Apache-2.0", deprecatedLicense},
 			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
-			allValid:      false,
 			invalidLicenses: []string{
 				deprecatedLicense,
 			},
@@ -313,7 +305,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 			name:          "WITH exception rejects deprecated license if FailDeprecatedLicenses is true",
 			inputLicenses: []string{deprecatedLicense + " WITH Bison-exception-2.2"},
 			options:       ValidateLicensesOptions{FailDeprecatedLicenses: true},
-			allValid:      false,
 			invalidLicenses: []string{
 				deprecatedLicense + " WITH Bison-exception-2.2",
 			},
@@ -323,7 +314,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 			name:               "WITH exception allows deprecated license if FailDeprecatedLicenses is false",
 			inputLicenses:      []string{deprecatedLicense + " WITH Bison-exception-2.2"},
 			options:            ValidateLicensesOptions{FailDeprecatedLicenses: false},
-			allValid:           true,
 			invalidLicenses:    []string{},
 			normalizedLicenses: []string{deprecatedLicense + " WITH Bison-exception-2.2"},
 		},
@@ -334,7 +324,6 @@ func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testi
 			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
 			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
 			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
-			assert.Equal(t, test.allValid, len(invalidLicenses) == 0)
 		})
 	}
 }
@@ -350,7 +339,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 		name               string
 		inputLicenses      []string
 		options            ValidateLicensesOptions
-		allValid           bool
 		invalidLicenses    []string
 		normalizedLicenses []string
 	}{
@@ -358,7 +346,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "Dedups",
 			inputLicenses:      []string{" MIT ", "MIT", "mit"},
 			options:            ValidateLicensesOptions{},
-			allValid:           true,
 			invalidLicenses:    []string{},
 			normalizedLicenses: []string{"MIT"},
 		},
@@ -366,7 +353,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "Defaults allow deprecated, refs, and expressions",
 			inputLicenses:      []string{" MIT ", deprecated, "licenseref-mine-MyLicense", licenseRef, documentRef, expression, licenseWithException},
 			options:            ValidateLicensesOptions{},
-			allValid:           false,
 			invalidLicenses:    []string{"licenseref-mine-MyLicense"},
 			normalizedLicenses: []string{"MIT", deprecated, licenseRef, documentRef, expression, licenseWithException},
 		},
@@ -374,7 +360,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailDeprecatedLicenses rejects deprecated IDs",
 			inputLicenses:      []string{deprecated, "Apache-2.0"},
 			options:            ValidateLicensesOptions{FailDeprecatedLicenses: true},
-			allValid:           false,
 			invalidLicenses:    []string{deprecated},
 			normalizedLicenses: []string{"Apache-2.0"},
 		},
@@ -382,7 +367,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailComplexExpressions rejects conjunction expressions",
 			inputLicenses:      []string{expression, licenseWithException},
 			options:            ValidateLicensesOptions{FailComplexExpressions: true},
-			allValid:           false,
 			invalidLicenses:    []string{expression},
 			normalizedLicenses: []string{licenseWithException},
 		},
@@ -390,7 +374,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailComplexExpressions does not duplicate invalid entries",
 			inputLicenses:      []string{"MIT AND APCHE-2.0"},
 			options:            ValidateLicensesOptions{FailComplexExpressions: true},
-			allValid:           false,
 			invalidLicenses:    []string{"MIT AND APCHE-2.0"},
 			normalizedLicenses: []string{},
 		},
@@ -398,7 +381,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailAllLicenseRefs rejects LicenseRef but allows DocumentRef",
 			inputLicenses:      []string{licenseRef, documentRef},
 			options:            ValidateLicensesOptions{FailAllLicenseRefs: true},
-			allValid:           false,
 			invalidLicenses:    []string{licenseRef},
 			normalizedLicenses: []string{documentRef},
 		},
@@ -406,7 +388,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailAllDocumentRefs rejects DocumentRef but allows LicenseRef",
 			inputLicenses:      []string{documentRef, licenseRef},
 			options:            ValidateLicensesOptions{FailAllDocumentRefs: true},
-			allValid:           false,
 			invalidLicenses:    []string{documentRef},
 			normalizedLicenses: []string{licenseRef},
 		},
@@ -414,7 +395,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			name:               "FailAllLicenseRefs and FailAllDocumentRefs rejects any non-active atomic ref",
 			inputLicenses:      []string{licenseRef, documentRef, "CustomRef-foo"},
 			options:            ValidateLicensesOptions{FailAllLicenseRefs: true, FailAllDocumentRefs: true},
-			allValid:           false,
 			invalidLicenses:    []string{licenseRef, documentRef, "CustomRef-foo"},
 			normalizedLicenses: []string{},
 		},
@@ -427,7 +407,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 				FailAllLicenseRefs:     true,
 				FailAllDocumentRefs:    true,
 			},
-			allValid:           false,
 			invalidLicenses:    []string{deprecated, licenseRef, documentRef, expression},
 			normalizedLicenses: []string{licenseWithException, "Apache-2.0"},
 		},
@@ -439,7 +418,6 @@ func TestValidateAndNormalizeLicensesWithOptions_AllOptions(t *testing.T) {
 			normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(test.inputLicenses, test.options)
 			assert.EqualValues(t, test.invalidLicenses, invalidLicenses, "invalid licenses should match expected")
 			assert.EqualValues(t, test.normalizedLicenses, normalizedLicenses, "normalized licenses should match expected")
-			assert.Equal(t, test.allValid, len(invalidLicenses) == 0)
 		})
 	}
 }

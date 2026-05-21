@@ -13,8 +13,6 @@ on:
 jobs:
     fetch-licenses:
         runs-on: ubuntu-latest
-        # TODO(security): Confirm this scheduled license update workflow still requires
-        # write-scoped GITHUB_TOKEN permissions to open/update pull requests.
         permissions:
           contents: write
           pull-requests: write

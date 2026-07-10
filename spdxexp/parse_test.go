@@ -45,6 +45,9 @@ func TestParse(t *testing.T) {
 		{"invalid license", "NON-EXISTENT-LICENSE", nil, "",
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
 
+		{"dangling open parenthesis", "(", nil, "",
+			errors.New("expected node, but found none")},
+
 		{"OR Expression", "MIT OR Apache-2.0",
 			&node{
 				role: expressionNode,

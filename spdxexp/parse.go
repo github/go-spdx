@@ -281,6 +281,10 @@ func (t *tokenStream) parseLicenseRef() *node {
 	ref := referenceNodePartial{documentRef: "", hasDocumentRef: false, licenseRef: ""}
 
 	token := t.peek()
+	if token == nil {
+		// end of stream, so no license reference to parse
+		return nil
+	}
 	if token.role == documentRefToken {
 		ref.documentRef = token.value
 		ref.hasDocumentRef = true
@@ -294,6 +298,13 @@ func (t *tokenStream) parseLicenseRef() *node {
 	}
 
 	token = t.peek()
+	if token == nil && ref.hasDocumentRef {
+		t.err = errors.New("expected 'LicenseRef-...' after 'DocumentRef-...'")
+		return nil
+	} else if token == nil {
+		// not found is not an error as long as DocumentRef and : weren't the previous tokens
+		return nil
+	}
 	if token.role != licenseRefToken && ref.hasDocumentRef {
 		t.err = errors.New("expected 'LicenseRef-...' after 'DocumentRef-...'")
 		return nil
@@ -315,7 +326,7 @@ func (t *tokenStream) parseLicenseRef() *node {
 // an error is returned.  Advances the index if a valid license is found.
 func (t *tokenStream) parseLicense() *node {
 	token := t.peek()
-	if token.role != licenseToken {
+	if token == nil || token.role != licenseToken {
 		return nil
 	}
 	t.next()
@@ -361,6 +372,10 @@ func (t *tokenStream) parseLicense() *node {
 // Advances the index if the operator is found.
 func (t *tokenStream) parseOperator(operator string) *string {
 	token := t.peek()
+	if token == nil {
+		// end of stream, so the requested operator is not present
+		return nil
+	}
 	if token.role == operatorToken && token.value == operator {
 		t.next()
 		return &(token.value)

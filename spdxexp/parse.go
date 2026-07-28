@@ -361,7 +361,7 @@ func (t *tokenStream) parseLicense() *node {
 // Advances the index if the operator is found.
 func (t *tokenStream) parseOperator(operator string) *string {
 	token := t.peek()
-	if token.role == operatorToken && token.value == operator {
+	if token != nil && token.role == operatorToken && token.value == operator {
 		t.next()
 		return &(token.value)
 	}

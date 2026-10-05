@@ -346,7 +346,9 @@ func (n *node) expandOr() [][]*node {
 
 // expandOrTerm expands the terms of an OR expression.
 func expandOrTerm(term *node, result [][]*node) [][]*node {
-	if term.isLicense() {
+	// LicenseRef terms must be kept (same as expandAndTerm). Dropping them
+	// made Satisfies ignore LicenseRef alternatives of OR (see #165).
+	if term.isLicense() || term.isLicenseRef() {
 		result = append(result, []*node{term})
 	} else if term.isExpression() {
 		if term.isOrExpression() {

@@ -412,7 +412,8 @@ func appendTerms(left, right [][]*node) [][]*node {
 	var result [][]*node
 	for _, r := range right {
 		for _, l := range left {
-			tmp := l
+			tmp := make([]*node, 0, len(l)+len(r))
+			tmp = append(tmp, l...)
 			tmp = append(tmp, r...)
 			result = append(result, tmp)
 		}

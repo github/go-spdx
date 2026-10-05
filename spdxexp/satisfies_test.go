@@ -660,6 +660,12 @@ func TestSatisfies(t *testing.T) {
 		{"two licenseRef OR groups require one licenseRef from each", "(LicenseRef-a OR LicenseRef-b) AND (LicenseRef-c OR LicenseRef-d)", []string{"LicenseRef-b"}, false, nil},
 		{"nested license and licenseRef OR groups satisfy second alternatives", "MIT OR ((ISC OR BSD-3-Clause) AND (LicenseRef-a OR LicenseRef-b))", []string{"BSD-3-Clause", "LicenseRef-b"}, true, nil},
 		{"nested documentRef OR satisfies second alternative", "MIT OR (ISC AND (DocumentRef-x:LicenseRef-a OR DocumentRef-x:LicenseRef-b))", []string{"ISC", "DocumentRef-x:LicenseRef-b"}, true, nil},
+		{"deep AND with licenseRef and documentRef is satisfied", "MIT AND ISC AND LicenseRef-a AND DocumentRef-x:LicenseRef-b", []string{"MIT", "ISC", "LicenseRef-a", "DocumentRef-x:LicenseRef-b"}, true, nil},
+		{"deep AND with licenseRef and documentRef requires every term", "MIT AND ISC AND LicenseRef-a AND DocumentRef-x:LicenseRef-b", []string{"MIT", "ISC", "LicenseRef-a"}, false, nil},
+		{"deep mixed AND satisfies first alternatives", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"MIT", "LicenseRef-a", "DocumentRef-x:LicenseRef-c"}, true, nil},
+		{"deep mixed AND satisfies second alternatives", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b", "DocumentRef-x:LicenseRef-d"}, true, nil},
+		{"deep mixed AND requires one term from every OR group", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b"}, false, nil},
+		{"deep mixed AND requires matching documentRef", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b", "DocumentRef-y:LicenseRef-d"}, false, nil},
 	}
 
 	for _, test := range tests {
@@ -868,6 +874,22 @@ func TestExpandAnd(t *testing.T) {
 			assert.Equal(t, test.expanded, expandAndResult)
 		})
 	}
+}
+
+func TestAppendTermsDoesNotAliasBranches(t *testing.T) {
+	mit := getLicenseNode("MIT", false)
+	isc := getLicenseNode("ISC", false)
+	apache := getLicenseNode("Apache-2.0", false)
+
+	leftTerm := make([]*node, 1, 2)
+	leftTerm[0] = mit
+
+	actual := appendTerms(
+		[][]*node{leftTerm},
+		[][]*node{{isc}, {apache}},
+	)
+
+	assert.Equal(t, [][]*node{{mit, isc}, {mit, apache}}, actual)
 }
 
 type testCaseData struct {

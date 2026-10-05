@@ -641,6 +641,15 @@ func TestSatisfies(t *testing.T) {
 		{"licenseRef alone not allowed, but with documentRef allowed",
 			"MIT AND LicenseRef-X-BSD-3-Clause-Golang",
 			[]string{"MIT", "Apache-2.0", "DocumentRef-spdx-tool-1.2:LicenseRef-X-BSD-3-Clause-Golang"}, false, nil},
+		{"first licenseRef satisfies (licenseRef OR licenseRef)", "LicenseRef-x OR LicenseRef-y", []string{"LicenseRef-x"}, true, nil},
+		{"second licenseRef satisfies (licenseRef OR licenseRef)", "LicenseRef-x OR LicenseRef-y", []string{"LicenseRef-y"}, true, nil},
+		{"licenseRef satisfies (license OR licenseRef)", "MIT OR LicenseRef-x", []string{"LicenseRef-x"}, true, nil},
+		{"2nd license satisfies (license OR license)", "MIT OR ISC", []string{"ISC"}, true, nil},
+		{"licenseRef alone does not satisfy (license AND (licenseRef OR licenseRef))", "MIT AND (LicenseRef-a OR LicenseRef-b)", []string{"MIT"}, false, nil},
+		{"ORed license alone does not satisfy (license AND (license OR license))", "MIT AND (ISC OR BSD-3-Clause)", []string{"MIT"}, false, nil},
+		{"licenseRef satisfies (licenseRef OR license)", "LicenseRef-x OR MIT", []string{"LicenseRef-x"}, true, nil},
+		{"licenseRef alone does not satisfy ((licenseRef OR licenseRef) AND license)", "(LicenseRef-a OR LicenseRef-b) AND MIT", []string{"MIT"}, false, nil},
+		{"documentRef satisfies (license OR documentRef)", "MIT OR DocumentRef-x:LicenseRef-y", []string{"DocumentRef-x:LicenseRef-y"}, true, nil},
 	}
 
 	for _, test := range tests {

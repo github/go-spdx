@@ -346,7 +346,7 @@ func (n *node) expandOr() [][]*node {
 
 // expandOrTerm expands the terms of an OR expression.
 func expandOrTerm(term *node, result [][]*node) [][]*node {
-	if term.isLicense() {
+	if term.isLicense() || term.isLicenseRef() {
 		result = append(result, []*node{term})
 	} else if term.isExpression() {
 		if term.isOrExpression() {

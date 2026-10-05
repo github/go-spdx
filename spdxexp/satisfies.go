@@ -353,8 +353,8 @@ func expandOrTerm(term *node, result [][]*node) [][]*node {
 			left := term.expandOr()
 			result = append(result, left...)
 		} else if term.isAndExpression() {
-			left := term.expandAnd()[0]
-			result = append(result, left)
+			left := term.expandAnd()
+			result = append(result, left...)
 		}
 	}
 	return result

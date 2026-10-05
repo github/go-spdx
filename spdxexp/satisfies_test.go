@@ -650,6 +650,16 @@ func TestSatisfies(t *testing.T) {
 		{"licenseRef satisfies (licenseRef OR license)", "LicenseRef-x OR MIT", []string{"LicenseRef-x"}, true, nil},
 		{"licenseRef alone does not satisfy ((licenseRef OR licenseRef) AND license)", "(LicenseRef-a OR LicenseRef-b) AND MIT", []string{"MIT"}, false, nil},
 		{"documentRef satisfies (license OR documentRef)", "MIT OR DocumentRef-x:LicenseRef-y", []string{"DocumentRef-x:LicenseRef-y"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) satisfied by license, first licenseRef", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"ISC", "LicenseRef-a"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) satisfied by license, second licenseRef", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"ISC", "LicenseRef-b"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) not satisfied by licenseRef alone", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"LicenseRef-a"}, false, nil},
+		{"nested AND on left of OR satisfied by second licenseRef", "(ISC AND (LicenseRef-a OR LicenseRef-b)) OR MIT", []string{"ISC", "LicenseRef-b"}, true, nil},
+		{"nested AND on either side of OR satisfied by left second licenseRef", "(MIT AND (LicenseRef-a OR LicenseRef-b)) OR (ISC AND (LicenseRef-c OR LicenseRef-d))", []string{"MIT", "LicenseRef-b"}, true, nil},
+		{"nested AND on either side of OR satisfied by right second licenseRef", "(MIT AND (LicenseRef-a OR LicenseRef-b)) OR (ISC AND (LicenseRef-c OR LicenseRef-d))", []string{"ISC", "LicenseRef-d"}, true, nil},
+		{"two licenseRef OR groups produce Cartesian alternatives", "(LicenseRef-a OR LicenseRef-b) AND (LicenseRef-c OR LicenseRef-d)", []string{"LicenseRef-b", "LicenseRef-d"}, true, nil},
+		{"two licenseRef OR groups require one licenseRef from each", "(LicenseRef-a OR LicenseRef-b) AND (LicenseRef-c OR LicenseRef-d)", []string{"LicenseRef-b"}, false, nil},
+		{"nested license and licenseRef OR groups satisfy second alternatives", "MIT OR ((ISC OR BSD-3-Clause) AND (LicenseRef-a OR LicenseRef-b))", []string{"BSD-3-Clause", "LicenseRef-b"}, true, nil},
+		{"nested documentRef OR satisfies second alternative", "MIT OR (ISC AND (DocumentRef-x:LicenseRef-a OR DocumentRef-x:LicenseRef-b))", []string{"ISC", "DocumentRef-x:LicenseRef-b"}, true, nil},
 	}
 
 	for _, test := range tests {

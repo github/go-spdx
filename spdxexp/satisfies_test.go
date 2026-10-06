@@ -641,6 +641,31 @@ func TestSatisfies(t *testing.T) {
 		{"licenseRef alone not allowed, but with documentRef allowed",
 			"MIT AND LicenseRef-X-BSD-3-Clause-Golang",
 			[]string{"MIT", "Apache-2.0", "DocumentRef-spdx-tool-1.2:LicenseRef-X-BSD-3-Clause-Golang"}, false, nil},
+		{"first licenseRef satisfies (licenseRef OR licenseRef)", "LicenseRef-x OR LicenseRef-y", []string{"LicenseRef-x"}, true, nil},
+		{"second licenseRef satisfies (licenseRef OR licenseRef)", "LicenseRef-x OR LicenseRef-y", []string{"LicenseRef-y"}, true, nil},
+		{"licenseRef satisfies (license OR licenseRef)", "MIT OR LicenseRef-x", []string{"LicenseRef-x"}, true, nil},
+		{"2nd license satisfies (license OR license)", "MIT OR ISC", []string{"ISC"}, true, nil},
+		{"licenseRef alone does not satisfy (license AND (licenseRef OR licenseRef))", "MIT AND (LicenseRef-a OR LicenseRef-b)", []string{"MIT"}, false, nil},
+		{"ORed license alone does not satisfy (license AND (license OR license))", "MIT AND (ISC OR BSD-3-Clause)", []string{"MIT"}, false, nil},
+		{"licenseRef satisfies (licenseRef OR license)", "LicenseRef-x OR MIT", []string{"LicenseRef-x"}, true, nil},
+		{"licenseRef alone does not satisfy ((licenseRef OR licenseRef) AND license)", "(LicenseRef-a OR LicenseRef-b) AND MIT", []string{"MIT"}, false, nil},
+		{"documentRef satisfies (license OR documentRef)", "MIT OR DocumentRef-x:LicenseRef-y", []string{"DocumentRef-x:LicenseRef-y"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) satisfied by license, first licenseRef", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"ISC", "LicenseRef-a"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) satisfied by license, second licenseRef", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"ISC", "LicenseRef-b"}, true, nil},
+		{"deep nested (license AND (licenseRef OR licenseRef)) not satisfied by licenseRef alone", "MIT OR (ISC AND (LicenseRef-a OR LicenseRef-b))", []string{"LicenseRef-a"}, false, nil},
+		{"nested AND on left of OR satisfied by second licenseRef", "(ISC AND (LicenseRef-a OR LicenseRef-b)) OR MIT", []string{"ISC", "LicenseRef-b"}, true, nil},
+		{"nested AND on either side of OR satisfied by left second licenseRef", "(MIT AND (LicenseRef-a OR LicenseRef-b)) OR (ISC AND (LicenseRef-c OR LicenseRef-d))", []string{"MIT", "LicenseRef-b"}, true, nil},
+		{"nested AND on either side of OR satisfied by right second licenseRef", "(MIT AND (LicenseRef-a OR LicenseRef-b)) OR (ISC AND (LicenseRef-c OR LicenseRef-d))", []string{"ISC", "LicenseRef-d"}, true, nil},
+		{"two licenseRef OR groups produce Cartesian alternatives", "(LicenseRef-a OR LicenseRef-b) AND (LicenseRef-c OR LicenseRef-d)", []string{"LicenseRef-b", "LicenseRef-d"}, true, nil},
+		{"two licenseRef OR groups require one licenseRef from each", "(LicenseRef-a OR LicenseRef-b) AND (LicenseRef-c OR LicenseRef-d)", []string{"LicenseRef-b"}, false, nil},
+		{"nested license and licenseRef OR groups satisfy second alternatives", "MIT OR ((ISC OR BSD-3-Clause) AND (LicenseRef-a OR LicenseRef-b))", []string{"BSD-3-Clause", "LicenseRef-b"}, true, nil},
+		{"nested documentRef OR satisfies second alternative", "MIT OR (ISC AND (DocumentRef-x:LicenseRef-a OR DocumentRef-x:LicenseRef-b))", []string{"ISC", "DocumentRef-x:LicenseRef-b"}, true, nil},
+		{"deep AND with licenseRef and documentRef is satisfied", "MIT AND ISC AND LicenseRef-a AND DocumentRef-x:LicenseRef-b", []string{"MIT", "ISC", "LicenseRef-a", "DocumentRef-x:LicenseRef-b"}, true, nil},
+		{"deep AND with licenseRef and documentRef requires every term", "MIT AND ISC AND LicenseRef-a AND DocumentRef-x:LicenseRef-b", []string{"MIT", "ISC", "LicenseRef-a"}, false, nil},
+		{"deep mixed AND satisfies first alternatives", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"MIT", "LicenseRef-a", "DocumentRef-x:LicenseRef-c"}, true, nil},
+		{"deep mixed AND satisfies second alternatives", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b", "DocumentRef-x:LicenseRef-d"}, true, nil},
+		{"deep mixed AND requires one term from every OR group", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b"}, false, nil},
+		{"deep mixed AND requires matching documentRef", "(MIT OR Apache-2.0) AND (LicenseRef-a OR LicenseRef-b) AND (DocumentRef-x:LicenseRef-c OR DocumentRef-x:LicenseRef-d)", []string{"Apache-2.0", "LicenseRef-b", "DocumentRef-y:LicenseRef-d"}, false, nil},
 	}
 
 	for _, test := range tests {
@@ -849,6 +874,22 @@ func TestExpandAnd(t *testing.T) {
 			assert.Equal(t, test.expanded, expandAndResult)
 		})
 	}
+}
+
+func TestAppendTermsDoesNotAliasBranches(t *testing.T) {
+	mit := getLicenseNode("MIT", false)
+	isc := getLicenseNode("ISC", false)
+	apache := getLicenseNode("Apache-2.0", false)
+
+	leftTerm := make([]*node, 1, 2)
+	leftTerm[0] = mit
+
+	actual := appendTerms(
+		[][]*node{leftTerm},
+		[][]*node{{isc}, {apache}},
+	)
+
+	assert.Equal(t, [][]*node{{mit, isc}, {mit, apache}}, actual)
 }
 
 type testCaseData struct {

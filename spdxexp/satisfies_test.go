@@ -272,6 +272,15 @@ func TestValidateAndNormalizeLicensesWithOptions_FailComplexExpressions(t *testi
 	}
 }
 
+func TestValidateAndNormalizeLicensesWithOptions_MalformedTrailingTokens(t *testing.T) {
+	licenses := []string{"(", "((", "MIT OR (", "DocumentRef-spdx-tool-1.2:"}
+
+	normalizedLicenses, invalidLicenses := ValidateAndNormalizeLicensesWithOptions(licenses, ValidateLicensesOptions{})
+
+	assert.Empty(t, normalizedLicenses)
+	assert.Equal(t, licenses, invalidLicenses)
+}
+
 func TestValidateAndNormalizeLicensesWithOptions_FailDeprecatedLicenses(t *testing.T) {
 	// eCos-2.0 is a known deprecated SPDX license ID (see TestDeprecatedLicense).
 	deprecatedLicense := "eCos-2.0"

@@ -41,6 +41,10 @@ func TestParse(t *testing.T) {
 			"MIT", nil},
 
 		{"empty expression", "", nil, "", errors.New("parse error - cannot parse empty string")},
+		{"operator error - nothing after open parenthesis", "(", nil, "", errors.New("open parenthesis does not have a matching close parenthesis")},
+		{"operator error - nested dangling open parenthesis", "((", nil, "", errors.New("open parenthesis does not have a matching close parenthesis")},
+		{"operator error - expression ending in open parenthesis", "MIT OR (", nil, "", errors.New("open parenthesis does not have a matching close parenthesis")},
+		{"document reference without license reference", "DocumentRef-spdx-tool-1.2:", nil, "", errors.New("expected 'LicenseRef-...' after 'DocumentRef-...'")},
 
 		{"invalid license", "NON-EXISTENT-LICENSE", nil, "",
 			errors.New("unknown license 'NON-EXISTENT-LICENSE' at offset 0")},
@@ -1075,6 +1079,7 @@ func TestParseTokens(t *testing.T) {
 			},
 			"{ LEFT: { LEFT: MIT and RIGHT: Apache-1.0+ } or RIGHT: { LEFT: DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 or RIGHT: GPL-2.0 with Bison-exception-2.2 } }", nil,
 		},
+
 		{"operator error - missing close parenthesis", getMissingEndParenTokens(0),
 			&node{}, "", errors.New("open parenthesis does not have a matching close parenthesis"),
 		},
@@ -1214,6 +1219,7 @@ func TestParseOperator(t *testing.T) {
 		{"looking for + operator", getPlusClauseTokens(1), "+", false, 2},
 		{"looking for OR operator, but got AND", getAndClauseTokens(1), "OR", true, 1},
 		{"looking for OR operator, but got LICENSE", getOrClauseTokens(0), "OR", true, 0},
+		{"looking for operator past end", getAndClauseTokens(3), "OR", true, 3},
 	}
 
 	for _, test := range tests {

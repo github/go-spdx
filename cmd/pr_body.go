@@ -42,6 +42,7 @@ func generatePRBody(outputPath string) error {
 }
 
 func decodePreviousJSON(repositoryRoot, path string, destination any) error {
+	// #nosec G204 -- repositoryRoot is discovered by Git and path is an internal constant.
 	contents, err := exec.Command("git", "-C", repositoryRoot, "show", "HEAD:"+path).Output()
 	if err != nil {
 		return fmt.Errorf("read previous %s: %w", path, err)
@@ -53,6 +54,7 @@ func decodePreviousJSON(repositoryRoot, path string, destination any) error {
 }
 
 func decodeJSONFile(path string, destination any) error {
+	// #nosec G304 -- path is built from the Git repository root and an internal constant.
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", path, err)

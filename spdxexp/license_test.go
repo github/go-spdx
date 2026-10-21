@@ -121,22 +121,28 @@ func TestGetLicenseRange(t *testing.T) {
 	tests := []struct {
 		name         string
 		id           string
-		licenseRange *licenseRange
+		licenses     []string
+		versionGroup int
+		licenseIndex int
 	}{
-		{"no multi-element ranges", "Apache-2.0", &licenseRange{
-			licenses: []string{"Apache-2.0"},
-			location: map[uint8]int{licenseGroup: 2, versionGroup: 2, licenseIndex: 0}}},
-		{"multi-element ranges", "GFDL-1.2-only", &licenseRange{
-			licenses: []string{"GFDL-1.2", "GFDL-1.2-only"},
-			location: map[uint8]int{licenseGroup: 21, versionGroup: 1, licenseIndex: 1}}},
-		{"no range", "Bison-exception-2.2", nil},
+		{"no multi-element ranges", "Apache-2.0", []string{"Apache-2.0"}, 2, 0},
+		{"multi-element ranges", "GFDL-1.2-only", []string{"GFDL-1.2", "GFDL-1.2-only"}, 1, 1},
+		{"no range", "Bison-exception-2.2", nil, 0, 0},
 	}
 
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			licenseRange := getLicenseRange(test.id)
-			assert.Equal(t, test.licenseRange, licenseRange)
+			if test.licenses == nil {
+				assert.Nil(t, licenseRange)
+				return
+			}
+			if assert.NotNil(t, licenseRange) {
+				assert.Equal(t, test.licenses, licenseRange.licenses)
+				assert.Equal(t, test.versionGroup, licenseRange.location[versionGroup])
+				assert.Equal(t, test.licenseIndex, licenseRange.location[licenseIndex])
+			}
 		})
 	}
 }

@@ -93,6 +93,14 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"bzip2-1.0.5",
+			},
+			{
+				"bzip2-1.0.6",
+			},
+		},
+		{
+			{
 				"CC-BY-1.0",
 			},
 			{
@@ -203,6 +211,14 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"CDLA-Permissive-1.0",
+			},
+			{
+				"CDLA-Permissive-2.0",
+			},
+		},
+		{
+			{
 				"CECILL-1.0",
 			},
 			{
@@ -213,6 +229,22 @@ func LicenseRanges() [][][]string {
 			},
 			{
 				"CECILL-2.1",
+			},
+		},
+		{
+			{
+				"CERN-OHL-1.1",
+			},
+			{
+				"CERN-OHL-1.2",
+			},
+		},
+		{
+			{
+				"copyleft-next-0.3.0",
+			},
+			{
+				"copyleft-next-0.3.1",
 			},
 		},
 		{
@@ -296,6 +328,14 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"LAL-1.2",
+			},
+			{
+				"LAL-1.3",
+			},
+		},
+		{
+			{
 				"LGPL-2.0",
 				"LGPL-2.0-only",
 			},
@@ -306,6 +346,14 @@ func LicenseRanges() [][][]string {
 			{
 				"LGPL-3.0",
 				"LGPL-3.0-only",
+			},
+		},
+		{
+			{
+				"libpng-1.6.35",
+			},
+			{
+				"libpng-2.0",
 			},
 		},
 		{
@@ -357,6 +405,22 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"MulanPSL-1.0",
+			},
+			{
+				"MulanPSL-2.0",
+			},
+		},
+		{
+			{
+				"NLOD-1.0",
+			},
+			{
+				"NLOD-2.0",
+			},
+		},
+		{
+			{
 				"NPL-1.0",
 			},
 			{
@@ -369,6 +433,17 @@ func LicenseRanges() [][][]string {
 			},
 			{
 				"OFL-1.1",
+			},
+		},
+		{
+			{
+				"OGL-UK-1.0",
+			},
+			{
+				"OGL-UK-2.0",
+			},
+			{
+				"OGL-UK-3.0",
 			},
 		},
 		{
@@ -440,10 +515,26 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
+				"Parity-6.0.0",
+			},
+			{
+				"Parity-7.0.0",
+			},
+		},
+		{
+			{
 				"PHP-3.0",
 			},
 			{
 				"PHP-3.01",
+			},
+		},
+		{
+			{
+				"Python-2.0",
+			},
+			{
+				"Python-2.0.1",
 			},
 		},
 		{
@@ -467,21 +558,26 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
-				"YPL-1.0",
+				"SHL-0.5",
 			},
 			{
-				"YPL-1.1",
+				"SHL-0.51",
 			},
 		},
 		{
 			{
-				"ZPL-1.1",
+				"TU-Berlin-1.0",
 			},
 			{
-				"ZPL-2.0",
+				"TU-Berlin-2.0",
+			},
+		},
+		{
+			{
+				"YPL-1.0",
 			},
 			{
-				"ZPL-2.1",
+				"YPL-1.1",
 			},
 		},
 		{
@@ -494,10 +590,13 @@ func LicenseRanges() [][][]string {
 		},
 		{
 			{
-				"bzip2-1.0.5",
+				"ZPL-1.1",
 			},
 			{
-				"bzip2-1.0.6",
+				"ZPL-2.0",
+			},
+			{
+				"ZPL-2.1",
 			},
 		},
 	}

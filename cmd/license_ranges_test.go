@@ -7,12 +7,17 @@ import (
 )
 
 func TestBuildLicenseRanges(t *testing.T) {
-	previousFamilies := licenseRangeFamilies
-	licenseRangeFamilies = []licenseRangeFamily{
+	previousIncluded := includedLicenseRangeFamilies
+	previousExcluded := excludedLicenseRangeFamilyBases
+	includedLicenseRangeFamilies = []licenseRangeFamily{
 		{base: "Example"},
 		{base: "Example", suffix: "-special", inheritBaseVersions: true},
 	}
-	t.Cleanup(func() { licenseRangeFamilies = previousFamilies })
+	excludedLicenseRangeFamilyBases = nil
+	t.Cleanup(func() {
+		includedLicenseRangeFamilies = previousIncluded
+		excludedLicenseRangeFamilyBases = previousExcluded
+	})
 
 	licenses := []License{
 		{LicenseID: "Example-10.0"},
@@ -29,6 +34,31 @@ func TestBuildLicenseRanges(t *testing.T) {
 		{{"Example-1.0"}, {"Example-2.0", "Example-2.0-only"}, {"Example-10.0"}},
 		{{"Example-1.0-special"}, {"Example-2.0"}, {"Example-3.0-special"}, {"Example-10.0"}},
 	}, buildLicenseRanges(licenses))
+}
+
+func TestBuildLicenseRangeFamilies(t *testing.T) {
+	licenses := []License{
+		{LicenseID: "Apache-1.0"},
+		{LicenseID: "Apache-2.0"},
+		{LicenseID: "ASWF-1.0"},
+		{LicenseID: "ASWF-2.0"},
+		{LicenseID: "Example-1.0"},
+		{LicenseID: "Example-2.0"},
+		{LicenseID: "Excluded-1.0"},
+		{LicenseID: "Excluded-2.0"},
+		{LicenseID: "Singleton-1.0"},
+		{LicenseID: "Special-2-Clause"},
+		{LicenseID: "Special-3-Clause"},
+	}
+	included := []licenseRangeFamily{{base: "Special", suffix: "-Clause"}}
+	excluded := map[string]struct{}{"Excluded": {}}
+
+	assert.Equal(t, []licenseRangeFamily{
+		{base: "Apache"},
+		{base: "ASWF"},
+		{base: "Example"},
+		{base: "Special", suffix: "-Clause"},
+	}, buildLicenseRangeFamilies(licenses, included, excluded))
 }
 
 func TestCompareLicenseVersions(t *testing.T) {

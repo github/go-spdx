@@ -16,52 +16,20 @@ type licenseRangeFamily struct {
 	inheritBaseVersions bool
 }
 
-// SPDX identifies version ranges syntactically but does not publish family relationships as data.
-// Keep family membership explicit and discover each family's available versions from licenses.json.
-var licenseRangeFamilies = []licenseRangeFamily{
-	{base: "AFL"},
-	{base: "AGPL"},
-	{base: "Apache"},
-	{base: "APSL"},
-	{base: "Artistic"},
-	{base: "ASWF-Digital-Assets"},
-	{base: "BitTorrent"},
+var includedLicenseRangeFamilies = []licenseRangeFamily{
 	{base: "Brian-Gladman", suffix: "-Clause"},
-	{base: "CC-BY"},
-	{base: "CC-BY-NC"},
-	{base: "CC-BY-NC-ND"},
-	{base: "CC-BY-NC-SA"},
-	{base: "CC-BY-ND"},
-	{base: "CC-BY-SA"},
-	{base: "CDDL"},
-	{base: "CECILL"},
-	{base: "DRL"},
-	{base: "ECL"},
-	{base: "EFL"},
-	{base: "EPL"},
-	{base: "EUPL"},
-	{base: "GFDL"},
-	{base: "GPL"},
-	{base: "HP"},
-	{base: "LGPL"},
-	{base: "LPL"},
-	{base: "LPPL"},
-	{base: "MPL"},
 	{base: "MPL", suffix: "-no-copyleft-exception", inheritBaseVersions: true},
-	{base: "NPL"},
-	{base: "OFL"},
-	{base: "OLDAP"},
-	{base: "OSL"},
-	{base: "PHP"},
-	{base: "RPL"},
-	{base: "SGI-B"},
-	{base: "YPL"},
-	{base: "ZPL"},
-	{base: "Zimbra"},
-	{base: "bzip2"},
+}
+
+var excludedLicenseRangeFamilyBases = map[string]struct{}{
+	"Spencer":     {},
+	"Unicode-DFS": {},
+	"W3C":         {},
 }
 
 const licenseVersionPattern = `\d+(?:\.\d+)*(?:[a-z])?`
+
+var standardLicenseVersionPattern = regexp.MustCompile("^(.+)-(" + licenseVersionPattern + ")$")
 
 func generateLicenseRanges(licenses []License) error {
 	ranges := buildLicenseRanges(licenses)
@@ -105,8 +73,9 @@ func buildLicenseRanges(licenses []License) [][][]string {
 		licenseIDs[license.LicenseID] = struct{}{}
 	}
 
-	ranges := make([][][]string, 0, len(licenseRangeFamilies))
-	for _, family := range licenseRangeFamilies {
+	families := buildLicenseRangeFamilies(licenses, includedLicenseRangeFamilies, excludedLicenseRangeFamilyBases)
+	ranges := make([][][]string, 0, len(families))
+	for _, family := range families {
 		pattern := regexp.MustCompile("^" + regexp.QuoteMeta(family.base) + "-(" + licenseVersionPattern + ")" + regexp.QuoteMeta(family.suffix) + "$")
 		versions := make(map[string][]string)
 		for id := range licenseIDs {
@@ -152,6 +121,50 @@ func buildLicenseRanges(licenses []License) [][][]string {
 		}
 	}
 	return ranges
+}
+
+func buildLicenseRangeFamilies(licenses []License, included []licenseRangeFamily, excluded map[string]struct{}) []licenseRangeFamily {
+	versionsByBase := make(map[string]map[string]struct{})
+	for _, license := range licenses {
+		matches := standardLicenseVersionPattern.FindStringSubmatch(license.LicenseID)
+		if matches == nil {
+			continue
+		}
+		if _, excluded := excluded[matches[1]]; excluded {
+			continue
+		}
+		if versionsByBase[matches[1]] == nil {
+			versionsByBase[matches[1]] = make(map[string]struct{})
+		}
+		versionsByBase[matches[1]][matches[2]] = struct{}{}
+	}
+
+	familiesByKey := make(map[string]licenseRangeFamily, len(versionsByBase)+len(included))
+	for base, versions := range versionsByBase {
+		if len(versions) > 1 {
+			familiesByKey[base+"\x00"] = licenseRangeFamily{base: base}
+		}
+	}
+	for _, family := range included {
+		familiesByKey[family.base+"\x00"+family.suffix] = family
+	}
+
+	families := make([]licenseRangeFamily, 0, len(familiesByKey))
+	for _, family := range familiesByKey {
+		families = append(families, family)
+	}
+	sort.Slice(families, func(i, j int) bool {
+		firstBase := strings.ToLower(families[i].base)
+		secondBase := strings.ToLower(families[j].base)
+		if firstBase != secondBase {
+			return firstBase < secondBase
+		}
+		if families[i].base != families[j].base {
+			return families[i].base < families[j].base
+		}
+		return families[i].suffix < families[j].suffix
+	})
+	return families
 }
 
 func compareLicenseVersions(first, second string) int {

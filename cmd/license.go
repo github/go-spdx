@@ -24,11 +24,9 @@ type License struct {
 	IsOsiApproved   bool     `json:"isOsiApproved"`
 }
 
-// extractLicenseIDs reads the official licenses.json file copied from spdx/license-list-data
-// and writes two files, license_ids.json and deprecated_license_ids.json, containing just
-// the license IDs and deprecated license IDs, respectively.  It returns an error if it
-// encounters one.
-func extractLicenseIDs() error {
+// extractLicenses reads the official licenses.json file copied from spdx/license-list-data
+// and generates the active license, deprecated license, and license range Go files.
+func extractLicenses() error {
 	// open file
 	file, err := os.Open("licenses.json")
 	if err != nil {
@@ -174,6 +172,10 @@ func GetDeprecated() []string {
 		return err
 	}
 	fmt.Println("Writing `../spdxexp/spdxlicenses/get_deprecated.go`... COMPLETE")
+
+	if err := generateLicenseRanges(licenseData.Licenses); err != nil {
+		return fmt.Errorf("generate license ranges: %w", err)
+	}
 
 	return nil
 }

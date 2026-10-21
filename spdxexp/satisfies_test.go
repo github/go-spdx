@@ -559,7 +559,7 @@ func TestSatisfies(t *testing.T) {
 		{"MIT AND Apache-2.0 satisfies [MIT, Apache-1.0, Apache-2.0]", "MIT AND Apache-2.0", []string{"MIT", "Apache-1.0", "Apache-2.0"}, true, nil},
 
 		{"Apache-1.0+ satisfies [Apache-2.0]", "Apache-1.0+", []string{"Apache-2.0"}, true, nil},
-		{"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, true, nil}, // TODO: Fails here but passes js
+		{"Apache-1.0+ satisfies [Apache-2.0+]", "Apache-1.0+", []string{"Apache-2.0+"}, true, nil},
 		{"! Apache-1.0 satisfies [Apache-2.0+]", "Apache-1.0", []string{"Apache-2.0+"}, false, nil},
 		{"Apache-2.0 satisfies [Apache-2.0+]", "Apache-2.0", []string{"Apache-2.0+"}, true, nil},
 		{"! Apache-3.0 satisfies [Apache-2.0+]", "Apache-3.0", []string{"Apache-2.0+"}, false, errors.New("unknown license 'Apache-3.0' at offset 0")},
@@ -578,8 +578,8 @@ func TestSatisfies(t *testing.T) {
 		{"MIT satisfies [ISC, MIT]", "MIT", []string{"ISC", "MIT"}, true, nil},
 		{"Zlib satisfies [ISC, MIT, Zlib]", "Zlib", []string{"ISC", "MIT", "Zlib"}, true, nil},
 		{"! GPL-3.0 satisfies [ISC, MIT]", "GPL-3.0", []string{"ISC", "MIT"}, false, nil},
-		{"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, true, nil},                 // TODO: Fails here but passes js
-		{"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, true, nil}, // TODO: Fails here and js
+		{"GPL-2.0 satisfies [GPL-2.0+]", "GPL-2.0", []string{"GPL-2.0+"}, true, nil},
+		{"GPL-2.0 satisfies [GPL-2.0-or-later]", "GPL-2.0", []string{"GPL-2.0-or-later"}, true, nil},
 		{"GPL-3.0 satisfies [GPL-2.0+]", "GPL-3.0", []string{"GPL-2.0+"}, true, nil},
 		{"GPL-1.0-or-later satisfies [GPL-2.0-or-later]", "GPL-1.0-or-later", []string{"GPL-2.0-or-later"}, true, nil},
 		{"GPL-1.0+ satisfies [GPL-2.0+]", "GPL-1.0+", []string{"GPL-2.0+"}, true, nil},
@@ -613,7 +613,7 @@ func TestSatisfies(t *testing.T) {
 		{"MIT satisfies [GPL-2.0, MIT, MIT, ISC]",
 			"MIT", []string{"GPL-2.0", "MIT", "MIT", "ISC"}, true, nil},
 		{"MIT AND ICU satisfies [MIT, GPL-2.0, ISC, Apache-2.0, ICU]",
-			"MIT AND ICU", []string{"MIT", "GPL-2.0", "ISC", "Apache-2.0", "ICU"}, true, nil}, // TODO: This says true and the js version returns true, but it shouldn't.
+			"MIT AND ICU", []string{"MIT", "GPL-2.0", "ISC", "Apache-2.0", "ICU"}, true, nil},
 		{"! (MIT AND GPL-2.0) satisfies [ISC, GPL-2.0]",
 			"(MIT AND GPL-2.0)", []string{"ISC", "GPL-2.0"}, false, nil},
 		{"! MIT AND (GPL-2.0 OR ISC) satisfies [MIT]",
@@ -737,121 +737,122 @@ func TestExpandOr(t *testing.T) {
 		{andOrAndExpression().name, andOrAndExpression().node, andOrAndExpression().expanded},
 		{oPAndCPOrOPAndCPExpression().name, oPAndCPOrOPAndCPExpression().node, oPAndCPOrOPAndCPExpression().expanded},
 
-		// TODO: Uncomment kitchen sink test when license plus, exception, license ref, and document ref are supported.
-		// {"kitchen sink",
-		// 	// "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
-		// 	&node{
-		// 		role: expressionNode,
-		// 		exp: &expressionNodePartial{
-		// 			left: &node{
-		// 				role: expressionNode,
-		// 				exp: &expressionNodePartial{
-		// 					left: &node{
-		// 						role: licenseNode,
-		// 						exp:  nil,
-		// 						lic: &licenseNodePartial{
-		// 							license:      "MIT",
-		// 							hasPlus:      false,
-		// 							hasException: false,
-		// 							exception:    "",
-		// 						},
-		// 						ref: nil,
-		// 					},
-		// 					conjunction: "and",
-		// 					right: &node{
-		// 						role: licenseNode,
-		// 						exp:  nil,
-		// 						lic: &licenseNodePartial{
-		// 							license:      "Apache-1.0",
-		// 							hasPlus:      true,
-		// 							hasException: false,
-		// 							exception:    "",
-		// 						},
-		// 						ref: nil,
-		// 					},
-		// 				},
-		// 				lic: nil,
-		// 				ref: nil,
-		// 			},
-		// 			conjunction: "or",
-		// 			right: &node{
-		// 				role: expressionNode,
-		// 				exp: &expressionNodePartial{
-		// 					left: &node{
-		// 						role: licenseRefNode,
-		// 						exp:  nil,
-		// 						lic:  nil,
-		// 						ref: &referenceNodePartial{
-		// 							hasDocumentRef: true,
-		// 							documentRef:    "spdx-tool-1.2",
-		// 							licenseRef:     "MIT-Style-2",
-		// 						},
-		// 					},
-		// 					conjunction: "or",
-		// 					right: &node{
-		// 						role: licenseNode,
-		// 						exp:  nil,
-		// 						lic: &licenseNodePartial{
-		// 							license:      "GPL-2.0",
-		// 							hasPlus:      false,
-		// 							hasException: true,
-		// 							exception:    "Bison-exception-2.2",
-		// 						},
-		// 						ref: nil,
-		// 					},
-		// 				},
-		// 				lic: nil,
-		// 				ref: nil,
-		// 			},
-		// 		},
-		// 		lic: nil,
-		// 		ref: nil,
-		// 	},
-		// 	// [][]string{{"MIT", "Apache-1.0+"}, {"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}, {"GPL-2.0 with Bison-exception-2.2"}}},
-		//     [][]*node{
-		// 		{
-		// 			{
-		// 				role: licenseNode,
-		// 				exp:  nil,
-		// 				lic: &licenseNodePartial{
-		// 					license: "MIT", hasPlus: false,
-		// 					hasException: false, exception: ""},
-		// 				ref: nil,
-		// 			},
-		// 			{
-		// 				role: licenseNode,
-		// 				exp:  nil,
-		// 				lic: &licenseNodePartial{
-		// 					license: "Apache-1.0", hasPlus: true,
-		// 					hasException: false, exception: ""},
-		// 				ref: nil,
-		// 			},
-		// 		},
-		// 		{
-		// 			{
-		// 				role: licenseRefNode,
-		// 				exp:  nil,
-		// 				lic:  nil,
-		// 				ref: &referenceNodePartial{
-		// 					hasDocumentRef: true,
-		// 					documentRef:    "spdx-tool-1.2",
-		// 					licenseRef:     "MIT-Style-2",
-		// 				},
-		// 			},
-		// 			{
-		// 				role: licenseNode,
-		// 				exp:  nil,
-		// 				lic: &licenseNodePartial{
-		// 					license:      "GPL-2.0",
-		// 					hasPlus:      false,
-		// 					hasException: true,
-		// 					exception:    "Bison-exception-2.2",
-		// 				},
-		// 				ref: nil,
-		// 			},
-		// 		},
-		// 	},
-		// },
+		{"kitchen sink",
+			// "   (MIT AND Apache-1.0+)   OR   DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2 OR (GPL-2.0 WITH Bison-exception-2.2)",
+			&node{
+				role: expressionNode,
+				exp: &expressionNodePartial{
+					left: &node{
+						role: expressionNode,
+						exp: &expressionNodePartial{
+							left: &node{
+								role: licenseNode,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "MIT",
+									hasPlus:      false,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+							conjunction: "and",
+							right: &node{
+								role: licenseNode,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "Apache-1.0",
+									hasPlus:      true,
+									hasException: false,
+									exception:    "",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+					conjunction: "or",
+					right: &node{
+						role: expressionNode,
+						exp: &expressionNodePartial{
+							left: &node{
+								role: licenseRefNode,
+								exp:  nil,
+								lic:  nil,
+								ref: &referenceNodePartial{
+									hasDocumentRef: true,
+									documentRef:    "spdx-tool-1.2",
+									licenseRef:     "MIT-Style-2",
+								},
+							},
+							conjunction: "or",
+							right: &node{
+								role: licenseNode,
+								exp:  nil,
+								lic: &licenseNodePartial{
+									license:      "GPL-2.0",
+									hasPlus:      false,
+									hasException: true,
+									exception:    "Bison-exception-2.2",
+								},
+								ref: nil,
+							},
+						},
+						lic: nil,
+						ref: nil,
+					},
+				},
+				lic: nil,
+				ref: nil,
+			},
+			// [][]string{{"MIT", "Apache-1.0+"}, {"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}, {"GPL-2.0 with Bison-exception-2.2"}}},
+		    [][]*node{
+				{
+					{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "MIT", hasPlus: false,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+					{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license: "Apache-1.0", hasPlus: true,
+							hasException: false, exception: ""},
+						ref: nil,
+					},
+				},
+				{
+					{
+						role: licenseRefNode,
+						exp:  nil,
+						lic:  nil,
+						ref: &referenceNodePartial{
+							hasDocumentRef: true,
+							documentRef:    "spdx-tool-1.2",
+							licenseRef:     "MIT-Style-2",
+						},
+					},
+				},
+				{
+					{
+						role: licenseNode,
+						exp:  nil,
+						lic: &licenseNodePartial{
+							license:      "GPL-2.0",
+							hasPlus:      false,
+							hasException: true,
+							exception:    "Bison-exception-2.2",
+						},
+						ref: nil,
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

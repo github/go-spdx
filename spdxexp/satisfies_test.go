@@ -807,7 +807,7 @@ func TestExpandOr(t *testing.T) {
 				ref: nil,
 			},
 			// [][]string{{"MIT", "Apache-1.0+"}, {"DocumentRef-spdx-tool-1.2:LicenseRef-MIT-Style-2"}, {"GPL-2.0 with Bison-exception-2.2"}}},
-		    [][]*node{
+			[][]*node{
 				{
 					{
 						role: licenseNode,

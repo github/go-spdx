@@ -20,6 +20,7 @@ func main() {
 	flagSet := flag.NewFlagSet("run", flag.ExitOnError)
 	shouldExtractLicenses := flagSet.Bool("l", false, "Should licenses and ranges be extracted?")
 	extractExceptions := flagSet.Bool("e", false, "Should exception ids be extracted?")
+	outputPath := flagSet.String("o", "", "Output path")
 	help := flagSet.Bool("h", false, "Show help")
 
 	err := flagSet.Parse(argsRemainder)
@@ -54,6 +55,15 @@ func main() {
 			}
 			fmt.Println("Done!")
 			fmt.Println("---------------------------")
+		}
+	case "pr-body":
+		if *outputPath == "" {
+			fmt.Println("error generating PR body: -o is required")
+			os.Exit(1)
+		}
+		if err := generatePRBody(*outputPath); err != nil {
+			fmt.Printf("error generating PR body: %v\n", err)
+			os.Exit(1)
 		}
 	default:
 		writeHelpMessage()

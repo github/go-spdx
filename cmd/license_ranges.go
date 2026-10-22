@@ -22,7 +22,7 @@ var includedLicenseRangeFamilies = []licenseRangeFamily{
 }
 
 var excludedLicenseRangeFamilyBases = map[string]struct{}{
-	"Spencer":     {},
+	"Spencer": {},
 }
 
 const licenseVersionPattern = `\d+(?:\.\d+)*(?:[a-z])?`

@@ -21,7 +21,7 @@ func TestGenerateLicenseRanges(t *testing.T) {
 		{LicenseID: "Example-2.0"},
 		{LicenseID: "Example-3.0-special"},
 		{LicenseID: "Example-1.0-special"},
-		{LicenseID: "Unrelated-2.0"},
+		{LicenseID: "SingleVersion-2.0"},
 	}
 
 	require.NoError(t, generateLicenseRanges(licenses, outputPath))
@@ -44,13 +44,17 @@ func TestBuildLicenseRanges(t *testing.T) {
 		{LicenseID: "Example-2.0"},
 		{LicenseID: "Example-3.0-special"},
 		{LicenseID: "Example-1.0-special"},
-		{LicenseID: "Unrelated-2.0"},
+		{LicenseID: "SingleVersion-2.0"},
 	}
+
+	licenseRanges := buildLicenseRanges(licenses)
 
 	assert.Equal(t, [][][]string{
 		{{"Example-1.0"}, {"Example-2.0", "Example-2.0-only"}, {"Example-10.0"}},
 		{{"Example-1.0-special"}, {"Example-2.0"}, {"Example-3.0-special"}, {"Example-10.0"}},
-	}, buildLicenseRanges(licenses))
+	}, licenseRanges)
+
+	assert.NotContains(t, licenseRanges, [][]string{{"SingleVersion-2.0"}})
 }
 
 func configureExampleLicenseRangeFamilies(t *testing.T) {
@@ -84,12 +88,32 @@ func TestBuildLicenseRangeFamilies(t *testing.T) {
 	included := []licenseRangeFamily{{base: "Special", suffix: "-Clause"}}
 	excluded := map[string]struct{}{"Excluded": {}}
 
-	assert.Equal(t, []licenseRangeFamily{
-		{base: "Apache"},
-		{base: "ASWF"},
-		{base: "Example"},
-		{base: "Special", suffix: "-Clause"},
-	}, buildLicenseRangeFamilies(licenses, included, excluded))
+	tests := []struct {
+		name                 string
+		licenses             []License
+		included             []licenseRangeFamily
+		excluded             map[string]struct{}
+		licenseRangeFamilies []licenseRangeFamily
+	}{
+		{"no version", []License{{LicenseID: "Example"}}, nil, nil, []licenseRangeFamily{}},
+		{"only one version", []License{{LicenseID: "Singleton-1.0"}}, nil, nil, []licenseRangeFamily{}},
+		{"multiple versions", []License{{LicenseID: "Example-1.0"}, {LicenseID: "Example-2.0"}}, nil, nil, []licenseRangeFamily{{base: "Example"}}},
+		{"included with suffix", []License{{LicenseID: "Special-2-Clause"}, {LicenseID: "Special-3-Clause"}}, included, nil, []licenseRangeFamily{{base: "Special", suffix: "-Clause"}}},
+		{"excluded base", []License{{LicenseID: "Excluded-1.0"}, {LicenseID: "Excluded-2.0"}}, nil, excluded, []licenseRangeFamily{}},
+		{"multiple families", licenses, included, excluded, []licenseRangeFamily{
+			{base: "Apache"},
+			{base: "ASWF"},
+			{base: "Example"},
+			{base: "Special", suffix: "-Clause"},
+		}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			licenseRangeFamilies := buildLicenseRangeFamilies(test.licenses, test.included, test.excluded)
+			assert.Equal(t, test.licenseRangeFamilies, licenseRangeFamilies)
+		})
+	}
 }
 
 func TestCompareLicenseVersions(t *testing.T) {

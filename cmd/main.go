@@ -18,8 +18,9 @@ func main() {
 	}
 
 	flagSet := flag.NewFlagSet("run", flag.ExitOnError)
-	extractLicenses := flagSet.Bool("l", false, "Should license ids be extracted?")
+	shouldExtractLicenses := flagSet.Bool("l", false, "Should licenses and ranges be extracted?")
 	extractExceptions := flagSet.Bool("e", false, "Should exception ids be extracted?")
+	outputPath := flagSet.String("o", "", "Output path")
 	help := flagSet.Bool("h", false, "Show help")
 
 	err := flagSet.Parse(argsRemainder)
@@ -30,16 +31,16 @@ func main() {
 
 	switch cmd {
 	case "extract":
-		if *help || (!*extractLicenses && !*extractExceptions) {
+		if *help || (!*shouldExtractLicenses && !*extractExceptions) {
 			writeHelpMessage()
 			os.Exit(0)
 		}
-		if *extractLicenses {
+		if *shouldExtractLicenses {
 			fmt.Println("-------------------------")
-			fmt.Println("Extracting license ids...")
-			err := extractLicenseIDs()
+			fmt.Println("Extracting licenses and ranges...")
+			err := extractLicenses()
 			if err != nil {
-				fmt.Printf("error extracting license ids: %v\n", err)
+				fmt.Printf("error extracting licenses and ranges: %v\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Done!")
@@ -55,6 +56,15 @@ func main() {
 			fmt.Println("Done!")
 			fmt.Println("---------------------------")
 		}
+	case "pr-body":
+		if *outputPath == "" {
+			fmt.Println("error generating PR body: -o is required")
+			os.Exit(1)
+		}
+		if err := generatePRBody(*outputPath); err != nil {
+			fmt.Printf("error generating PR body: %v\n", err)
+			os.Exit(1)
+		}
 	default:
 		writeHelpMessage()
 		os.Exit(0)
@@ -68,16 +78,15 @@ func writeHelpMessage() {
 	fmt.Println("https://github.com/spdx/license-list-data/blob/main/json/licenses.json and exceptions.json")
 	fmt.Println("file from https://github.com/spdx/license-list-data/blob/main/json/exceptions.json.")
 	fmt.Println("")
-	fmt.Println("After running the extract command, the license_ids.json, deprecated_ids.json, and exception_ids.json")
-	fmt.Println("files will be overwritten with the extracted ids.  These license ids can then be used to update the")
-	fmt.Println("spdxexp/license.go file.")
+	fmt.Println("After running the extract command, the generated license, deprecated license, exception, and license")
+	fmt.Println("range Go files in spdxexp/spdxlicenses will be overwritten with data derived from the SPDX license list.")
 	fmt.Println("")
 	fmt.Println("Command to run all extractions (run command from the /cmd directory):")
 	fmt.Println("  `go run . extract -l -e`")
 	fmt.Println("")
 	fmt.Println("Usage options:")
 	fmt.Println("  -h: prints this help message")
-	fmt.Println("  -l: Extract license ids")
+	fmt.Println("  -l: Extract licenses and ranges")
 	fmt.Println("  -e: Extract exception ids")
 	fmt.Println("")
 	os.Exit(0)

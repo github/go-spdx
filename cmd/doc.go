@@ -4,9 +4,8 @@ The source data needs to be manually updated by copying the licenses.json file f
 https://github.com/spdx/license-list-data/blob/main/json/licenses.json and exceptions.json
 file from https://github.com/spdx/license-list-data/blob/main/json/exceptions.json.
 
-After running the extract command, the license_ids.json, deprecated_ids.json, and exception_ids.json
-files will be overwritten with the extracted ids.  These license ids can then be used to update the
-spdxexp/license.go file.
+After running the extract command, the generated license, deprecated license, exception, and license
+range Go files in spdxexp/spdxlicenses will be overwritten with data derived from the SPDX license list.
 
 Command to run all extractions (run command from the /cmd directory):
 
@@ -16,7 +15,7 @@ Command to run all extractions (run command from the /cmd directory):
 Usage options:
 
 	-h: prints this help message
-	-l: Extract license ids
+	-l: Extract licenses and ranges
 	-e: Extract exception ids
 */
 package main

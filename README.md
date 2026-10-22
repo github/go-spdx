@@ -1,5 +1,5 @@
-<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.7.1/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.7.1/spdxexp) spdxexp</sub> <br>
-<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.7.1/spdxexp/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.7.1/spdxexp/spdxlicenses) spdxlicenses</sub>
+<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.8.0/spdxexp.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.8.0/spdxexp) spdxexp</sub> <br>
+<sub>[![Go Reference](https://pkg.go.dev/badge/github.com/github/go-spdx/v2@v2.8.0/spdxexp/spdxlicenses.svg)](https://pkg.go.dev/github.com/github/go-spdx/v2@v2.8.0/spdxexp/spdxlicenses) spdxlicenses</sub>
 
 # go-spdx
 
@@ -15,7 +15,8 @@ go get github.com/github/go-spdx@latest
 
 ## Packages
 
-- [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
+- [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/v2/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
+- [spdxlicenses](https://pkg.go.dev/github.com/github/go-spdx/v2/spdxexp/spdxlicenses) - License data package provides generated SPDX license IDs, exceptions, ranges, and the SPDX License List version used to generate them.
 
 ## CLI: spdx-validate
 
@@ -203,6 +204,21 @@ The second return value is an `error` which is not `nil` if the given expression
 ```go
 licenses, err := ExtractLicenses("(MIT AND APACHE-2.0) OR (APACHE-2.0)")
 assert.Equal(licenses, []string{"MIT", "Apache-2.0"})
+```
+
+### LicenseListVersion
+
+```go
+func LicenseListVersion() string
+```
+
+Function `LicenseListVersion` is provided by the `spdxlicenses` package. It returns the version of
+the SPDX License List used to generate the package's license data.
+
+#### Example
+
+```go
+version := spdxlicenses.LicenseListVersion()
 ```
 
 ## Background

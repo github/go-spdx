@@ -25,6 +25,7 @@ func TestGenerateLicenseRanges(t *testing.T) {
 	}
 
 	require.NoError(t, generateLicenseRanges(licenses, outputPath))
+	// #nosec G304 -- path is created within t.TempDir for this test.
 	generated, err := os.ReadFile(outputPath)
 	require.NoError(t, err)
 	golden, err := os.ReadFile("testdata/license_ranges.golden")

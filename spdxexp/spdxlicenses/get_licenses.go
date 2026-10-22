@@ -5,6 +5,12 @@ package spdxlicenses
 
 import "strings"
 
+// LicenseListVersion returns the SPDX License List version from which the
+// generated license IDs were sourced.
+func LicenseListVersion() string {
+	return "3.29.0"
+}
+
 // IsActiveLicense does a case-insensitive lookup for the license id in the active licenses map.
 // It returns true and the case-sensitive ID if found, otherwise false and the original id.
 func IsActiveLicense(id string) (bool, string) {

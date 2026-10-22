@@ -173,7 +173,7 @@ func GetDeprecated() []string {
 	}
 	fmt.Println("Writing `../spdxexp/spdxlicenses/get_deprecated.go`... COMPLETE")
 
-	if err := generateLicenseRanges(licenseData.Licenses); err != nil {
+	if err := generateLicenseRanges(licenseData.Licenses, "../spdxexp/spdxlicenses/license_ranges.go"); err != nil {
 		return fmt.Errorf("generate license ranges: %w", err)
 	}
 

@@ -29,7 +29,7 @@ const licenseVersionPattern = `\d+(?:\.\d+)*(?:[a-z])?`
 
 var standardLicenseVersionPattern = regexp.MustCompile("^(.+)-(" + licenseVersionPattern + ")$")
 
-func generateLicenseRanges(licenses []License) error {
+func generateLicenseRanges(licenses []License, outputPath string) error {
 	ranges := buildLicenseRanges(licenses)
 	contents := []byte(`package spdxlicenses
 
@@ -58,7 +58,7 @@ func LicenseRanges() [][][]string {
 	if err != nil {
 		return fmt.Errorf("format generated license_ranges.go: %w", err)
 	}
-	if err := os.WriteFile("../spdxexp/spdxlicenses/license_ranges.go", contents, 0600); err != nil {
+	if err := os.WriteFile(outputPath, contents, 0600); err != nil {
 		return err
 	}
 	fmt.Println("Writing `../spdxexp/spdxlicenses/license_ranges.go`... COMPLETE")

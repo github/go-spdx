@@ -1,23 +1,40 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestBuildLicenseRanges(t *testing.T) {
-	previousIncluded := includedLicenseRangeFamilies
-	previousExcluded := excludedLicenseRangeFamilyBases
-	includedLicenseRangeFamilies = []licenseRangeFamily{
-		{base: "Example"},
-		{base: "Example", suffix: "-special", inheritBaseVersions: true},
+func TestGenerateLicenseRanges(t *testing.T) {
+	configureExampleLicenseRangeFamilies(t)
+
+	outputPath := filepath.Join(t.TempDir(), "license_ranges.go")
+	licenses := []License{
+		{LicenseID: "Example-10.0"},
+		{LicenseID: "Example-2.0-only"},
+		{LicenseID: "Example-1.0-or-later"},
+		{LicenseID: "Example-1.0"},
+		{LicenseID: "Example-2.0"},
+		{LicenseID: "Example-3.0-special"},
+		{LicenseID: "Example-1.0-special"},
+		{LicenseID: "Unrelated-2.0"},
 	}
-	excludedLicenseRangeFamilyBases = nil
-	t.Cleanup(func() {
-		includedLicenseRangeFamilies = previousIncluded
-		excludedLicenseRangeFamilyBases = previousExcluded
-	})
+
+	require.NoError(t, generateLicenseRanges(licenses, outputPath))
+	generated, err := os.ReadFile(outputPath)
+	require.NoError(t, err)
+	golden, err := os.ReadFile("testdata/license_ranges.golden")
+	require.NoError(t, err)
+
+	assert.Equal(t, string(golden), string(generated))
+}
+
+func TestBuildLicenseRanges(t *testing.T) {
+	configureExampleLicenseRangeFamilies(t)
 
 	licenses := []License{
 		{LicenseID: "Example-10.0"},
@@ -34,6 +51,20 @@ func TestBuildLicenseRanges(t *testing.T) {
 		{{"Example-1.0"}, {"Example-2.0", "Example-2.0-only"}, {"Example-10.0"}},
 		{{"Example-1.0-special"}, {"Example-2.0"}, {"Example-3.0-special"}, {"Example-10.0"}},
 	}, buildLicenseRanges(licenses))
+}
+
+func configureExampleLicenseRangeFamilies(t *testing.T) {
+	previousIncluded := includedLicenseRangeFamilies
+	previousExcluded := excludedLicenseRangeFamilyBases
+	includedLicenseRangeFamilies = []licenseRangeFamily{
+		{base: "Example"},
+		{base: "Example", suffix: "-special", inheritBaseVersions: true},
+	}
+	excludedLicenseRangeFamilyBases = nil
+	t.Cleanup(func() {
+		includedLicenseRangeFamilies = previousIncluded
+		excludedLicenseRangeFamilyBases = previousExcluded
+	})
 }
 
 func TestBuildLicenseRangeFamilies(t *testing.T) {

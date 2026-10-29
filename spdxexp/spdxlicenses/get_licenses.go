@@ -8,7 +8,7 @@ import "strings"
 // LicenseListVersion returns the SPDX License List version from which the
 // generated license IDs were sourced.
 func LicenseListVersion() string {
-	return "3.29.0"
+	return "8791eda"
 }
 
 // IsActiveLicense does a case-insensitive lookup for the license id in the active licenses map.

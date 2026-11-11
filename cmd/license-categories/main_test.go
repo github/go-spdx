@@ -2,14 +2,145 @@ package main
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestModuleVersion(t *testing.T) {
+	t.Parallel()
+
+	info, ok := debug.ReadBuildInfo()
+	require.True(t, ok)
+	got, err := moduleVersion()
+	require.NoError(t, err)
+	if info.Main.Version != "" && info.Main.Version != "(devel)" {
+		assert.Equal(t, info.Main.Version, got)
+	} else {
+		assert.Regexp(t, `^[a-f0-9]{40} \(local\)$`, got)
+		revision, err := exec.Command("git", "rev-parse", "HEAD").Output()
+		require.NoError(t, err)
+		assert.Equal(t, strings.TrimSpace(string(revision))+" (local)", got)
+	}
+}
+
+func TestLocalCheckoutVersionAndVerificationAcrossCommits(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	source := filepath.Join(root, "cmd", "license-categories", "main.go")
+	require.NoError(t, os.MkdirAll(filepath.Dir(source), 0o750))
+	require.NoError(t, os.WriteFile(source, []byte("package main\n"), 0o600))
+	git := func(args ...string) string {
+		// #nosec G204 -- arguments are fixed test commands scoped to t.TempDir.
+		command := exec.Command("git", append([]string{"-C", root}, args...)...)
+		output, err := command.CombinedOutput()
+		require.NoError(t, err, string(output))
+		return strings.TrimSpace(string(output))
+	}
+	git("init", "--quiet")
+	git("add", ".")
+	commit := func() {
+		git("-c", "user.name=Test", "-c", "user.email=test@example.com",
+			"-c", "commit.gpgsign=false", "commit", "--quiet", "--allow-empty", "-m", "Test provenance")
+	}
+	commit()
+	first, err := localCheckoutVersion(source)
+	require.NoError(t, err)
+	assert.Equal(t, git("rev-parse", "HEAD")+" (local)", first)
+	commit()
+	second, err := localCheckoutVersion(source)
+	require.NoError(t, err)
+	assert.NotEqual(t, first, second)
+	assert.Regexp(t, `^[a-f0-9]{40} \(local\)$`, second)
+
+	render := func(version string) []byte {
+		output, err := renderTypeScript(map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}},
+			generationProvenance{GoSPDXVersion: version, SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"})
+		require.NoError(t, err)
+		return output
+	}
+	require.NoError(t, verifyGeneratedData(render(first), render(second)))
+	require.NoError(t, verifyGeneratedData(render("(devel)"), render(second)))
+}
+
+func TestLocalCheckoutVersionErrors(t *testing.T) {
+	t.Parallel()
+
+	_, err := localCheckoutVersion("cmd/license-categories/main.go")
+	require.ErrorContains(t, err, "absolute generator source path")
+	_, err = localCheckoutVersion(filepath.Join(t.TempDir(), "main.go"))
+	require.ErrorContains(t, err, "Git checkout")
+}
+
+func TestVerifyGeneratedDataIgnoresOnlyGoSPDXProvenance(t *testing.T) {
+	t.Parallel()
+
+	render := func(version string) []byte {
+		output, err := renderTypeScript(map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}},
+			generationProvenance{GoSPDXVersion: version, SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"})
+		require.NoError(t, err)
+		return output
+	}
+	output := render(strings.Repeat("a", 40) + " (local)")
+	for _, version := range []string{"(devel)", "v2.9.0 (release)", strings.Repeat("b", 40) + " (dispatch)"} {
+		actual := render(version)
+		require.NoError(t, verifyGeneratedData(output, actual))
+		require.NoError(t, verifyGeneratedData(actual, output))
+	}
+}
+
+func TestVerifyGeneratedDataRejectsOtherDifferences(t *testing.T) {
+	t.Parallel()
+
+	provenance := generationProvenance{GoSPDXVersion: strings.Repeat("a", 40) + " (local)",
+		SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"}
+	output, err := renderTypeScript(map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}}, provenance)
+	require.NoError(t, err)
+	for _, change := range [][2]string{
+		{"MIT License", "changed-name"},
+		{"'MIT':", "'changed-ID':"},
+		{"Permissive", "Copyleft"},
+		{"Safe for most", "changed-description"},
+		{"// Code generated", "// Different owner"},
+		{"// go-spdx: ", "// wrong-header: "},
+		{"// spdx-license-list-version: ", "// wrong-header: "},
+		{"// scancode-licensedb commit: ", "// wrong-header: "},
+		{provenance.GoSPDXVersion, ""},
+		{"3.29.0", ""},
+		{"3.29.0", "3.30.0"},
+		{"abc123", "def456"},
+		{"abc123", "   "},
+		{"// go-spdx: ", "// Extra comment\n// go-spdx: "},
+		{"// spdx-license-list-version: ", "// Extra comment\n// spdx-license-list-version: "},
+		{"// scancode-licensedb commit: ", "// Extra comment\n// scancode-licensedb commit: "},
+		{"// scancode-licensedb commit: abc123\n", ""},
+		{"export const", "// Extra comment\nexport const"},
+		{"export const", "// go-spdx: not leading provenance\nexport const"},
+	} {
+		changed := []byte(strings.Replace(string(output), change[0], change[1], 1))
+		require.NotEqual(t, output, changed, change)
+		require.Error(t, verifyGeneratedData(output, changed), change)
+		require.Error(t, verifyGeneratedData(changed, output), change)
+	}
+	require.Error(t, verifyGeneratedData([]byte("no headers"), output))
+}
+
+func TestRunRejectsConflictingOutputAndVerification(t *testing.T) {
+	t.Parallel()
+
+	err := run([]string{"-verify", "generated.ts", "-out", "other.ts"}, io.Discard, io.Discard, nil)
+	require.ErrorContains(t, err, "-verify cannot be combined with -out")
+}
 
 func TestBuildLicenseData_ExclusionsAndUnknown(t *testing.T) {
 	t.Parallel()

@@ -22,8 +22,12 @@ make test-license-categories
 `make license-categories` runs `go run ./cmd/license-categories` and writes
 `packages/license-categories/src/generated.ts`. Generation requires network
 access to the pinned public ScanCode archive. `make verify-license-categories`
-generates a temporary file and compares it byte for byte with the checked-in
-file, including all provenance comments, without overwriting it.
+uses the generator's `-verify` mode to compare fresh output to the checked-in
+file without overwriting it. Only the leading `// go-spdx:` provenance value
+is ignored, avoiding a self-reference when committing the generated checkout SHA.
+The generator header and provenance labels/order must match, with a nonempty
+value on each provenance line. The SPDX list version, ScanCode commit, actual data,
+and all other content must match exactly.
 
 For a build without tests, run:
 
@@ -32,7 +36,7 @@ npm run build --prefix packages/license-categories
 ```
 
 The build removes `dist` before compiling TypeScript. `npm test` builds and runs
-the API, tarball, workflow-contract, and publication-preparation tests, including
+the API, tarball, workflow-contract, publication-preparation, and provenance tests, including
 importing an extracted package independently of the source tree.
 `npm run test:tarball --prefix packages/license-categories` runs only the packaging
 tests after building. The `prepack` hook also builds before packing or publishing.
@@ -48,10 +52,19 @@ The generator keeps explicit, reviewed category overrides, normalizes category
 names, and warns while assigning `Unknown` to IDs absent from ScanCode.
 Unrecognized category mappings are errors; do not infer categories from SPDX IDs.
 
-`src/generated.ts` records the Go main module version, SPDX list version, and
-ScanCode commit. Running the generator from this checkout with `go run` records
-`go-spdx: (devel)`, not the checkout's SHA or a release tag. No timestamps are
-generated, and output is deterministic for the same inputs.
+`src/generated.ts` records the SPDX list version and ScanCode commit. The
+go-spdx provenance is recorded according to the generation or publication context:
+
+- Local checkout: `// go-spdx: <full checkout HEAD SHA> (local)`.
+- Manual publication: `// go-spdx: <full checked-out commit SHA> (dispatch)`.
+- Release publication: `// go-spdx: v2.9.0 (release)`, using the actual release tag.
+
+Versioned Go installations retain their module version. The local SHA identifies
+the source checkout's base commit, not an assertion that uncommitted files match
+that revision. It is resolved from the generator's source directory, not an
+unrelated working directory. A local build without an accessible source checkout
+(including a trimmed source path) fails explicitly; use the checkout or a versioned
+installation rather than recording a fabricated revision. No timestamps are generated.
 
 Review data changes and any warnings, and include regenerated output with its
 source changes. Do not edit generated data by hand. When updating the ScanCode
@@ -88,21 +101,30 @@ prerelease versions follow the same ordering rules; the GitHub release flag does
 not change those rules. Backports on older release tracks would require a future
 version-policy change.
 
-The job verifies committed generated data byte for byte with
-`make verify-license-categories`, installs npm dependencies with a lockfile-backed
-cache, and runs `npm test`, including API and tarball tests. It uses Node.js 24 and
-npm 11.20.0 for OIDC authentication, with no long-lived npm token. Workflow default
-permissions are read-only; only the publication job receives OIDC permission.
-Checkout does not retain Git write credentials.
+The job verifies committed generated data with `make verify-license-categories`,
+ignoring only the leading go-spdx provenance value. It installs npm dependencies
+with a lockfile-backed cache and stamps only the `// go-spdx:` header in the
+Actions checkout's `src/generated.ts`:
+
+- **Release:** Actual release tag plus ` (release)`, after confirming the tag
+  identifies the checked-out commit.
+- **Dispatch:** Full checked-out `git rev-parse HEAD` plus ` (dispatch)`,
+  not a moving branch tip.
+
+Stamping follows verification and does not regenerate assignments, write back
+to the repository, or create a commit. Publication runs `npm test`, which cleanly
+builds the verified source with its publication header and runs all package tests.
+The job uses Node.js 24 and npm 11.20.0 for OIDC authentication, with no long-lived
+npm token. Workflow default permissions are read-only; only the publication job
+receives OIDC permission. Checkout does not retain Git write credentials.
 
 ## Publication artifact preparation and version checks
 
 The [publication helper](../script/prepare-publication.mjs) prepares and compares
 the already-built package after tests. Its `changed` output gates publication:
 unchanged contents skip publishing, while eligible changed contents are published
-from the exact compared tarball using `npm publish --ignore-scripts` with public
-access. Lifecycle scripts do not rebuild the compared artifact. npm provenance
-remains explicitly disabled, and no publication header is stamped.
+from the exact compared tarball using `npm publish --ignore-scripts --provenance`
+with public access. Lifecycle scripts do not rebuild the compared artifact.
 
 To run the helper separately after building:
 
@@ -124,7 +146,8 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   consumer README, license/attribution notices, consumer metadata, and file additions
   or removals all remain significant. Nested manifest key order is preserved because
   conditional `exports`/`imports` and overlapping `typesVersions` ranges can depend
-  on it. A provenance-only change can require a new version.
+  on it. **At this intermediate stack layer, a different
+  publication stamp alone can count as a package change and require a new version.**
 - **Unchanged:** Succeed with an explicit skip, including reruns and version-only
   changes. No candidate is written for that attempt. Version checks apply only
   after finding changed contents or confirming first publication.
@@ -153,6 +176,11 @@ Retries recheck npm rather than using a prior failed or skipped run as a baselin
 Fix the reported problem and release or dispatch an approved corrected ref. A
 repeated attempt cannot reuse a published version for changed contents.
 
+Ignoring all leading provenance during source verification and comparing only
+literal license data for automatic releases, with forced manual dispatch, are
+reserved for the next stack layer. Scheduled ScanCode updates and npm regeneration
+in the existing fetch workflow are also separate; this layer does not change that workflow.
+
 ## Publishing permissions and versioning
 
 Adding this package does not publish it or change registry settings. Do not
@@ -176,5 +204,5 @@ Before the first publication, a maintainer must:
    reviewed ref. Both paths require changed, version-validated package contents.
    A workflow filename or environment change requires updating the npm trusted
    publisher.
-5. Verify anonymous installation from npmjs, the MIT software license, and
-   upstream data attribution.
+5. Verify anonymous installation from npmjs, the MIT software license,
+   upstream data attribution, and provenance.

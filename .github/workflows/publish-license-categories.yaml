@@ -54,6 +54,10 @@ jobs:
         run: npm ci
         working-directory: packages/license-categories
 
+      - name: Stamp publication provenance
+        run: node script/stamp-provenance.mjs
+        working-directory: packages/license-categories
+
       - name: Build and test committed package source
         run: npm test
         working-directory: packages/license-categories
@@ -65,7 +69,5 @@ jobs:
 
       - name: Publish compared tarball using trusted publishing
         if: steps.prepare.outputs.changed == 'true'
-        run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --registry=https://registry.npmjs.org
+        run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org
         working-directory: packages/license-categories
-        env:
-          NPM_CONFIG_PROVENANCE: 'false'

@@ -128,9 +128,8 @@ the map change; do not edit the generated assignments manually.
 The existing tests in
 [`main_test.go`](../../../cmd/license-categories/main_test.go) cover exclusions
 and missing-metadata fallback, overrides with and without ScanCode records, and
-invalid override categories. `TestCategoryOverrides` asserts the exact current
-override map, so update that expectation when intentionally changing the map.
-Add or adjust focused cases for the intended correction or exclusion. The
+invalid override categories. Add or adjust focused cases for the intended
+correction or exclusion. The
 rendering golden test and npm API/tarball tests provide additional regression
 coverage; do not update a golden fixture merely to hide an unexpected change.
 

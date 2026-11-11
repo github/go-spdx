@@ -76,6 +76,41 @@ overrides, warnings, and attribution in the package's
 [THIRD_PARTY_NOTICE.md](../THIRD_PARTY_NOTICE.md). Preserve upstream data
 licensing and any other third-party notices.
 
+### Scheduled SPDX and ScanCode updates
+
+The [Fetch Licenses workflow](../../../.github/workflows/fetch-licenses.yaml)
+runs daily at 04:05 UTC and checks SPDX and ScanCode independently.
+
+- **Immutable input:** Resolve `aboutcode-org/scancode-licensedb`'s `main` once
+  to a full commit, download its archive, compute SHA-256, and generate npm data
+  from those same bytes. Monitor the repository, not the potentially lagging website.
+- **Local refresh:** Run from the repository root:
+  `go run ./cmd/license-categories -update-scancode -out packages/license-categories/src/generated.ts`.
+  This updates `scancodeCommit` and `scancodeZipSHA256`; `scancodeZipURL` is derived
+  from the commit, and `currentScancodeSource` holds the recorded source.
+- **Pinned generation:** Ordinary generation and verification never advance the
+  pin. An unchanged upstream revision still regenerates against the recorded checksum.
+  `-verify` cannot be combined with `-update-scancode`.
+- **Failures:** Network, API, archive, and unsupported-category errors stop the
+  update rather than substituting older data. Rendering succeeds before pins are
+  written. Manual overrides and exclusions remain intact; review warnings and notices.
+- **One reviewable PR:** Serialized runs create or update `auto-update-licenses`
+  against `main`, including ScanCode-only and pin/provenance-only updates.
+  SPDX extraction is followed by npm regeneration. The PR includes both generated
+  outputs and the immutable ScanCode pin/checksum.
+- **Validation:** Go tests, pinned generated-data verification, and npm tests run
+  before opening the PR. Its description distinguishes category payload changes
+  from provenance-only changes. Review the diff, warnings, overrides, and notices.
+- **Dispatch:** `force_run=true` repeats SPDX extraction and validation even without
+  source changes. There are no automatic version bumps, merges, or npm publications.
+  Provenance-only updates do not trigger automatic release publication.
+
+GitHub may require enabling **Allow GitHub Actions to create and approve pull
+requests** in repository Actions settings. PRs created using `GITHUB_TOKEN` may
+not trigger other PR workflows, so the updater validates before opening its PR.
+
+## Validation workflow
+
 [Validate License Categories](../../../.github/workflows/validate-license-categories.yaml)
 verifies committed generated data and runs npm tests on relevant pull requests
 and pushes to `main`. It has read-only permissions and cannot publish. The existing
@@ -198,10 +233,8 @@ Retries recheck npm rather than using a prior failed or skipped run as a baselin
 Fix the reported problem and release or dispatch an approved corrected ref. A
 repeated attempt cannot reuse a published version for changed contents.
 
-Scheduled ScanCode updates and npm regeneration in the existing fetch workflow
-are separate; this layer does not change that workflow. The existing SPDX list
-identifier behavior is unchanged; expanding a no-version identifier to a full SHA
-is deferred.
+The existing SPDX list identifier behavior is unchanged; expanding a no-version
+identifier to a full SHA is deferred.
 
 ## Publishing permissions and versioning
 

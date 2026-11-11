@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildPRBody(t *testing.T) {
@@ -17,6 +18,7 @@ func TestBuildPRBody(t *testing.T) {
 			{LicenseID: "Reactivated", IsDeprecated: true},
 		},
 	}
+
 	currentLicenses := LicenseData{
 		Version: "3.29.0",
 		Licenses: []License{
@@ -43,4 +45,23 @@ func TestBuildPRBody(t *testing.T) {
 	assert.Contains(t, body, "- **Reactivated licenses:** `Reactivated`")
 	assert.Contains(t, body, "- **Added:** `Example-<version>`")
 	assert.Contains(t, body, "Human review required: license range family changed")
+}
+
+func TestBuildCategorySummary(t *testing.T) {
+	t.Parallel()
+	header := func(commit, payload string) []byte {
+		return []byte("// generated\n// go-spdx: (devel)\n// spdx-license-list-version: 3.29.0\n// scancode-licensedb commit: " + commit + "\n" + payload)
+	}
+	previous := header("old", "data")
+	summary, err := buildCategorySummary(previous, header("new", "data"))
+	require.NoError(t, err)
+	assert.Contains(t, summary, "**Previous ScanCode commit:** `old`")
+	assert.Contains(t, summary, "**New ScanCode commit:** `new`")
+	assert.Contains(t, summary, "provenance-only")
+	assert.Contains(t, summary, "Unchanged")
+	summary, err = buildCategorySummary(previous, header("new", "new data"))
+	require.NoError(t, err)
+	assert.Contains(t, summary, "Changed; review")
+	_, err = buildCategorySummary(previous, []byte("no header"))
+	require.ErrorContains(t, err, "missing the ScanCode provenance header")
 }

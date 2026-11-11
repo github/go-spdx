@@ -82,20 +82,31 @@ func TestLocalCheckoutVersionErrors(t *testing.T) {
 	require.ErrorContains(t, err, "Git checkout")
 }
 
-func TestVerifyGeneratedDataIgnoresOnlyGoSPDXProvenance(t *testing.T) {
+func TestVerifyGeneratedDataIgnoresProvenanceValues(t *testing.T) {
 	t.Parallel()
 
-	render := func(version string) []byte {
-		output, err := renderTypeScript(map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}},
-			generationProvenance{GoSPDXVersion: version, SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"})
-		require.NoError(t, err)
-		return output
-	}
-	output := render(strings.Repeat("a", 40) + " (local)")
-	for _, version := range []string{"(devel)", "v2.9.0 (release)", strings.Repeat("b", 40) + " (dispatch)"} {
-		actual := render(version)
-		require.NoError(t, verifyGeneratedData(output, actual))
-		require.NoError(t, verifyGeneratedData(actual, output))
+	provenance := generationProvenance{GoSPDXVersion: strings.Repeat("a", 40) + " (local)",
+		SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"}
+	licenses := map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}}
+	output, err := renderTypeScript(licenses, provenance)
+	require.NoError(t, err)
+	for name, changed := range map[string]generationProvenance{
+		"go-spdx": {GoSPDXVersion: "v2.9.0 (release)",
+			SPDXLicenseListVersion: provenance.SPDXLicenseListVersion, ScancodeCommit: provenance.ScancodeCommit},
+		"SPDX": {GoSPDXVersion: provenance.GoSPDXVersion,
+			SPDXLicenseListVersion: "8791eda", ScancodeCommit: provenance.ScancodeCommit},
+		"ScanCode": {GoSPDXVersion: provenance.GoSPDXVersion,
+			SPDXLicenseListVersion: provenance.SPDXLicenseListVersion, ScancodeCommit: "def456"},
+		"all": {GoSPDXVersion: strings.Repeat("b", 40) + " (dispatch)",
+			SPDXLicenseListVersion: "8791eda", ScancodeCommit: "def456"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			actual, err := renderTypeScript(licenses, changed)
+			require.NoError(t, err)
+			require.NoError(t, verifyGeneratedData(output, actual))
+			require.NoError(t, verifyGeneratedData(actual, output))
+		})
 	}
 }
 
@@ -117,9 +128,11 @@ func TestVerifyGeneratedDataRejectsOtherDifferences(t *testing.T) {
 		{"// scancode-licensedb commit: ", "// wrong-header: "},
 		{provenance.GoSPDXVersion, ""},
 		{"3.29.0", ""},
-		{"3.29.0", "3.30.0"},
-		{"abc123", "def456"},
 		{"abc123", "   "},
+		{"// go-spdx: " + provenance.GoSPDXVersion + "\n", ""},
+		{"// spdx-license-list-version: 3.29.0\n", ""},
+		{"// go-spdx: " + provenance.GoSPDXVersion + "\n// spdx-license-list-version: 3.29.0\n",
+			"// spdx-license-list-version: 3.29.0\n// go-spdx: " + provenance.GoSPDXVersion + "\n"},
 		{"// go-spdx: ", "// Extra comment\n// go-spdx: "},
 		{"// spdx-license-list-version: ", "// Extra comment\n// spdx-license-list-version: "},
 		{"// scancode-licensedb commit: ", "// Extra comment\n// scancode-licensedb commit: "},
@@ -155,11 +168,15 @@ func TestVerifyGeneratedDataRejectsCommentTerminatorsInProvenance(t *testing.T) 
 		t.Run(terminator.name, func(t *testing.T) {
 			t.Parallel()
 
-			changed := []byte(strings.Replace(string(output), provenance.GoSPDXVersion,
-				provenance.GoSPDXVersion+terminator.value+"export const injected = true;", 1))
-			require.Error(t, verifyGeneratedData(output, changed))
-			require.Error(t, verifyGeneratedData(changed, output))
-			require.Error(t, verifyGeneratedData(changed, changed))
+			for _, value := range []string{provenance.GoSPDXVersion, provenance.SPDXLicenseListVersion, provenance.ScancodeCommit} {
+				changed := []byte(strings.Replace(string(output), value,
+					value+terminator.value+"export const injected = true;", 1))
+				require.Error(t, verifyGeneratedData(output, changed))
+				require.Error(t, verifyGeneratedData(changed, output))
+				if terminator.value != "\n" {
+					require.Error(t, verifyGeneratedData(changed, changed))
+				}
+			}
 		})
 	}
 }

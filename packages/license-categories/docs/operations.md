@@ -23,11 +23,12 @@ make test-license-categories
 `packages/license-categories/src/generated.ts`. Generation requires network
 access to the pinned public ScanCode archive. `make verify-license-categories`
 uses the generator's `-verify` mode to compare fresh output to the checked-in
-file without overwriting it. Only the leading `// go-spdx:` provenance value
-is ignored, avoiding a self-reference when committing the generated checkout SHA.
+file without overwriting it. The three leading provenance values (`go-spdx`,
+`spdx-license-list-version`, and `scancode-licensedb commit`) are ignored,
+including the self-reference when committing the generated checkout SHA.
 The generator header and provenance labels/order must match, with a nonempty
-value on each provenance line. The SPDX list version, ScanCode commit, actual data,
-and all other content must match exactly. Provenance header values cannot contain
+value on each provenance line. All remaining content, including non-provenance
+comments, must match exactly. Provenance header values cannot contain
 CR, LF, or Unicode line/paragraph separators (U+2028/U+2029), which terminate
 TypeScript line comments.
 
@@ -96,17 +97,19 @@ prerelease. Pushes do not trigger publication.
 The single publication job is disabled unless the repository variable
 `LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED` is exactly `true`. Publications are
 serialized across all refs without canceling a running publication. There is no
-default-branch-only restriction. Dispatch bypasses only the release event
-restriction, not enablement, generated-data verification, package comparison,
-or version checks. Only release or dispatch trusted, reviewed refs. npm semantic
-prerelease versions follow the same ordering rules; the GitHub release flag does
-not change those rules. Backports on older release tracks would require a future
-version-policy change.
+default-branch-only restriction. Dispatch bypasses the Go-release event
+requirement and unchanged-data skip, not the
+enablement gate, generated-data validation, or version checks. Dispatch is the
+explicit way to publish non-data fixes; only release or dispatch trusted, reviewed refs.
+npm semantic prerelease versions follow the same ordering rules; the GitHub
+release flag does not change those rules.
+Backports on older release tracks would require a future version-policy change.
 
-The job verifies committed generated data with `make verify-license-categories`,
-ignoring only the leading go-spdx provenance value. It installs npm dependencies
-with a lockfile-backed cache and stamps only the `// go-spdx:` header in the
-Actions checkout's `src/generated.ts`:
+Publication independently runs `make verify-license-categories` using the Go
+version from `go.mod`, downloading the pinned ScanCode archive and comparing fresh
+output. Only the three leading provenance values are ignored. It then installs
+lockfile-backed dependencies with npm caching and stamps only the `// go-spdx:`
+header in the Actions checkout's `src/generated.ts`:
 
 - **Release:** Actual release tag plus ` (release)`, after confirming the tag
   identifies the checked-out commit.
@@ -133,7 +136,7 @@ receives OIDC permission. Checkout does not retain Git write credentials.
 
 The [publication helper](../script/prepare-publication.mjs) prepares and compares
 the already-built package after tests. Its `changed` output gates publication:
-unchanged contents skip publishing, while eligible changed contents are published
+unchanged data skips automatic publishing, while eligible releases or dispatches publish
 from the exact compared tarball using `npm publish --ignore-scripts --provenance`
 with public access. Lifecycle scripts do not rebuild the compared artifact.
 
@@ -148,34 +151,42 @@ The helper uses `npm pack --ignore-scripts` and retains the exact candidate
 tarball at the requested destination only when publication is eligible. It does
 not publish, regenerate data, stamp provenance, or bump versions. Its behavior is:
 
-- **Compare:** Compare every packaged file against the most recent npm publication
-  by timestamp, including prereleases, not a Go tag or npm's `latest` tag. Archive
-  metadata and entry order do not affect comparison.
-- **Ignore:** Manifest version, npm bookkeeping fields (leading `_` and `gitHead`),
-  and top-level manifest JSON key order. Unpackaged maintainer docs do not affect contents.
-- **Preserve:** API code, generated data, comments and provenance, declarations,
-  consumer README, license/attribution notices, consumer metadata, and file additions
-  or removals all remain significant. Nested manifest key order is preserved because
-  conditional `exports`/`imports` and overlapping `typesVersions` ranges can depend
-  on it. **At this intermediate stack layer, a different
-  publication stamp alone can count as a package change and require a new version.**
-- **Unchanged:** Succeed with an explicit skip, including reruns and version-only
-  changes. No candidate is written for that attempt. Version checks apply only
-  after finding changed contents or confirming first publication.
-- **Changed:** Require matching names and versions in `package.json` and
-  `package-lock.json`, with a valid, unused semantic version newer than every
-  published version. Prerelease versions follow semantic version ordering.
+- **Compare:** Compare literal `categoryDescriptions` and `licensesById` from packed `dist/generated.js`
+  against the most recent npm publication by timestamp, including prereleases.
+  The baseline is not a Go tag, repository diff, or npm's `latest` tag.
+- **Counts as a change:** License IDs, membership, names, categories, or category descriptions.
+- **Ignored:** The entire generated header, all comments, formatting, quoting,
+  and object ordering. Other package files, metadata, versions, and unpackaged
+  maintainer docs do not trigger automatic publication.
+- **Unchanged release:** Succeed with an explicit skip, including reruns, even
+  after a version bump. Non-data fixes ship with the next data update unless
+  published sooner by manual dispatch. No candidate is written for a skipped attempt.
+- **Manual dispatch:** Force publication even without data changes, only after
+  verifying the Actions event and selected ref; all data, version, and enablement
+  checks still apply.
+- **Changed data or dispatch:** Require a valid version and matching names/versions in
+  `package.json` and `package-lock.json`. The version must be unused and
+  semantically newer than every published version. **No automatic bumps.**
   Versions recorded in npm's publication history remain used even after unpublishing.
-  Update both package files explicitly; no automatic bump is performed.
-- **First publication:** Only an explicit npm package-not-found response counts.
-  Manifest and lockfile validation still applies.
-- **Errors:** Registry/authentication, network, malformed metadata, archive,
-  download, and integrity failures stop preparation instead of assuming first
-  publication. Downloads and unpacked contents are limited to 100 MiB; archive
-  listings are limited to 100 entries and 1 MiB of cumulative UTF-8 path bytes,
-  including directory entries. File entries must be regular files under `package/`
-  with safe, unique paths. Invalid archives reject preparation through its normal
-  error handling, removing temporary files without writing a candidate tarball.
+- **First publication:** Only confirmed npm package absence counts; valid
+  generated data, version, and lockfile checks are still required.
+- **Safe parsing:** Use the existing TypeScript parser to read literal data,
+  never import or execute downloaded JavaScript. Missing, malformed, duplicate,
+  non-literal, or unsupported generated data fails explicitly, even on dispatch.
+  Packaged manifests must parse and identify the expected package before comparison.
+- **Verification is separate:** Committed-source verification ignores only the
+  three leading provenance values. Header structure, actual data, and all other
+  content, including non-provenance comments, must still match.
+- **Errors:** Registry/authentication, network, malformed-response, archive,
+  download, and integrity failures stop publication; they never mean "first publication."
+  Downloads and unpacked contents are limited to 100 MiB; archive listings are
+  limited to 100 entries and 1 MiB of cumulative UTF-8 path bytes, including directories.
+  Files must be regular entries under `package/` with safe, unique paths.
+  Invalid archives reject normally, removing temporary files without writing a candidate.
+- **Retry:** Fix the reported problem and release or dispatch an approved corrected
+  ref. Every attempt checks npm again, so skipped or failed Go releases do not change
+  the baseline. A repeated dispatch cannot reuse a published version;
+  bump both version files before dispatching again.
 
 When run in GitHub Actions, the helper accepts only a `released` event's tag or a
 `workflow_dispatch` selected ref and checks that the resolved ref matches checkout
@@ -187,10 +198,10 @@ Retries recheck npm rather than using a prior failed or skipped run as a baselin
 Fix the reported problem and release or dispatch an approved corrected ref. A
 repeated attempt cannot reuse a published version for changed contents.
 
-Ignoring all leading provenance during source verification and comparing only
-literal license data for automatic releases, with forced manual dispatch, are
-reserved for the next stack layer. Scheduled ScanCode updates and npm regeneration
-in the existing fetch workflow are also separate; this layer does not change that workflow.
+Scheduled ScanCode updates and npm regeneration in the existing fetch workflow
+are separate; this layer does not change that workflow. The existing SPDX list
+identifier behavior is unchanged; expanding a no-version identifier to a full SHA
+is deferred.
 
 ## Publishing permissions and versioning
 
@@ -212,7 +223,8 @@ Before the first publication, a maintainer must:
    a separate bootstrap, arrange that with an authorized npm maintainer.
 4. After publication approval, set the repository variable to `true` and publish
    an approved Go release, or dispatch the workflow with an explicitly selected
-   reviewed ref. Both paths require changed, version-validated package contents.
+   reviewed ref. Releases require changed data; dispatch may force publication.
+   Both paths require version-validated contents with public access and provenance.
    A workflow filename or environment change requires updating the npm trusted
    publisher.
 5. Verify anonymous installation from npmjs, the MIT software license,

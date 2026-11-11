@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import test from 'node:test'
 import {publicationProvenance, stampSource} from '../script/stamp-provenance.mjs'
-import {samePackageContents} from '../script/prepare-publication.mjs'
+import {sameLicenseData} from '../script/prepare-publication.mjs'
 
 const head = 'a'.repeat(40)
 
@@ -141,15 +141,42 @@ test('the compiled publication artifact retains the stamped header', t => {
   assert.ok(readFileSync(join(directory, 'generated.js'), 'utf8').includes(`// go-spdx: ${head} (dispatch)`))
 })
 
-test('publication stamps count as package changes at this stack layer', () => {
-  const generated = readFileSync(new URL('../dist/generated.js', import.meta.url), 'utf8')
-  const packed = source => new Map([
-    ['package.json', Buffer.from(JSON.stringify({name: '@github/license-categories', version: '0.1.2'}))],
-    ['dist/generated.js', Buffer.from(source)],
+test('real built local, release and dispatch stamps are equivalent but data changes remain significant', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'license-categories-data-stamps-'))
+  t.after(() => rmSync(directory, {recursive: true, force: true}))
+  const source = readFileSync(new URL('../src/generated.ts', import.meta.url), 'utf8')
+  const provenances = [
+    `${head} (local)`,
+    publicationProvenance('release', {action: 'released', release: {tag_name: 'v2.9.0'}}, head, () => head),
+    publicationProvenance('workflow_dispatch', {}, 'b'.repeat(40), () => 'b'.repeat(40)),
+  ]
+  const inputs = provenances.map((provenance, index) => {
+    const path = join(directory, `generated-${index}.ts`)
+    writeFileSync(path, stampSource(source, provenance)
+      .replace(/^(\/\/ spdx-license-list-version: ).*$/m, `$1version-${index}`)
+      .replace(/^(\/\/ scancode-licensedb commit: ).*$/m, `$1${String(index).repeat(40)}`))
+    return path
+  })
+  const changedPath = join(directory, 'changed.ts')
+  assert.ok(source.includes("'Safe for most'"))
+  writeFileSync(changedPath, stampSource(source.replace("'Safe for most'", "'Changed description'"), provenances[2]))
+  execFileSync(process.execPath, [
+    new URL('../node_modules/typescript/bin/tsc', import.meta.url).pathname,
+    ...inputs, changedPath, '--target', 'ES2022', '--module', 'ES2022',
   ])
-  const baseline = packed(stampSource(generated, `${head} (local)`))
-  assert.ok(samePackageContents(packed(stampSource(generated, `${head} (local)`)), baseline))
-  for (const provenance of ['v2.9.0 (release)', `${'b'.repeat(40)} (dispatch)`]) {
-    assert.ok(!samePackageContents(packed(stampSource(generated, provenance)), baseline))
+  const packed = path => new Map([
+    ['package.json', Buffer.from(JSON.stringify({name: '@github/license-categories'}))],
+    ['dist/generated.js', readFileSync(path)],
+  ])
+  const variants = inputs.map((path, index) => {
+    const js = path.replace(/\.ts$/, '.js')
+    assert.ok(readFileSync(js, 'utf8').includes(`// go-spdx: ${provenances[index]}`))
+    return packed(js)
+  })
+  const changed = packed(join(directory, 'changed.js'))
+  for (const left of variants) {
+    for (const right of variants) assert.ok(sameLicenseData(left, right))
+    assert.ok(!sameLicenseData(left, changed))
+    assert.ok(!sameLicenseData(changed, left))
   }
 })

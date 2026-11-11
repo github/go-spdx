@@ -147,8 +147,8 @@ test('real built local, release and dispatch stamps are equivalent but data chan
   const source = readFileSync(new URL('../src/generated.ts', import.meta.url), 'utf8')
   const provenances = [
     `${head} (local)`,
-    publicationProvenance('release', {action: 'released', release: {tag_name: 'v2.9.0'}}, () => head),
-    publicationProvenance('workflow_dispatch', {}, () => 'b'.repeat(40)),
+    publicationProvenance('release', {action: 'released', release: {tag_name: 'v2.9.0'}}, head, () => head),
+    publicationProvenance('workflow_dispatch', {}, 'b'.repeat(40), () => 'b'.repeat(40)),
   ]
   const inputs = provenances.map((provenance, index) => {
     const path = join(directory, `generated-${index}.ts`)

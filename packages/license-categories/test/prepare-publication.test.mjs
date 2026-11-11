@@ -272,7 +272,7 @@ for (const [label, before, after] of [
 }
 
 test('the Actions entry point rejects invalid events and mismatched refs before forcing publication', t => {
-  const directory = mkdtempSync(join(tmpdir(), 'license-categories-event-'))
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'license-categories-event-')))
   t.after(() => rmSync(directory, {recursive: true, force: true}))
   const git = (...args) => execFileSync('git', [
     '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
@@ -284,7 +284,11 @@ test('the Actions entry point rejects invalid events and mismatched refs before 
   git('commit', '--quiet', '--allow-empty', '-m', 'Checked-out commit')
   const eventPath = join(directory, 'event.json')
   writeFileSync(eventPath, '{}')
-  const script = new URL('../script/prepare-publication.mjs', import.meta.url).pathname
+  const packageDirectory = join(directory, 'packages/license-categories')
+  mkdirSync(join(packageDirectory, 'script'), {recursive: true})
+  const script = join(packageDirectory, 'script/prepare-publication.mjs')
+  copyFileSync(new URL('../script/prepare-publication.mjs', import.meta.url), script)
+  symlinkSync(realpathSync(new URL('../node_modules', import.meta.url)), join(packageDirectory, 'node_modules'), 'dir')
   const run = (event, ref) => {
     assert.throws(() => execFileSync(process.execPath, [script, join(directory, 'candidate.tgz')], {
       cwd: directory,

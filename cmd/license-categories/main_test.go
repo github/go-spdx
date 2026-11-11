@@ -168,11 +168,15 @@ func TestVerifyGeneratedDataRejectsCommentTerminatorsInProvenance(t *testing.T) 
 		t.Run(terminator.name, func(t *testing.T) {
 			t.Parallel()
 
-			changed := []byte(strings.Replace(string(output), provenance.GoSPDXVersion,
-				provenance.GoSPDXVersion+terminator.value+"export const injected = true;", 1))
-			require.Error(t, verifyGeneratedData(output, changed))
-			require.Error(t, verifyGeneratedData(changed, output))
-			require.Error(t, verifyGeneratedData(changed, changed))
+			for _, value := range []string{provenance.GoSPDXVersion, provenance.SPDXLicenseListVersion, provenance.ScancodeCommit} {
+				changed := []byte(strings.Replace(string(output), value,
+					value+terminator.value+"export const injected = true;", 1))
+				require.Error(t, verifyGeneratedData(output, changed))
+				require.Error(t, verifyGeneratedData(changed, output))
+				if terminator.value != "\n" {
+					require.Error(t, verifyGeneratedData(changed, changed))
+				}
+			}
 		})
 	}
 }

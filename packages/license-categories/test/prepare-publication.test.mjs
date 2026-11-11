@@ -168,7 +168,7 @@ test('CLI validates the packaged checkout independently of the caller checkout',
   const events = [
     ['dispatch-tag', 'workflow_dispatch', {}, 'refs/tags/selected'],
     ['dispatch-branch', 'workflow_dispatch', {}, 'refs/heads/selected'],
-    ['release', 'release', {action: 'published', release: {tag_name: 'selected'}}, 'refs/tags/selected'],
+    ['release', 'release', {action: 'released', release: {tag_name: 'selected'}}, 'refs/tags/selected'],
   ]
   for (const matches of [false, true]) {
     for (const ref of ['refs/tags/selected', 'refs/heads/selected']) {

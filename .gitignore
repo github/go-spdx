@@ -16,3 +16,7 @@
 
 # Ignore path setup by fetch-licenses workflow
 official-spdx-licenses/
+
+# npm package build output and dependencies
+packages/license-categories/dist/
+packages/license-categories/node_modules/

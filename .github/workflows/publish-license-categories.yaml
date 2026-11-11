@@ -1,13 +1,12 @@
 name: Publish License Categories
 
-run-name: Publish License Categories - ${{ github.sha }}
-
 on:
+  release:
+    types: [released]
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - packages/license-categories/**
+
+permissions:
+  contents: read
 
 concurrency:
   group: publish-license-categories
@@ -16,26 +15,28 @@ concurrency:
 jobs:
   publish:
     name: Publish
-    if: vars.LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true'
+    # Dispatch bypasses the release event restriction, not the enablement gate.
+    if: >-
+      vars.LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true' &&
+      (github.event_name != 'release' || github.event.release.prerelease == false)
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
-
+      id-token: write
     steps:
-      - name: Validate default branch
-        if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
-        run: |
-          echo "::error::This workflow should only be run on the main branch."
-          exit 1
-
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: './go.mod'
+          go-version-file: go.mod
+
+      - name: Verify committed generated data
+        run: make verify-license-categories
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
@@ -49,23 +50,22 @@ jobs:
       - name: Install OIDC-capable npm
         run: npm install -g npm@11.20.0
 
-      - name: Verify generated license categories
-        run: make verify-license-categories
-
-      - name: Install dependencies
+      - name: Install package dependencies
         run: npm ci
         working-directory: packages/license-categories
 
-      - name: Test package
+      - name: Build and test committed package source
         run: npm test
         working-directory: packages/license-categories
 
-      - name: Test package tarball
-        run: npm run test:tarball
+      - name: Compare published contents and validate version
+        id: prepare
+        run: node script/prepare-publication.mjs "$RUNNER_TEMP/license-categories.tgz"
         working-directory: packages/license-categories
 
-      - name: Publish to npm using OIDC
-        run: npm publish --access public --registry=https://registry.npmjs.org
+      - name: Publish compared tarball using trusted publishing
+        if: steps.prepare.outputs.changed == 'true'
+        run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --registry=https://registry.npmjs.org
         working-directory: packages/license-categories
         env:
           NPM_CONFIG_PROVENANCE: 'false'

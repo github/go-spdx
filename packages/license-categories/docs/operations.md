@@ -32,7 +32,7 @@ npm run build --prefix packages/license-categories
 ```
 
 The build removes `dist` before compiling TypeScript. `npm test` builds and runs
-the API, tarball, validation-workflow, and publication-preparation tests, including
+the API, tarball, workflow-contract, and publication-preparation tests, including
 importing an extracted package independently of the source tree.
 `npm run test:tarball --prefix packages/license-categories` runs only the packaging
 tests after building. The `prepack` hook also builds before packing or publishing.
@@ -69,33 +69,42 @@ tests through `go test -race ./...`; validation does not duplicate them.
 ## Publication workflow
 
 [Publish License Categories](../../../.github/workflows/publish-license-categories.yaml)
-runs on pushes to `main` that change `packages/license-categories/**`, or through
-`workflow_dispatch`. The workflow rejects refs other than the repository's
-default branch. Changes only to the generator or Makefile do not trigger it;
-regenerate and commit package output with relevant source changes, or dispatch
-the workflow on the default branch.
+is publication-only. It listens for `release: released`, which runs when a stable
+GitHub release is first published or an already published prerelease is promoted
+to a stable release, checking out that release's exact tag. It also runs through
+`workflow_dispatch`, using the selected ref.
+Draft releases and prereleases do not trigger publication. The publication job
+also checks GitHub's `release.prerelease` flag, not the tag's spelling or suffix.
+A promoted release can retain its original tag without being marked as a
+prerelease. Pushes do not trigger publication.
 
 The single publication job is disabled unless the repository variable
 `LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED` is exactly `true`. Publications are
-serialized without canceling a running publication. The job verifies generated
-data, installs npm dependencies with a lockfile-backed cache, and runs the API
-and tarball tests before publishing with public access through npm trusted
-publishing. It uses Node.js 24 and npm 11.20.0 for OIDC authentication, with no
-long-lived npm token.
+serialized across all refs without canceling a running publication. There is no
+default-branch-only restriction. Dispatch bypasses only the release event
+restriction, not enablement, generated-data verification, package comparison,
+or version checks. Only release or dispatch trusted, reviewed refs. npm semantic
+prerelease versions follow the same ordering rules; the GitHub release flag does
+not change those rules. Backports on older release tracks would require a future
+version-policy change.
 
-The workflow retains the original OLC publication behavior: npm provenance is
-explicitly disabled, no publication header is stamped, and every enabled run
-attempts to publish the version in the manifest. There is no registry comparison,
-unchanged-data skip, version bump, or release-event trigger. npm rejects a version
-that has already been published. Bump both `package.json` and `package-lock.json`
-before subsequent publication attempts.
+The job verifies committed generated data byte for byte with
+`make verify-license-categories`, installs npm dependencies with a lockfile-backed
+cache, and runs `npm test`, including API and tarball tests. It uses Node.js 24 and
+npm 11.20.0 for OIDC authentication, with no long-lived npm token. Workflow default
+permissions are read-only; only the publication job receives OIDC permission.
+Checkout does not retain Git write credentials.
 
-## Publication artifact preparation (not yet wired)
+## Publication artifact preparation and version checks
 
 The [publication helper](../script/prepare-publication.mjs) prepares and compares
-an already-built package, but is **not called by the publication workflow yet**.
-The workflow behavior described above remains unchanged. To run the helper
-separately after building:
+the already-built package after tests. Its `changed` output gates publication:
+unchanged contents skip publishing, while eligible changed contents are published
+from the exact compared tarball using `npm publish --ignore-scripts` with public
+access. Lifecycle scripts do not rebuild the compared artifact. npm provenance
+remains explicitly disabled, and no publication header is stamped.
+
+To run the helper separately after building:
 
 ```sh
 npm run build --prefix packages/license-categories
@@ -136,14 +145,15 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   with safe, unique paths. Invalid archives reject preparation through its normal
   error handling, removing temporary files without writing a candidate tarball.
 
-When run in GitHub Actions, the helper's input contract accepts only a published
-release tag or a `workflow_dispatch` selected ref and checks that the resolved ref
-matches checkout `HEAD`. Both Git checks run in the package directory containing
-the helper, so they validate the checkout being packaged regardless of the caller's
-working directory. Those guards and their tests prepare for later workflow
-integration; they do not change the current workflow's main-push/dispatch policy.
+When run in GitHub Actions, the helper accepts only a `released` event's tag or a
+`workflow_dispatch` selected ref and checks that the resolved ref matches checkout
+`HEAD`.
+Both Git checks run in the package directory containing the helper, so they
+validate the checkout being packaged regardless of the caller's working directory.
 The helper writes `changed=true` or `changed=false` to `GITHUB_OUTPUT` when set.
 Retries recheck npm rather than using a prior failed or skipped run as a baseline.
+Fix the reported problem and release or dispatch an approved corrected ref. A
+repeated attempt cannot reuse a published version for changed contents.
 
 ## Publishing permissions and versioning
 
@@ -163,9 +173,10 @@ Before the first publication, a maintainer must:
    `publish-license-categories.yaml`, with no environment restriction (the
    workflow does not use an environment). If first-publication setup requires
    a separate bootstrap, arrange that with an authorized npm maintainer.
-4. After publication approval, set the repository variable to `true` and push
-   an approved package change to `main` or dispatch the workflow on the default
-   branch. A workflow filename or environment change requires updating the
-   npm trusted publisher.
+4. After publication approval, set the repository variable to `true` and publish
+   an approved Go release, or dispatch the workflow with an explicitly selected
+   reviewed ref. Both paths require changed, version-validated package contents.
+   A workflow filename or environment change requires updating the npm trusted
+   publisher.
 5. Verify anonymous installation from npmjs, the MIT software license, and
    upstream data attribution.

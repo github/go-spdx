@@ -118,12 +118,22 @@ test('invalid published archives reject normally, clean up, and do not write a c
 })
 
 test('release tags and selected dispatch refs are used literally', () => {
-  assert.equal(publicationRef('release', {action: 'published', release: {tag_name: 'v2.9.0'}}, 'refs/heads/main'), 'refs/tags/v2.9.0')
+  assert.equal(publicationRef('release', {action: 'released', release: {tag_name: 'v2.9.0'}}, 'refs/heads/main'), 'refs/tags/v2.9.0')
   assert.equal(publicationRef('workflow_dispatch', {}, 'refs/heads/fix'), 'refs/heads/fix')
   assert.equal(publicationRef('workflow_dispatch', {}, 'refs/tags/v2.9.0'), 'refs/tags/v2.9.0')
-  assert.equal(publicationRef('release', {action: 'published', release: {tag_name: '$(touch bad)'}}, ''), 'refs/tags/$(touch bad)')
+  assert.equal(publicationRef('release', {action: 'released', release: {tag_name: '$(touch bad)'}}, ''), 'refs/tags/$(touch bad)')
   assert.throws(() => publicationRef('push', {}, 'refs/heads/main'), /requires/)
   assert.throws(() => publicationRef('release', {action: 'drafted'}, ''), /requires/)
+  assert.throws(() => publicationRef('release', {action: 'published', release: {tag_name: 'v2.9.0'}}, ''), /requires/)
+  assert.throws(() => publicationRef('release', {action: 'prereleased', release: {tag_name: 'v2.9.0-beta.1'}}, ''), /requires/)
+})
+
+test('stable releases and promoted prereleases use the same released event contract', () => {
+  for (const tag of ['v2.9.0', 'v2.9.0-beta.1']) {
+    assert.equal(publicationRef('release', {
+      action: 'released', release: {tag_name: tag, prerelease: false},
+    }, 'refs/heads/main'), `refs/tags/${tag}`)
+  }
 })
 
 test('CLI validates the packaged checkout independently of the caller checkout', async t => {
@@ -158,7 +168,7 @@ test('CLI validates the packaged checkout independently of the caller checkout',
   const events = [
     ['dispatch-tag', 'workflow_dispatch', {}, 'refs/tags/selected'],
     ['dispatch-branch', 'workflow_dispatch', {}, 'refs/heads/selected'],
-    ['release', 'release', {action: 'published', release: {tag_name: 'selected'}}, 'refs/tags/selected'],
+    ['release', 'release', {action: 'released', release: {tag_name: 'selected'}}, 'refs/tags/selected'],
   ]
   for (const matches of [false, true]) {
     for (const ref of ['refs/tags/selected', 'refs/heads/selected']) {

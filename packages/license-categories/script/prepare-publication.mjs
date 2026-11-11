@@ -14,11 +14,11 @@ const maximumEntries = 100
 const maximumPathBytes = 1024 * 1024
 
 export function publicationRef(eventName, event, selectedRef) {
-  if (eventName === 'release' && event.action === 'published' && event.release?.tag_name) {
+  if (eventName === 'release' && event.action === 'released' && event.release?.tag_name) {
     return `refs/tags/${event.release.tag_name}`
   }
   if (eventName === 'workflow_dispatch' && selectedRef) return selectedRef
-  throw new Error('Publication requires a published release tag or a workflow_dispatch selected ref.')
+  throw new Error('Publication requires a released tag or a workflow_dispatch selected ref.')
 }
 
 export async function packedFiles(path) {

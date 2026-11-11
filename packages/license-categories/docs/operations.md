@@ -113,6 +113,12 @@ Actions checkout's `src/generated.ts`:
 - **Dispatch:** Full checked-out `git rev-parse HEAD` plus ` (dispatch)`,
   not a moving branch tip.
 
+Before stamping, both paths require checkout `HEAD` to match the run's full
+`GITHUB_SHA`, which npm uses for source attestation. A missing, malformed, or
+mismatched event SHA stops the job before the source is stamped or built.
+A queued or rerun dispatch whose selected branch has advanced must use a new
+dispatch run for that commit rather than publishing with mismatched provenance.
+
 Release tags and stamped provenance values must not contain CR, LF, U+2028, or
 U+2029; these are rejected rather than allowing a header to introduce source code.
 

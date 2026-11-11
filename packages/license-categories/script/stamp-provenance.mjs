@@ -11,9 +11,15 @@ function gitRevision(ref) {
   }).trim()
 }
 
-export function publicationProvenance(eventName, event, revision = gitRevision) {
+export function publicationProvenance(eventName, event, eventSHA, revision = gitRevision) {
+  if (typeof eventSHA !== 'string' || !/^[a-f0-9]{40}$/.test(eventSHA)) {
+    throw new Error('Expected GITHUB_SHA to identify the full event commit SHA.')
+  }
   const head = revision('HEAD')
   if (!/^[a-f0-9]{40}$/.test(head)) throw new Error('Expected the full checked-out Git commit SHA.')
+  if (head !== eventSHA) {
+    throw new Error('Checked-out commit does not match GITHUB_SHA; refusing to publish mismatched npm provenance.')
+  }
   if (eventName === 'workflow_dispatch') return `${head} (dispatch)`
   if (eventName === 'release' && event.action === 'released') {
     const tag = event.release?.tag_name
@@ -42,7 +48,7 @@ export function stampSource(source, provenance) {
 function main() {
   if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Publication stamping is only supported in GitHub Actions.')
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
-  const provenance = publicationProvenance(process.env.GITHUB_EVENT_NAME, event)
+  const provenance = publicationProvenance(process.env.GITHUB_EVENT_NAME, event, process.env.GITHUB_SHA)
   const path = new URL('../src/generated.ts', import.meta.url)
   const source = readFileSync(path, 'utf8')
   writeFileSync(path, stampSource(source, provenance))

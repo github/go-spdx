@@ -13,17 +13,17 @@ export function publicationProvenance(eventName, event, revision = gitRevision) 
   const head = revision('HEAD')
   if (!/^[a-f0-9]{40}$/.test(head)) throw new Error('Expected the full checked-out Git commit SHA.')
   if (eventName === 'workflow_dispatch') return `${head} (dispatch)`
-  if (eventName === 'release' && event.action === 'published') {
+  if (eventName === 'release' && event.action === 'released') {
     const tag = event.release?.tag_name
     if (typeof tag !== 'string' || !tag || /[\r\n]/.test(tag)) {
-      throw new Error('Published release must identify a single-line Git tag.')
+      throw new Error('Released event must identify a single-line Git tag.')
     }
     if (revision(`refs/tags/${tag}`) !== head) {
-      throw new Error('Checked-out commit does not match the published release tag.')
+      throw new Error('Checked-out commit does not match the released tag.')
     }
     return `${tag} (release)`
   }
-  throw new Error('Provenance stamping requires a published release or manual dispatch.')
+  throw new Error('Provenance stamping requires a released event or manual dispatch.')
 }
 
 export function stampSource(source, provenance) {

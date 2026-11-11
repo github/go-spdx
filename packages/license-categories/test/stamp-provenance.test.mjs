@@ -12,13 +12,26 @@ const head = 'a'.repeat(40)
 test('release provenance uses the actual checked-out release tag', () => {
   const refs = []
   const provenance = publicationProvenance('release', {
-    action: 'published', release: {tag_name: 'v2.9.0'},
+    action: 'released', release: {tag_name: 'v2.9.0'},
   }, ref => { refs.push(ref); return head })
   assert.equal(provenance, 'v2.9.0 (release)')
   assert.deepEqual(refs, ['HEAD', 'refs/tags/v2.9.0'])
   assert.throws(() => publicationProvenance('release', {
-    action: 'published', release: {tag_name: 'v2.9.0'},
+    action: 'released', release: {tag_name: 'v2.9.0'},
   }, ref => ref === 'HEAD' ? head : 'b'.repeat(40)), /does not match/)
+})
+
+test('only released events stamp initial stable releases and prerelease promotions', () => {
+  for (const tag of ['v2.9.0', 'v2.9.1-rc.1']) {
+    assert.equal(publicationProvenance('release', {
+      action: 'released', release: {tag_name: tag, prerelease: false},
+    }, () => head), `${tag} (release)`)
+  }
+  for (const action of ['published', 'prereleased', 'created', 'edited']) {
+    assert.throws(() => publicationProvenance('release', {
+      action, release: {tag_name: 'v2.9.0', prerelease: false},
+    }, () => head), /requires a released event/)
+  }
 })
 
 test('dispatch provenance reads full checked-out HEAD, never a moving selected ref', () => {
@@ -44,7 +57,7 @@ test('stamping modifies only the go-spdx header and preserves literal tag text',
   assert.throws(() => stampSource('no header', provenance), /exactly one/)
   assert.throws(() => stampSource('// go-spdx: one\n// go-spdx: two', provenance), /exactly one/)
   assert.throws(() => publicationProvenance('release', {
-    action: 'published', release: {tag_name: 'v2.9.0\ninjected'},
+    action: 'released', release: {tag_name: 'v2.9.0\ninjected'},
   }, () => head), /single-line/)
 })
 

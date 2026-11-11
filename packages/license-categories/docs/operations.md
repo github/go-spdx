@@ -32,8 +32,8 @@ npm run build --prefix packages/license-categories
 ```
 
 The build removes `dist` before compiling TypeScript. `npm test` builds and runs
-the API, tarball, and validation-workflow tests, including importing an extracted
-package independently of the source tree.
+the API, tarball, validation-workflow, and publication-preparation tests, including
+importing an extracted package independently of the source tree.
 `npm run test:tarball --prefix packages/license-categories` runs only the packaging
 tests after building. The `prepack` hook also builds before packing or publishing.
 
@@ -89,6 +89,51 @@ attempts to publish the version in the manifest. There is no registry comparison
 unchanged-data skip, version bump, or release-event trigger. npm rejects a version
 that has already been published. Bump both `package.json` and `package-lock.json`
 before subsequent publication attempts.
+
+## Publication artifact preparation (not yet wired)
+
+The [publication helper](../script/prepare-publication.mjs) prepares and compares
+an already-built package, but is **not called by the publication workflow yet**.
+The workflow behavior described above remains unchanged. To run the helper
+separately after building:
+
+```sh
+npm run build --prefix packages/license-categories
+node packages/license-categories/script/prepare-publication.mjs /absolute/path/candidate.tgz
+```
+
+The helper uses `npm pack --ignore-scripts` and retains the exact candidate
+tarball at the requested destination only when publication is eligible. It does
+not publish, regenerate data, stamp provenance, or bump versions. Its behavior is:
+
+- **Compare:** Compare every packaged file against the most recent npm publication
+  by timestamp, including prereleases, not a Go tag or npm's `latest` tag. Archive
+  metadata and entry order do not affect comparison.
+- **Ignore:** Manifest version, npm bookkeeping fields (leading `_` and `gitHead`),
+  and manifest JSON key order. Unpackaged maintainer docs do not affect contents.
+- **Preserve:** API code, generated data, comments and provenance, declarations,
+  consumer README, license/attribution notices, consumer metadata, and file additions
+  or removals all remain significant. A provenance-only change can require a new version.
+- **Unchanged:** Succeed with an explicit skip, including reruns and version-only
+  changes. No candidate is written for that attempt. Version checks apply only
+  after finding changed contents or confirming first publication.
+- **Changed:** Require matching names and versions in `package.json` and
+  `package-lock.json`, with a valid, unused semantic version newer than every
+  published version. Prerelease versions follow semantic version ordering.
+  Update both package files explicitly; no automatic bump is performed.
+- **First publication:** Only an explicit npm package-not-found response counts.
+  Manifest and lockfile validation still applies.
+- **Errors:** Registry/authentication, network, malformed metadata, archive,
+  download, and integrity failures stop preparation instead of assuming first
+  publication. Downloads and unpacked contents are limited to 100 MiB; archive
+  entries must be regular files under `package/` with safe, unique paths.
+
+When run in GitHub Actions, the helper's input contract accepts only a published
+release tag or a `workflow_dispatch` selected ref and checks that the resolved ref
+matches checkout `HEAD`. Those guards and their tests prepare for later workflow
+integration; they do not change the current workflow's main-push/dispatch policy.
+The helper writes `changed=true` or `changed=false` to `GITHUB_OUTPUT` when set.
+Retries recheck npm rather than using a prior failed or skipped run as a baseline.
 
 ## Publishing permissions and versioning
 

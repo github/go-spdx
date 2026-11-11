@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import {spawnSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import {mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
+import {existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import test from 'node:test'
@@ -27,7 +27,7 @@ const files = (version, extra = {}) => new Map([
 
 function writeEmptyArchive(destination, paths, type = 'File') {
   const blocks = paths.flatMap(path => {
-    const header = new Header({path, type, size: 0, mode: 0o644})
+    const header = new Header({type, size: 0, mode: 0o644, ...(typeof path === 'string' ? {path} : path)})
     const block = Buffer.alloc(512)
     return header.encode(block) ? [new Pax({path}).encode(), block] : [block]
   })
@@ -59,6 +59,60 @@ test('packed archives bound entry count and UTF-8 path bytes, including director
       assert.equal(result.status, 1, label)
       assert.match(result.stderr, expected, label)
     }
+  }
+})
+
+test('invalid published archives reject normally, clean up, and do not write a candidate', async t => {
+  const temporary = mkdtempSync(join(tmpdir(), 'license-categories-archive-errors-'))
+  t.after(() => rmSync(temporary, {recursive: true, force: true}))
+  const directory = join(temporary, 'package')
+  mkdirSync(directory)
+  writeFileSync(join(directory, 'package.json'), JSON.stringify(manifest('1.0.1')))
+  writeFileSync(join(directory, 'package-lock.json'), JSON.stringify(lock('1.0.1')))
+  const cases = [
+    ['symlink', [{path: 'package/link', type: 'SymbolicLink', linkpath: 'target'}], /Unsupported package archive entry/],
+    ['outside', ['outside/file'], /Unsupported package archive entry/],
+    ['traversal', ['package/../file'], /Invalid or duplicate/],
+    ['dot', ['package/./file'], /Invalid or duplicate/],
+    ['empty-segment', ['package/nested//file'], /Invalid or duplicate/],
+    ['backslash', ['package/nested\\file'], /Invalid or duplicate/],
+    ['duplicate', ['package/file', 'package/file'], /Invalid or duplicate/],
+    ['oversized', [{path: 'package/large', size: 100 * 1024 * 1024 + 1}], /contents exceed 100 MiB/],
+    ['entry-count', Array(101).fill('package/'), /entry count exceeds 100/],
+    ['path-bytes', Array(65).fill(`package/${'d'.repeat(60)}/${'é'.repeat(8157)}/`), /path bytes exceed 1 MiB/],
+  ]
+  for (const [label, paths, expected] of cases) {
+    const archive = join(temporary, `${label}.tgz`)
+    const scratch = join(temporary, `${label}-scratch`)
+    const destination = join(temporary, `${label}-candidate.tgz`)
+    mkdirSync(scratch)
+    writeEmptyArchive(archive, paths)
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+      import {readFileSync} from 'node:fs';
+      import {createHash} from 'node:crypto';
+      import {preparePublication} from ${JSON.stringify(new URL('../script/prepare-publication.mjs', import.meta.url).href)};
+      const bytes = readFileSync(process.argv[1]);
+      const metadata = ${JSON.stringify(metadata('1.0.0'))};
+      metadata.versions['1.0.0'].dist = {
+        tarball: 'https://registry.npmjs.org/fixture.tgz',
+        integrity: 'sha512-' + createHash('sha512').update(bytes).digest('base64'),
+      };
+      try {
+        await preparePublication(process.argv[2], process.argv[3], async url =>
+          String(url).endsWith('.tgz') ? new Response(bytes) : new Response(JSON.stringify(metadata)));
+        throw new Error('Unexpected successful preparation');
+      } catch (error) {
+        console.log('caught: ' + error.message);
+      }
+    `, archive, directory, destination], {
+      encoding: 'utf8', timeout: 10_000,
+      env: {...process.env, TMPDIR: scratch, NODE_DISABLE_COMPILE_CACHE: '1'},
+    })
+    assert.ifError(result.error)
+    assert.equal(result.status, 0, `${label}: ${result.stderr}`)
+    assert.match(result.stdout, expected, label)
+    assert.deepEqual(readdirSync(scratch), [], `${label}: temporary files remain`)
+    assert.equal(existsSync(destination), false, `${label}: candidate was written`)
   }
 })
 

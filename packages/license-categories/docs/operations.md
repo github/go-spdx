@@ -130,7 +130,8 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   publication. Downloads and unpacked contents are limited to 100 MiB; archive
   listings are limited to 100 entries and 1 MiB of cumulative UTF-8 path bytes,
   including directory entries. File entries must be regular files under `package/`
-  with safe, unique paths.
+  with safe, unique paths. Invalid archives reject preparation through its normal
+  error handling, removing temporary files without writing a candidate tarball.
 
 When run in GitHub Actions, the helper's input contract accepts only a published
 release tag or a `workflow_dispatch` selected ref and checks that the resolved ref

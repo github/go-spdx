@@ -26,30 +26,39 @@ export async function packedFiles(path) {
   let total = 0
   let entries = 0
   let pathBytes = 0
+  let failure
+  const invalidate = message => { failure = new Error(message) }
   await list({
     file: path,
     strict: true,
     onReadEntry(entry) {
+      if (failure) return
       entries++
       pathBytes += Buffer.byteLength(entry.path)
-      if (entries > maximumEntries) throw new Error('Package archive entry count exceeds 100.')
-      if (pathBytes > maximumPathBytes) throw new Error('Package archive path bytes exceed 1 MiB.')
+      if (entries > maximumEntries) return invalidate('Package archive entry count exceeds 100.')
+      if (pathBytes > maximumPathBytes) return invalidate('Package archive path bytes exceed 1 MiB.')
       if (entry.type === 'Directory') return
       if (entry.type !== 'File' || !entry.path.startsWith('package/')) {
-        throw new Error(`Unsupported package archive entry: ${entry.path} (${entry.type})`)
+        return invalidate(`Unsupported package archive entry: ${entry.path} (${entry.type})`)
       }
       const path = entry.path.slice('package/'.length)
       if (!path || path.split('/').some(part => part === '..' || part === '' || part === '.')
           || path.includes('\\') || files.has(path)) {
-        throw new Error(`Invalid or duplicate package archive path: ${entry.path}`)
+        return invalidate(`Invalid or duplicate package archive path: ${entry.path}`)
       }
       total += entry.size
-      if (total > maximumBytes) throw new Error('Package contents exceed 100 MiB.')
+      if (total > maximumBytes) return invalidate('Package contents exceed 100 MiB.')
       const chunks = []
       files.set(path, chunks)
-      entry.on('data', chunk => chunks.push(chunk))
+      entry.on('data', chunk => {
+        if (!failure) chunks.push(chunk)
+      })
     },
+  }).catch(error => {
+    throw failure ?? error
   })
+  // tar drains entries after the callback; reject here so callers can clean up.
+  if (failure) throw failure
   return new Map([...files].map(([path, chunks]) => [path, Buffer.concat(chunks)]))
 }
 

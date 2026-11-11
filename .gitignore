@@ -16,3 +16,7 @@
 
 # Ignore path setup by fetch-licenses workflow
 official-spdx-licenses/
+
+packages/license-categories/node_modules/
+packages/license-categories/dist/
+packages/license-categories/*.tgz

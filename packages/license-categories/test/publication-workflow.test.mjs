@@ -4,13 +4,14 @@ import test from 'node:test'
 
 const workflow = readFileSync(new URL('../../../.github/workflows/publish-license-categories.yaml', import.meta.url), 'utf8')
 
-test('publication verifies, builds/tests, prepares, and publishes the compared artifact in order', () => {
+test('publication verifies, stamps, builds/tests, prepares, and publishes the compared artifact in order', () => {
   const commands = [
     'run: make verify-license-categories',
     'run: npm ci',
+    'run: node script/stamp-provenance.mjs',
     'run: npm test',
     'run: node script/prepare-publication.mjs "$RUNNER_TEMP/license-categories.tgz"',
-    'run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --registry=https://registry.npmjs.org',
+    'run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org',
   ]
   let previous = -1
   for (const command of commands) {
@@ -21,8 +22,7 @@ test('publication verifies, builds/tests, prepares, and publishes the compared a
   assert.match(workflow, /id: prepare/)
   assert.match(workflow, /if: steps\.prepare\.outputs\.changed == 'true'/)
   assert.doesNotMatch(workflow, /run: npm run test:tarball/)
-  assert.doesNotMatch(workflow, /stamp-provenance|--provenance\b/)
-  assert.match(workflow, /NPM_CONFIG_PROVENANCE: 'false'/)
+  assert.doesNotMatch(workflow, /NPM_CONFIG_PROVENANCE: 'false'/)
 })
 
 test('publication retains release/dispatch gates, exact refs, serialization and OIDC safeguards', () => {

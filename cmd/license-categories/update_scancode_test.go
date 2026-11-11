@@ -114,6 +114,7 @@ func TestRunUpdateScancode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			require.NoError(t, os.MkdirAll(filepath.Join(dir, "cmd/license-categories"), 0o750))
+			// #nosec G703 -- t.TempDir and the constant fixture path confine this write to the test directory.
 			require.NoError(t, os.WriteFile(filepath.Join(dir, scancodePinPath), original, 0o600))
 			t.Chdir(dir)
 			if tt.matchingChecksum {

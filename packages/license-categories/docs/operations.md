@@ -110,10 +110,12 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   by timestamp, including prereleases, not a Go tag or npm's `latest` tag. Archive
   metadata and entry order do not affect comparison.
 - **Ignore:** Manifest version, npm bookkeeping fields (leading `_` and `gitHead`),
-  and manifest JSON key order. Unpackaged maintainer docs do not affect contents.
+  and top-level manifest JSON key order. Unpackaged maintainer docs do not affect contents.
 - **Preserve:** API code, generated data, comments and provenance, declarations,
   consumer README, license/attribution notices, consumer metadata, and file additions
-  or removals all remain significant. A provenance-only change can require a new version.
+  or removals all remain significant. Nested manifest key order is preserved because
+  conditional `exports`/`imports` and overlapping `typesVersions` ranges can depend
+  on it. A provenance-only change can require a new version.
 - **Unchanged:** Succeed with an explicit skip, including reruns and version-only
   changes. No candidate is written for that attempt. Version checks apply only
   after finding changed contents or confirming first publication.

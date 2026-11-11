@@ -19,14 +19,6 @@ export function publicationRef(eventName, event, selectedRef) {
   throw new Error('Publication requires a published release tag or a workflow_dispatch selected ref.')
 }
 
-function canonical(value) {
-  if (Array.isArray(value)) return value.map(canonical)
-  if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]))
-  }
-  return value
-}
-
 export async function packedFiles(path) {
   const files = new Map()
   let total = 0
@@ -63,7 +55,9 @@ export function samePackageContents(candidate, published) {
     for (const key of Object.keys(manifest)) {
       if (key === 'version' || key === 'gitHead' || key.startsWith('_')) delete manifest[key]
     }
-    return new Map([...files, ['package.json', Buffer.from(JSON.stringify(canonical(manifest)))]])
+    // Nested key order can affect exports, imports, and typesVersions resolution.
+    const ordered = Object.fromEntries(Object.keys(manifest).sort().map(key => [key, manifest[key]]))
+    return new Map([...files, ['package.json', Buffer.from(JSON.stringify(ordered))]])
   }
   const left = normalize(candidate)
   const right = normalize(published)

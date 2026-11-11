@@ -32,7 +32,7 @@ test('release tags and selected dispatch refs are used literally', () => {
   assert.throws(() => publicationRef('release', {action: 'drafted'}, ''), /requires/)
 })
 
-test('comparison ignores only manifest version, npm bookkeeping and JSON key order', () => {
+test('comparison ignores only manifest version, npm bookkeeping and top-level JSON key order', () => {
   assert.ok(samePackageContents(files('1.0.0'), files('1.1.0', {_id: `${name}@1.1.0`, _npmVersion: '11', gitHead: 'abc'})))
   const reordered = files('1.1.0')
   reordered.set('package.json', Buffer.from(JSON.stringify({
@@ -45,6 +45,32 @@ test('comparison ignores only manifest version, npm bookkeeping and JSON key ord
   malformed.set('package.json', Buffer.from('{'))
   assert.throws(() => samePackageContents(files('1.0.0'), malformed), SyntaxError)
 })
+
+for (const [label, before, after] of [
+  [
+    'nested exports conditions',
+    {exports: {'.': {node: {import: './node.js', default: './fallback.js'}}}},
+    {exports: {'.': {node: {default: './fallback.js', import: './node.js'}}}},
+  ],
+  [
+    'imports conditions',
+    {imports: {'#internal': {node: './node.js', default: './fallback.js'}}},
+    {imports: {'#internal': {default: './fallback.js', node: './node.js'}}},
+  ],
+  [
+    'overlapping typesVersions ranges',
+    {typesVersions: {'>=5.0': {'*': ['modern.d.ts']}, '>=4.0': {'*': ['legacy.d.ts']}}},
+    {typesVersions: {'>=4.0': {'*': ['legacy.d.ts']}, '>=5.0': {'*': ['modern.d.ts']}}},
+  ],
+]) {
+  test(`comparison preserves ${label} order`, () => {
+    const original = files('1.0.0', before)
+    const reordered = files('1.1.0', after)
+    assert.ok(samePackageContents(original, files('1.1.0', before)))
+    assert.ok(!samePackageContents(original, reordered))
+    assert.ok(!samePackageContents(reordered, original))
+  })
+}
 
 test('every packaged file, provenance and consumer metadata remain significant', () => {
   for (const extra of [{license: 'MIT'}, {description: 'changed'}, {exports: './new.js'}, {engines: {node: '>=24'}}]) {

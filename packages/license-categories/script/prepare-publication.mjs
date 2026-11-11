@@ -10,6 +10,8 @@ import {list} from 'tar'
 const packageName = '@github/license-categories'
 const registry = 'https://registry.npmjs.org'
 const maximumBytes = 100 * 1024 * 1024
+const maximumEntries = 100
+const maximumPathBytes = 1024 * 1024
 
 export function publicationRef(eventName, event, selectedRef) {
   if (eventName === 'release' && event.action === 'published' && event.release?.tag_name) {
@@ -22,10 +24,16 @@ export function publicationRef(eventName, event, selectedRef) {
 export async function packedFiles(path) {
   const files = new Map()
   let total = 0
+  let entries = 0
+  let pathBytes = 0
   await list({
     file: path,
     strict: true,
     onReadEntry(entry) {
+      entries++
+      pathBytes += Buffer.byteLength(entry.path)
+      if (entries > maximumEntries) throw new Error('Package archive entry count exceeds 100.')
+      if (pathBytes > maximumPathBytes) throw new Error('Package archive path bytes exceed 1 MiB.')
       if (entry.type === 'Directory') return
       if (entry.type !== 'File' || !entry.path.startsWith('package/')) {
         throw new Error(`Unsupported package archive entry: ${entry.path} (${entry.type})`)

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
+import {spawnSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import test from 'node:test'
-import {create} from 'tar'
+import {gzipSync} from 'node:zlib'
+import {create, Header, Pax} from 'tar'
 import {
   latestPublication, packedFiles, preparePublication, publicationRef,
   publishedTarball, registryMetadata, samePackageContents, validateVersion,
@@ -22,6 +24,43 @@ const files = (version, extra = {}) => new Map([
   ['dist/index.js', Buffer.from('export const answer = 42\n')],
   ['dist/generated.js', Buffer.from('// go-spdx: (devel)\nexport const data = {}\n')],
 ])
+
+function writeEmptyArchive(destination, paths, type = 'File') {
+  const blocks = paths.flatMap(path => {
+    const header = new Header({path, type, size: 0, mode: 0o644})
+    const block = Buffer.alloc(512)
+    return header.encode(block) ? [new Pax({path}).encode(), block] : [block]
+  })
+  writeFileSync(destination, gzipSync(Buffer.concat([...blocks, Buffer.alloc(1024)])))
+}
+
+test('packed archives bound entry count and UTF-8 path bytes, including directories', async t => {
+  const temporary = mkdtempSync(join(tmpdir(), 'license-categories-archive-bounds-'))
+  t.after(() => rmSync(temporary, {recursive: true, force: true}))
+  const directoryPath = `package/${'d'.repeat(60)}/${'é'.repeat(8157)}/`
+  assert.equal(Buffer.byteLength(directoryPath), 16_384)
+  const cases = [
+    ['file-count-boundary', Array.from({length: 100}, (_, index) => `package/${index}`), 'File', 100],
+    ['file-count-exceeded', Array.from({length: 101}, (_, index) => `package/${index}`), 'File', /entry count exceeds 100/],
+    ['directory-count-exceeded', Array(101).fill('package/'), 'Directory', /entry count exceeds 100/],
+    ['path-bytes-boundary', Array(64).fill(directoryPath), 'Directory', 0],
+    ['path-bytes-exceeded', Array(65).fill(directoryPath), 'Directory', /path bytes exceed 1 MiB/],
+  ]
+  for (const [label, paths, type, expected] of cases) {
+    const archive = join(temporary, `${label}.tgz`)
+    writeEmptyArchive(archive, paths, type)
+    if (typeof expected === 'number') {
+      assert.equal((await packedFiles(archive)).size, expected, label)
+    } else {
+      const result = spawnSync(process.execPath, ['--input-type=module', '-e',
+        `import {packedFiles} from ${JSON.stringify(new URL('../script/prepare-publication.mjs', import.meta.url).href)};
+        await packedFiles(process.argv[1]);`, archive], {encoding: 'utf8', timeout: 10_000})
+      assert.ifError(result.error)
+      assert.equal(result.status, 1, label)
+      assert.match(result.stderr, expected, label)
+    }
+  }
+})
 
 test('release tags and selected dispatch refs are used literally', () => {
   assert.equal(publicationRef('release', {action: 'published', release: {tag_name: 'v2.9.0'}}, 'refs/heads/main'), 'refs/tags/v2.9.0')

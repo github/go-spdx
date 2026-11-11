@@ -274,11 +274,20 @@ for (const [label, before, after] of [
 test('the Actions entry point rejects invalid events and mismatched refs before forcing publication', t => {
   const directory = mkdtempSync(join(tmpdir(), 'license-categories-event-'))
   t.after(() => rmSync(directory, {recursive: true, force: true}))
+  const git = (...args) => execFileSync('git', [
+    '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+    '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', ...args,
+  ], {cwd: directory, stdio: 'pipe'})
+  git('init', '--quiet')
+  git('commit', '--quiet', '--allow-empty', '-m', 'Other commit')
+  git('tag', 'mismatched')
+  git('commit', '--quiet', '--allow-empty', '-m', 'Checked-out commit')
   const eventPath = join(directory, 'event.json')
   writeFileSync(eventPath, '{}')
   const script = new URL('../script/prepare-publication.mjs', import.meta.url).pathname
   const run = (event, ref) => {
     assert.throws(() => execFileSync(process.execPath, [script, join(directory, 'candidate.tgz')], {
+      cwd: directory,
       env: {...process.env, GITHUB_ACTIONS: 'true', GITHUB_EVENT_PATH: eventPath,
         GITHUB_EVENT_NAME: event, GITHUB_REF: ref},
       stdio: 'pipe',
@@ -288,7 +297,7 @@ test('the Actions entry point rejects invalid events and mismatched refs before 
     })
   }
   run('push', 'HEAD')
-  run('workflow_dispatch', 'HEAD~1')
+  run('workflow_dispatch', 'refs/tags/mismatched')
 })
 
 test('only generated data triggers automatic publication, not other package files', () => {

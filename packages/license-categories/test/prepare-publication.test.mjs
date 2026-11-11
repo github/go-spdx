@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
-import {spawnSync} from 'node:child_process'
+import {execFileSync, spawnSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import {existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync} from 'node:fs'
+import {copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import test from 'node:test'
+import {pathToFileURL} from 'node:url'
 import {gzipSync} from 'node:zlib'
 import {create, Header, Pax} from 'tar'
 import {
@@ -123,6 +124,82 @@ test('release tags and selected dispatch refs are used literally', () => {
   assert.equal(publicationRef('release', {action: 'published', release: {tag_name: '$(touch bad)'}}, ''), 'refs/tags/$(touch bad)')
   assert.throws(() => publicationRef('push', {}, 'refs/heads/main'), /requires/)
   assert.throws(() => publicationRef('release', {action: 'drafted'}, ''), /requires/)
+})
+
+test('CLI validates the packaged checkout independently of the caller checkout', async t => {
+  const temporary = realpathSync(mkdtempSync(join(tmpdir(), 'license-categories-checkout-')))
+  t.after(() => rmSync(temporary, {recursive: true, force: true}))
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_NAME: 'Fixture', GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
+    GIT_COMMITTER_NAME: 'Fixture', GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
+    NODE_DISABLE_COMPILE_CACHE: '1',
+  }
+  const git = (cwd, args) => execFileSync('git', args, {cwd, env, encoding: 'utf8'}).trim()
+  const checkout = label => {
+    const directory = join(temporary, label)
+    mkdirSync(directory)
+    git(directory, ['init', '--quiet', '--initial-branch=main'])
+    const tree = git(directory, ['mktree'])
+    const before = git(directory, ['commit-tree', tree, '-m', `${label} initial`])
+    const head = git(directory, ['commit-tree', tree, '-p', before, '-m', `${label} current`])
+    git(directory, ['update-ref', 'refs/heads/main', head])
+    return {directory, before, head}
+  }
+  const packaged = checkout('packaged')
+  const caller = checkout('caller')
+  const directory = join(packaged.directory, 'packages/license-categories')
+  mkdirSync(join(directory, 'script'), {recursive: true})
+  const helper = join(directory, 'script/prepare-publication.mjs')
+  copyFileSync(new URL('../script/prepare-publication.mjs', import.meta.url), helper)
+  symlinkSync(realpathSync(new URL('../node_modules', import.meta.url)), join(directory, 'node_modules'), 'dir')
+  writeFileSync(join(directory, 'package.json'), JSON.stringify({...manifest('1.0.1'), description: 'packaged checkout'}))
+  writeFileSync(join(directory, 'package-lock.json'), JSON.stringify(lock('1.0.1')))
+  const events = [
+    ['dispatch-tag', 'workflow_dispatch', {}, 'refs/tags/selected'],
+    ['dispatch-branch', 'workflow_dispatch', {}, 'refs/heads/selected'],
+    ['release', 'release', {action: 'published', release: {tag_name: 'selected'}}, 'refs/tags/selected'],
+  ]
+  for (const matches of [false, true]) {
+    for (const ref of ['refs/tags/selected', 'refs/heads/selected']) {
+      git(packaged.directory, ['update-ref', ref, matches ? packaged.head : packaged.before])
+      git(caller.directory, ['update-ref', ref, matches ? caller.before : caller.head])
+    }
+    for (const [label, eventName, event, ref] of events) {
+      await t.test(`${label}: packaged checkout ${matches ? 'matches' : 'mismatches'}, caller ${matches ? 'mismatches' : 'matches'}`, async () => {
+        const destination = join(temporary, `${label}-${matches}.tgz`)
+        const eventPath = join(temporary, `${label}-${matches}.json`)
+        const registryAccess = join(temporary, `${label}-${matches}-registry`)
+        const output = join(temporary, `${label}-${matches}-output`)
+        writeFileSync(eventPath, JSON.stringify(event))
+        const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+          import {writeFileSync} from 'node:fs';
+          globalThis.fetch = async () => {
+            writeFileSync(${JSON.stringify(registryAccess)}, 'registry queried');
+            return new Response(JSON.stringify({error: 'Not found'}), {status: 404});
+          };
+          process.argv = [process.execPath, ${JSON.stringify(helper)}, ${JSON.stringify(destination)}];
+          await import(${JSON.stringify(pathToFileURL(helper).href)});
+        `], {
+          cwd: caller.directory, encoding: 'utf8', timeout: 10_000,
+          env: {...env, GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: eventName,
+            GITHUB_EVENT_PATH: eventPath, GITHUB_REF: ref, GITHUB_OUTPUT: output},
+        })
+        assert.ifError(result.error)
+        assert.equal(result.status, matches ? 0 : 1, result.stdout + result.stderr)
+        assert.equal(existsSync(destination), matches)
+        assert.equal(existsSync(registryAccess), matches)
+        assert.equal(existsSync(output), matches)
+        if (matches) {
+          assert.equal(readFileSync(output, 'utf8'), 'changed=true\n')
+          const contents = await packedFiles(destination)
+          assert.equal(JSON.parse(contents.get('package.json').toString()).description, 'packaged checkout')
+        } else {
+          assert.match(result.stderr, /Checked-out commit does not match/)
+        }
+      })
+    }
+  }
 })
 
 test('comparison ignores only manifest version, npm bookkeeping and top-level JSON key order', () => {

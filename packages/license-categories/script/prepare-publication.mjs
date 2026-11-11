@@ -203,14 +203,15 @@ export async function preparePublication(directory, destination, fetcher = fetch
 async function main() {
   const destination = process.argv[2]
   if (!destination) throw new Error('Usage: node script/prepare-publication.mjs /absolute/path/candidate.tgz')
+  const directory = fileURLToPath(new URL('../', import.meta.url))
   if (process.env.GITHUB_ACTIONS === 'true') {
     const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
     const ref = publicationRef(process.env.GITHUB_EVENT_NAME, event, process.env.GITHUB_REF)
-    const expected = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`], {encoding: 'utf8'}).trim()
-    const actual = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim()
+    const expected = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`], {cwd: directory, encoding: 'utf8'}).trim()
+    const actual = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: directory, encoding: 'utf8'}).trim()
     if (expected !== actual) throw new Error('Checked-out commit does not match the release tag or selected dispatch ref.')
   }
-  const result = await preparePublication(fileURLToPath(new URL('../', import.meta.url)), resolve(destination))
+  const result = await preparePublication(directory, resolve(destination))
   console.log(result.message)
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `changed=${result.changed}\n`)
 }

@@ -136,7 +136,9 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
 
 When run in GitHub Actions, the helper's input contract accepts only a published
 release tag or a `workflow_dispatch` selected ref and checks that the resolved ref
-matches checkout `HEAD`. Those guards and their tests prepare for later workflow
+matches checkout `HEAD`. Both Git checks run in the package directory containing
+the helper, so they validate the checkout being packaged regardless of the caller's
+working directory. Those guards and their tests prepare for later workflow
 integration; they do not change the current workflow's main-push/dispatch policy.
 The helper writes `changed=true` or `changed=false` to `GITHUB_OUTPUT` when set.
 Retries recheck npm rather than using a prior failed or skipped run as a baseline.

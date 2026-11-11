@@ -69,11 +69,14 @@ tests through `go test -race ./...`; validation does not duplicate them.
 ## Publication workflow
 
 [Publish License Categories](../../../.github/workflows/publish-license-categories.yaml)
-is publication-only. It runs when a GitHub release is published, checking out that
-release's exact tag, or through `workflow_dispatch`, using the selected ref.
-Draft releases do not trigger publication. Releases marked **pre-release** in GitHub
-skip the publication job. This checks GitHub's `release.prerelease` flag, not the
-tag's spelling or suffix. Pushes do not trigger publication.
+is publication-only. It listens for `release: released`, which runs when a stable
+GitHub release is first published or an already published prerelease is promoted
+to a stable release, checking out that release's exact tag. It also runs through
+`workflow_dispatch`, using the selected ref.
+Draft releases and prereleases do not trigger publication. The publication job
+also checks GitHub's `release.prerelease` flag, not the tag's spelling or suffix.
+A promoted release can retain its original tag without being marked as a
+prerelease. Pushes do not trigger publication.
 
 The single publication job is disabled unless the repository variable
 `LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED` is exactly `true`. Publications are
@@ -140,7 +143,7 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   with safe, unique paths. Invalid archives reject preparation through its normal
   error handling, removing temporary files without writing a candidate tarball.
 
-When run in GitHub Actions, the helper accepts only a published release tag or a
+When run in GitHub Actions, the helper accepts only a `released` event's tag or a
 `workflow_dispatch` selected ref and checks that the resolved ref matches checkout
 `HEAD`.
 Both Git checks run in the package directory containing the helper, so they

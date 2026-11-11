@@ -26,7 +26,7 @@ test('publication verifies, builds/tests, prepares, and publishes the compared a
 })
 
 test('publication retains release/dispatch gates, exact refs, serialization and OIDC safeguards', () => {
-  assert.match(workflow, /release:\s+types: \[published\]/)
+  assert.match(workflow, /release:\s+types: \[released\]/)
   assert.match(workflow, /workflow_dispatch:/)
   assert.doesNotMatch(workflow, /^\s+(push|pull_request):|^run-name:/m)
   assert.match(workflow, /LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true'/)

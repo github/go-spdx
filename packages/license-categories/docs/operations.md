@@ -123,6 +123,8 @@ not publish, regenerate data, stamp provenance, or bump versions. Its behavior i
   `package-lock.json`, with a valid, unused semantic version newer than every
   published version. Prerelease versions follow semantic version ordering.
   Versions recorded in npm's publication history remain used even after unpublishing.
+  Reuse checks use npm's canonical version without build metadata: `1.1.0+build`
+  cannot reuse a previously published `1.1.0`.
   Update both package files explicitly; no automatic bump is performed.
 - **First publication:** Only an explicit npm package-not-found response counts.
   Manifest and lockfile validation still applies.

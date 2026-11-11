@@ -280,6 +280,7 @@ test('eligible publications require consistent, unused, semantically newer versi
   const occupied = metadata('1.0.0')
   occupied.versions['1.1.0'] = {name, version: '1.1.0'}
   assert.throws(() => validateVersion(manifest('1.1.0'), lock('1.1.0'), occupied), /already published/)
+  assert.throws(() => validateVersion(manifest('1.1.0+build'), lock('1.1.0+build'), occupied), /already published/)
   assert.throws(() => validateVersion(manifest('1.0.1'), lock('1.0.1'), occupied), /semantically newer/)
 })
 
@@ -288,7 +289,15 @@ test('unpublished versions in registry publication history cannot be reused', ()
   published.time['1.1.0'] = '2026-02-01T00:00:00Z'
   assert.equal(Object.hasOwn(published.versions, '1.1.0'), false)
   assert.throws(() => validateVersion(manifest('1.1.0'), lock('1.1.0'), published), /already published/)
+  for (const version of ['1.1.0+build', '1.1.0+other.build']) {
+    assert.throws(() => validateVersion(manifest(version), lock(version), published), /already published/)
+  }
+  published.time['1.2.0-beta.1'] = '2026-03-01T00:00:00Z'
+  assert.throws(() => validateVersion(manifest('1.2.0-beta.1+build'), lock('1.2.0-beta.1+build'), published), /already published/)
   validateVersion(manifest('1.1.1'), lock('1.1.1'), published)
+  validateVersion(manifest('1.1.1+build'), lock('1.1.1+build'), published)
+  validateVersion(manifest('1.2.0-beta.2+build'), lock('1.2.0-beta.2+build'), published)
+  validateVersion(manifest('1.1.0+build'), lock('1.1.0+build'), null)
   assert.equal(latestPublication(published), '1.0.0')
 })
 
@@ -401,6 +410,9 @@ test('packed fixtures cover whole-package gates, versions, excluded docs, failur
   await assert.rejects(preparePublication(directory, destination, async () => { throw new Error('offline') }), /offline/)
   published.time['1.0.1'] = '2026-02-01T00:00:00Z'
   rmSync(destination)
+  await assert.rejects(preparePublication(directory, destination, fetcher), /already published/)
+  assert.equal(existsSync(destination), false)
+  writeVersion('1.0.1+build')
   await assert.rejects(preparePublication(directory, destination, fetcher), /already published/)
   assert.equal(existsSync(destination), false)
   // First publication still enforces the manifest/lockfile contract.

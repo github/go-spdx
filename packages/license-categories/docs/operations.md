@@ -27,7 +27,9 @@ file without overwriting it. Only the leading `// go-spdx:` provenance value
 is ignored, avoiding a self-reference when committing the generated checkout SHA.
 The generator header and provenance labels/order must match, with a nonempty
 value on each provenance line. The SPDX list version, ScanCode commit, actual data,
-and all other content must match exactly.
+and all other content must match exactly. Provenance header values cannot contain
+CR, LF, or Unicode line/paragraph separators (U+2028/U+2029), which terminate
+TypeScript line comments.
 
 For a build without tests, run:
 
@@ -110,6 +112,9 @@ Actions checkout's `src/generated.ts`:
   identifies the checked-out commit.
 - **Dispatch:** Full checked-out `git rev-parse HEAD` plus ` (dispatch)`,
   not a moving branch tip.
+
+Release tags and stamped provenance values must not contain CR, LF, U+2028, or
+U+2029; these are rejected rather than allowing a header to introduce source code.
 
 Stamping follows verification and does not regenerate assignments, write back
 to the repository, or create a commit. Publication runs `npm test`, which cleanly

@@ -61,6 +61,25 @@ test('stamping modifies only the go-spdx header and preserves literal tag text',
   }, () => head), /single-line/)
 })
 
+test('release tags reject every TypeScript comment terminator', () => {
+  for (const terminator of ['\r', '\n', '\u2028', '\u2029']) {
+    const tag = `v2.9.0${terminator}export const injected = true;`
+    const refs = []
+    assert.throws(() => publicationProvenance('release', {
+      action: 'released', release: {tag_name: tag},
+    }, ref => { refs.push(ref); return head }), /single-line/)
+    assert.deepEqual(refs, ['HEAD'])
+  }
+})
+
+test('stamp values reject every TypeScript comment terminator', () => {
+  const source = readFileSync(new URL('../src/generated.ts', import.meta.url), 'utf8')
+  for (const terminator of ['\r', '\n', '\u2028', '\u2029']) {
+    const provenance = `v2.9.0${terminator}export const injected = true; (release)`
+    assert.throws(() => stampSource(source, provenance), /single-line/)
+  }
+})
+
 test('the compiled publication artifact retains the stamped header', t => {
   const directory = mkdtempSync(join(tmpdir(), 'license-categories-stamp-'))
   t.after(() => rmSync(directory, {recursive: true, force: true}))

@@ -135,6 +135,35 @@ func TestVerifyGeneratedDataRejectsOtherDifferences(t *testing.T) {
 	require.Error(t, verifyGeneratedData([]byte("no headers"), output))
 }
 
+func TestVerifyGeneratedDataRejectsCommentTerminatorsInProvenance(t *testing.T) {
+	t.Parallel()
+
+	provenance := generationProvenance{GoSPDXVersion: "v2.9.0 (release)",
+		SPDXLicenseListVersion: "3.29.0", ScancodeCommit: "abc123"}
+	output, err := renderTypeScript(map[string]licenseMetadata{"MIT": {Name: "MIT License", Category: "Permissive"}}, provenance)
+	require.NoError(t, err)
+
+	for _, terminator := range []struct {
+		name  string
+		value string
+	}{
+		{"CR", "\r"},
+		{"LF", "\n"},
+		{"line separator", "\u2028"},
+		{"paragraph separator", "\u2029"},
+	} {
+		t.Run(terminator.name, func(t *testing.T) {
+			t.Parallel()
+
+			changed := []byte(strings.Replace(string(output), provenance.GoSPDXVersion,
+				provenance.GoSPDXVersion+terminator.value+"export const injected = true;", 1))
+			require.Error(t, verifyGeneratedData(output, changed))
+			require.Error(t, verifyGeneratedData(changed, output))
+			require.Error(t, verifyGeneratedData(changed, changed))
+		})
+	}
+}
+
 func TestRunRejectsConflictingOutputAndVerification(t *testing.T) {
 	t.Parallel()
 

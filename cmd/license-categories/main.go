@@ -308,6 +308,9 @@ func verifyGeneratedData(expected, actual []byte) error {
 			return nil, errors.New("generated data must have the expected leading generator header")
 		}
 		for i, prefix := range []string{"// go-spdx: ", "// spdx-license-list-version: ", "// scancode-licensedb commit: "} {
+			if bytes.ContainsAny(lines[i+1], "\r\u2028\u2029") {
+				return nil, fmt.Errorf("generated data provenance header on line %d must not contain TypeScript comment terminators", i+2)
+			}
 			if !bytes.HasPrefix(lines[i+1], []byte(prefix)) ||
 				len(bytes.TrimSpace(lines[i+1][len(prefix):])) == 0 {
 				return nil, fmt.Errorf("generated data must have a nonempty %q provenance header on line %d", prefix, i+2)

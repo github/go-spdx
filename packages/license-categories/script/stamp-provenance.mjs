@@ -3,6 +3,8 @@ import {readFileSync, writeFileSync} from 'node:fs'
 import {resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
+const commentTerminator = /[\r\n\u2028\u2029]/
+
 function gitRevision(ref) {
   return execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`], {
     encoding: 'utf8',
@@ -15,7 +17,7 @@ export function publicationProvenance(eventName, event, revision = gitRevision) 
   if (eventName === 'workflow_dispatch') return `${head} (dispatch)`
   if (eventName === 'release' && event.action === 'released') {
     const tag = event.release?.tag_name
-    if (typeof tag !== 'string' || !tag || /[\r\n]/.test(tag)) {
+    if (typeof tag !== 'string' || !tag || commentTerminator.test(tag)) {
       throw new Error('Released event must identify a single-line Git tag.')
     }
     if (revision(`refs/tags/${tag}`) !== head) {
@@ -27,6 +29,9 @@ export function publicationProvenance(eventName, event, revision = gitRevision) 
 }
 
 export function stampSource(source, provenance) {
+  if (commentTerminator.test(provenance)) {
+    throw new Error('Publication provenance must be a single-line TypeScript comment value.')
+  }
   const header = /^\/\/ go-spdx: [^\r\n]*$/gm
   if ([...source.matchAll(header)].length !== 1) {
     throw new Error('Expected exactly one go-spdx provenance header in generated source.')

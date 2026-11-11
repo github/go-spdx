@@ -20,3 +20,4 @@ official-spdx-licenses/
 # npm package build output and dependencies
 packages/license-categories/dist/
 packages/license-categories/node_modules/
+packages/license-categories/*.tgz

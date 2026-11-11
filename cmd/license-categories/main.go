@@ -14,6 +14,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -32,17 +35,18 @@ const (
 	outputFileMode           = 0o644             // World-readable since the generated file is manually copied into other projects.
 )
 
+// excludedSpdxIDs contains SPDX IDs that should be ignored when generating license categories.
 // Keep this hardcoded list explicit and reviewed.
 var excludedSpdxIDs = map[string]struct{}{}
 
 // spdxCategoryOverrides allows manually overriding category assignments for specific SPDX IDs.
 // Keep this list explicit and reviewed for exceptions where upstream category data is not helpful.
 var spdxCategoryOverrides = map[string]string{
-	"any-OSI":                    "Permissive", // "any-OSI" just means any OSI-approved license, so people could choose a permissive one from that set.
-	"any-OSI-perl-modules":       "Permissive", // same rationale as "any-OSI"
-	"ESA-PL-strong-copyleft-2.4": "Copyleft",
-	"ESA-PL-weak-copyleft-2.4":   "Copyleft limited",
-	"MakeIndex":                  "Copyleft", // Unclear why the category didn't make it across: https://github.com/aboutcode-org/scancode-licensedb/blob/main/docs/makeindex.LICENSE
+	"any-OSI":                    "Permissive",       // "any-OSI" just means any OSI-approved license, so people could choose a permissive one from that set.
+	"any-OSI-perl-modules":       "Permissive",       // same rationale as "any-OSI"
+	"ESA-PL-strong-copyleft-2.4": "Copyleft",         // incorrectly categorized as Permissive
+	"ESA-PL-weak-copyleft-2.4":   "Copyleft limited", // incorrectly categorized as Permissive
+	"MakeIndex":                  "Copyleft",         // Unclear why the category didn't make it across: https://github.com/aboutcode-org/scancode-licensedb/blob/main/docs/makeindex.LICENSE
 }
 
 var categoryDescriptions = map[string]string{
@@ -101,9 +105,14 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 	fs.SetOutput(stderr)
 
 	outPath := fs.String("out", "-", "Output file path, or '-' for stdout")
+	verifyPath := fs.String("verify", "", "Verify an existing file, ignoring only its leading go-spdx provenance value")
 	err := fs.Parse(args)
 	if err != nil {
 		return err
+	}
+
+	if *verifyPath != "" && *outPath != "-" {
+		return errors.New("-verify cannot be combined with -out")
 	}
 
 	spdxIDs := spdxlicenses.GetLicenses()
@@ -133,6 +142,15 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	if *verifyPath != "" {
+		// #nosec G304 -- the caller explicitly selects the generated file to verify.
+		expected, err := os.ReadFile(*verifyPath)
+		if err != nil {
+			return fmt.Errorf("read generated file for verification: %w", err)
+		}
+		return verifyGeneratedData(expected, output)
 	}
 
 	if *outPath == "-" {
@@ -240,7 +258,77 @@ func moduleVersion() (string, error) {
 	if !ok {
 		return "", errors.New("read Go build information")
 	}
-	return buildInfo.Main.Version, nil
+	if version := buildInfo.Main.Version; version != "" && version != "(devel)" {
+		return version, nil
+	}
+	_, source, _, ok := runtime.Caller(0)
+	if !ok {
+		return "", errors.New("locate generator source checkout for local provenance")
+	}
+	return localCheckoutVersion(source)
+}
+
+func localCheckoutVersion(source string) (string, error) {
+	if !filepath.IsAbs(source) {
+		return "", errors.New("local provenance requires an absolute generator source path; build without -trimpath or use a versioned installation")
+	}
+	directory := filepath.Dir(source)
+	rootCommand := exec.Command("git", "rev-parse", "--show-toplevel")
+	rootCommand.Dir = directory
+	root, err := rootCommand.Output()
+	if err != nil {
+		return "", fmt.Errorf("locate generator source Git checkout (use a checkout or versioned installation): %w", err)
+	}
+	expectedDirectory := filepath.Join(strings.TrimSpace(string(root)), "cmd", "license-categories")
+	resolvedDirectory, err := filepath.EvalSymlinks(directory)
+	if err != nil {
+		return "", fmt.Errorf("resolve generator source directory: %w", err)
+	}
+	if resolvedDirectory != expectedDirectory {
+		return "", errors.New("generator source is not in the expected go-spdx checkout directory")
+	}
+	revisionCommand := exec.Command("git", "rev-parse", "--verify", "HEAD")
+	revisionCommand.Dir = directory
+	revision, err := revisionCommand.Output()
+	if err != nil {
+		return "", fmt.Errorf("read generator checkout HEAD: %w", err)
+	}
+	sha := strings.TrimSpace(string(revision))
+	decoded, err := hex.DecodeString(sha)
+	if err != nil || len(decoded) != 20 {
+		return "", errors.New("generator checkout HEAD is not a full 40-character commit SHA")
+	}
+	return sha + " (local)", nil
+}
+
+func verifyGeneratedData(expected, actual []byte) error {
+	normalize := func(content []byte) ([]byte, error) {
+		lines := bytes.Split(content, []byte("\n"))
+		if len(lines) < 4 ||
+			string(lines[0]) != "// Code generated by cmd/license-categories in go-spdx. DO NOT EDIT." {
+			return nil, errors.New("generated data must have the expected leading generator header")
+		}
+		for i, prefix := range []string{"// go-spdx: ", "// spdx-license-list-version: ", "// scancode-licensedb commit: "} {
+			if !bytes.HasPrefix(lines[i+1], []byte(prefix)) ||
+				len(bytes.TrimSpace(lines[i+1][len(prefix):])) == 0 {
+				return nil, fmt.Errorf("generated data must have a nonempty %q provenance header on line %d", prefix, i+2)
+			}
+		}
+		lines[1] = []byte("// go-spdx: <provenance>")
+		return bytes.Join(lines, []byte("\n")), nil
+	}
+	normalizedExpected, err := normalize(expected)
+	if err != nil {
+		return err
+	}
+	normalizedActual, err := normalize(actual)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(normalizedExpected, normalizedActual) {
+		return errors.New("generated license categories differ outside the leading go-spdx provenance value; run make license-categories and review the changes")
+	}
+	return nil
 }
 
 func scancodeGitHubURL(zipPath, commit string) string {

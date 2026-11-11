@@ -9,7 +9,7 @@ for correcting category assignments or omitting licenses from the npm data.
 ## Generate, build, and test
 
 Use the Go version declared in [go.mod](../../../go.mod) and Node.js 20+ with npm.
-The publication workflow uses Node.js 24. Run from the repository root:
+The workflows use Node.js 24. Run from the repository root:
 
 ```sh
 npm ci --prefix packages/license-categories
@@ -32,9 +32,10 @@ npm run build --prefix packages/license-categories
 ```
 
 The build removes `dist` before compiling TypeScript. `npm test` builds and runs
-the API and tarball tests. `npm run test:tarball --prefix packages/license-categories`
-runs only the packaging tests after building. The `prepack` hook also builds
-before packing or publishing.
+the API, tarball, and validation-workflow tests, including importing an extracted
+package independently of the source tree.
+`npm run test:tarball --prefix packages/license-categories` runs only the packaging
+tests after building. The `prepack` hook also builds before packing or publishing.
 
 ## Maintain the data
 
@@ -59,10 +60,11 @@ overrides, warnings, and attribution in the package's
 [THIRD_PARTY_NOTICE.md](../THIRD_PARTY_NOTICE.md). Preserve upstream data
 licensing and any other third-party notices.
 
-The existing [Build and test workflow](../../../.github/workflows/test.yaml)
-runs the generator tests through `go test -race ./...`. npm package tests and
-generation verification run locally and inline in the publication workflow;
-there is no separate npm pull-request validation workflow.
+[Validate License Categories](../../../.github/workflows/validate-license-categories.yaml)
+verifies committed generated data and runs npm tests on relevant pull requests
+and pushes to `main`. It has read-only permissions and cannot publish. The existing
+[Build and test workflow](../../../.github/workflows/test.yaml) runs the Go generator
+tests through `go test -race ./...`; validation does not duplicate them.
 
 ## Publication workflow
 

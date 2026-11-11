@@ -206,6 +206,15 @@ test('eligible publications require consistent, unused, semantically newer versi
   assert.throws(() => validateVersion(manifest('1.0.1'), lock('1.0.1'), occupied), /semantically newer/)
 })
 
+test('unpublished versions in registry publication history cannot be reused', () => {
+  const published = metadata('1.0.0')
+  published.time['1.1.0'] = '2026-02-01T00:00:00Z'
+  assert.equal(Object.hasOwn(published.versions, '1.1.0'), false)
+  assert.throws(() => validateVersion(manifest('1.1.0'), lock('1.1.0'), published), /already published/)
+  validateVersion(manifest('1.1.1'), lock('1.1.1'), published)
+  assert.equal(latestPublication(published), '1.0.0')
+})
+
 test('baseline is most recently published tarball, not a Go tag or latest dist-tag', () => {
   const published = metadata('1.0.0')
   published.versions['1.1.0-beta.1'] = {name, version: '1.1.0-beta.1'}
@@ -313,6 +322,10 @@ test('packed fixtures cover whole-package gates, versions, excluded docs, failur
   assert.equal((await preparePublication(directory, destination, async url =>
     String(url).endsWith('.tgz') ? new Response(uploaded) : jsonResponse(nowPublished))).changed, false)
   await assert.rejects(preparePublication(directory, destination, async () => { throw new Error('offline') }), /offline/)
+  published.time['1.0.1'] = '2026-02-01T00:00:00Z'
+  rmSync(destination)
+  await assert.rejects(preparePublication(directory, destination, fetcher), /already published/)
+  assert.equal(existsSync(destination), false)
   // First publication still enforces the manifest/lockfile contract.
   writeFileSync(join(directory, 'package-lock.json'), JSON.stringify(lock('1.0.0')))
   await assert.rejects(preparePublication(directory, destination, async () => jsonResponse({error: 'Not found'}, 404)), /must agree/)

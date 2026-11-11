@@ -109,7 +109,7 @@ export function validateVersion(manifest, lock, metadata) {
     throw new Error(`Invalid npm semantic version ${JSON.stringify(version)}. Set an explicit valid version in both package files.`)
   }
   if (!metadata) return
-  if (Object.hasOwn(metadata.versions, version)) {
+  if (Object.hasOwn(metadata.versions, version) || Object.hasOwn(metadata.time, version)) {
     throw new Error(`Version ${version} is already published. Bump package.json and package-lock.json; npm versions cannot be reused.`)
   }
   const newest = Object.keys(metadata.versions).sort(semver.rcompare)[0]

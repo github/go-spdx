@@ -435,7 +435,7 @@ export const licensesById: Record<string, {name: string; category: string}> = {
   'MVT-1.1': {name: 'MVT-1.1', category: 'Unknown'},
   'Mackerras-3-Clause': {name: 'Paul Mackerras New License', category: 'Permissive'},
   'Mackerras-3-Clause-acknowledgment': {name: 'Paul Mackerras License', category: 'Permissive'},
-  'MakeIndex': {name: 'MakeIndex', category: 'Copyleft'},
+  'MakeIndex': {name: 'MakeIndex Distribution Notice', category: 'Copyleft'},
   'Martin-Birgmeier': {name: 'Martin Bergmeier License', category: 'Permissive'},
   'McPhee-slideshow': {name: 'McPhee Slideshow License', category: 'Permissive'},
   'Minpack': {name: 'Minpack Copyright Notice', category: 'Permissive'},

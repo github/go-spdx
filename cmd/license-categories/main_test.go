@@ -68,6 +68,21 @@ func TestBuildLicenseData_AppliesSpdxCategoryOverrides(t *testing.T) {
 	assert.Equal(t, "", got[licenseNoScancode].SourceURL)
 }
 
+func TestBuildLicenseData_UsesMakeIndexMetadata(t *testing.T) {
+	t.Parallel()
+
+	const sourceURL = "https://github.com/aboutcode-org/scancode-licensedb/blob/" + scancodeCommit + "/docs/makeindex.json"
+	scancode := map[string]licenseMetadata{
+		"MakeIndex": {Name: "MakeIndex Distribution Notice", Category: "Copyleft", SourceURL: sourceURL},
+	}
+
+	got, warnings, err := buildLicenseData([]string{"MakeIndex"}, scancode, excludedSpdxIDs, spdxCategoryOverrides)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+	assert.Equal(t, licenseMetadata{Name: "MakeIndex Distribution Notice", Category: "Copyleft", SourceURL: sourceURL}, got["MakeIndex"])
+	assert.NotContains(t, spdxCategoryOverrides, "MakeIndex")
+}
+
 func TestBuildLicenseData_InvalidOverrideCategoryReturnsError(t *testing.T) {
 	t.Parallel()
 
@@ -146,6 +161,7 @@ func TestIsScancodeLicenseJSON(t *testing.T) {
 	t.Parallel()
 
 	assert.True(t, isScancodeLicenseJSON("scancode-licensedb-main/docs/mit.json"))
+	assert.True(t, isScancodeLicenseJSON("scancode-licensedb-main/docs/makeindex.json"))
 	assert.False(t, isScancodeLicenseJSON("scancode-licensedb-main/docs/index.json"))
 	assert.False(t, isScancodeLicenseJSON("scancode-licensedb-main/something/mit.json"))
 	assert.False(t, isScancodeLicenseJSON("scancode-licensedb-main/docs/mit.yml"))

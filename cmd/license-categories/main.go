@@ -42,7 +42,6 @@ var spdxCategoryOverrides = map[string]string{
 	"any-OSI-perl-modules":       "Permissive", // same rationale as "any-OSI"
 	"ESA-PL-strong-copyleft-2.4": "Copyleft",
 	"ESA-PL-weak-copyleft-2.4":   "Copyleft limited",
-	"MakeIndex":                  "Copyleft", // Unclear why the category didn't make it across: https://github.com/aboutcode-org/scancode-licensedb/blob/main/docs/makeindex.LICENSE
 }
 
 var categoryDescriptions = map[string]string{
@@ -255,7 +254,7 @@ func isScancodeLicenseJSON(path string) bool {
 	if !strings.HasSuffix(path, ".json") {
 		return false
 	}
-	if strings.HasSuffix(path, "index.json") {
+	if strings.HasSuffix(path, "/index.json") {
 		return false
 	}
 	// GitHub zip adds a top-level "<repo>-<branch>/" directory.

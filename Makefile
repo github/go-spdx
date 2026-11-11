@@ -75,4 +75,22 @@ help:
 	@echo "  test       - run some go test"
 	@echo "  lint-all   - runs linter for all files (optional pass in LINT_FILES=path_to_dir_or_file_to_check)"
 	@echo "  lint       - runs linter for only files with diffs from origin/main (useful for PRs)"
+	@echo "  license-categories        - regenerate npm license category data"
+	@echo "  verify-license-categories - verify checked-in npm data is current"
+	@echo "  test-license-categories   - run npm tests for the license-categories package"
 	@echo "  help       - this help message"
+
+.PHONY: license-categories
+license-categories:
+	go run ./cmd/license-categories -out packages/license-categories/src/generated.ts
+
+.PHONY: verify-license-categories
+verify-license-categories:
+	@tmp=$$(mktemp); \
+	trap 'rm -f "$$tmp"' 0; \
+	go run ./cmd/license-categories -out "$$tmp" && \
+	diff -u packages/license-categories/src/generated.ts "$$tmp"
+
+.PHONY: test-license-categories
+test-license-categories:
+	cd packages/license-categories && npm test

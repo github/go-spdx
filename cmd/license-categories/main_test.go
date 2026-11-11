@@ -11,6 +11,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCategoryOverrides(t *testing.T) {
+	t.Parallel()
+
+	expected := map[string]string{
+		"any-OSI":                    "Permissive",
+		"any-OSI-perl-modules":       "Permissive",
+		"ESA-PL-strong-copyleft-2.4": "Copyleft",
+		"ESA-PL-weak-copyleft-2.4":   "Copyleft limited",
+		"MakeIndex":                  "Copyleft",
+	}
+	assert.Equal(t, expected, spdxCategoryOverrides)
+}
+
 func TestBuildLicenseData_ExclusionsAndUnknown(t *testing.T) {
 	t.Parallel()
 

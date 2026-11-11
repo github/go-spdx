@@ -32,16 +32,17 @@ const (
 	outputFileMode           = 0o644             // World-readable since the generated file is manually copied into other projects.
 )
 
+// excludedSpdxIDs contains SPDX IDs that should be ignored when generating license categories.
 // Keep this hardcoded list explicit and reviewed.
 var excludedSpdxIDs = map[string]struct{}{}
 
 // spdxCategoryOverrides allows manually overriding category assignments for specific SPDX IDs.
 // Keep this list explicit and reviewed for exceptions where upstream category data is not helpful.
 var spdxCategoryOverrides = map[string]string{
-	"any-OSI":                    "Permissive", // "any-OSI" just means any OSI-approved license, so people could choose a permissive one from that set.
-	"any-OSI-perl-modules":       "Permissive", // same rationale as "any-OSI"
-	"ESA-PL-strong-copyleft-2.4": "Copyleft",
-	"ESA-PL-weak-copyleft-2.4":   "Copyleft limited",
+	"any-OSI":                    "Permissive",       // "any-OSI" just means any OSI-approved license, so people could choose a permissive one from that set.
+	"any-OSI-perl-modules":       "Permissive",       // same rationale as "any-OSI"
+	"ESA-PL-strong-copyleft-2.4": "Copyleft",         // incorrectly categorized as Permissive
+	"ESA-PL-weak-copyleft-2.4":   "Copyleft limited", // incorrectly categorized as Permissive
 }
 
 var categoryDescriptions = map[string]string{

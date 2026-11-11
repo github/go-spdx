@@ -26,13 +26,13 @@ import (
 )
 
 const (
-	scancodeCommit           = "5ee8765870cd2ed1cb345645be94a799ca584c90"
-	defaultScancodeZipURL    = "https://codeload.github.com/aboutcode-org/scancode-licensedb/zip/" + scancodeCommit
-	defaultScancodeZipSHA256 = "6b4b05f985bd7a520b30e7f8547778ae4cdd6760acc577ab11cebbde41f165bb"
-	defaultTimeout           = 60 * time.Second
-	maxZipBytes              = 100 * 1024 * 1024 // 100MB upper bound for the scancode zip download.
-	maxZipEntryBytes         = 1 * 1024 * 1024   // 1MB upper bound per zip entry to guard against zip bombs.
-	outputFileMode           = 0o644             // World-readable since the generated file is manually copied into other projects.
+	scancodeCommit    = "5ee8765870cd2ed1cb345645be94a799ca584c90"
+	scancodeZipURL    = "https://codeload.github.com/aboutcode-org/scancode-licensedb/zip/" + scancodeCommit
+	scancodeZipSHA256 = "6b4b05f985bd7a520b30e7f8547778ae4cdd6760acc577ab11cebbde41f165bb"
+	defaultTimeout    = 60 * time.Second
+	maxZipBytes       = 100 * 1024 * 1024 // 100MB upper bound for the scancode zip download.
+	maxZipEntryBytes  = 1 * 1024 * 1024   // 1MB upper bound per zip entry to guard against zip bombs.
+	outputFileMode    = 0o644             // World-readable since the generated file is manually copied into other projects.
 )
 
 // excludedSpdxIDs contains SPDX IDs that should be ignored when generating license categories.
@@ -79,10 +79,10 @@ type scancodeSource struct {
 	zipSHA256 string
 }
 
-var defaultScancodeSource = scancodeSource{
+var currentScancodeSource = scancodeSource{
 	commit:    scancodeCommit,
-	zipURL:    defaultScancodeZipURL,
-	zipSHA256: defaultScancodeZipSHA256,
+	zipURL:    scancodeZipURL,
+	zipSHA256: scancodeZipSHA256,
 }
 
 type generationProvenance struct {
@@ -105,6 +105,7 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 
 	outPath := fs.String("out", "-", "Output file path, or '-' for stdout")
 	verifyPath := fs.String("verify", "", "Verify an existing file, ignoring its leading go-spdx, SPDX list version, and ScanCode provenance values")
+	updateScancode := fs.Bool("update-scancode", false, "Update the ScanCode pin to upstream main and regenerate (run from repository root)")
 	err := fs.Parse(args)
 	if err != nil {
 		return err
@@ -113,13 +114,28 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 	if *verifyPath != "" && *outPath != "-" {
 		return errors.New("-verify cannot be combined with -out")
 	}
+	if *verifyPath != "" && *updateScancode {
+		return errors.New("-verify cannot be combined with -update-scancode")
+	}
 
-	spdxIDs := spdxlicenses.GetLicenses()
-	records, err := loadScancodeBySpdx(context.Background(), client, defaultScancodeSource, maxZipBytes)
+	ctx := context.Background()
+	source := currentScancodeSource
+	var sourceFile []byte
+	var records map[string]licenseMetadata
+	if *updateScancode {
+		source, records, sourceFile, err = prepareScancodeUpdate(ctx, client, stderr)
+		if err != nil {
+			return fmt.Errorf("update scancode source: %w", err)
+		}
+	}
+	if records == nil {
+		records, err = loadScancodeBySpdx(ctx, client, source, maxZipBytes)
+	}
 	if err != nil {
 		return fmt.Errorf("load scancode data: %w", err)
 	}
 
+	spdxIDs := spdxlicenses.GetLicenses()
 	licenses, warnings, err := buildLicenseData(spdxIDs, records, excludedSpdxIDs, spdxCategoryOverrides)
 	if err != nil {
 		return err
@@ -137,7 +153,7 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 	output, err := renderTypeScript(licenses, generationProvenance{
 		GoSPDXVersion:          goSPDXVersion,
 		SPDXLicenseListVersion: spdxlicenses.LicenseListVersion(),
-		ScancodeCommit:         defaultScancodeSource.commit,
+		ScancodeCommit:         source.commit,
 	})
 	if err != nil {
 		return err
@@ -154,18 +170,30 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 
 	if *outPath == "-" {
 		_, err = stdout.Write(output)
-		return err
+	} else {
+		err = os.WriteFile(*outPath, output, outputFileMode)
 	}
-
-	err = os.WriteFile(*outPath, output, outputFileMode)
 	if err != nil {
 		return fmt.Errorf("write output: %w", err)
+	}
+	if sourceFile != nil {
+		if err := os.WriteFile(scancodePinPath, sourceFile, outputFileMode); err != nil {
+			return fmt.Errorf("write scancode pin: %w", err)
+		}
 	}
 	return nil
 }
 
 func loadScancodeBySpdx(ctx context.Context, client *http.Client, source scancodeSource, maxZipBytes int64) (map[string]licenseMetadata, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source.zipURL, http.NoBody)
+	content, err := downloadScancodeArchive(ctx, client, source.zipURL, maxZipBytes)
+	if err != nil {
+		return nil, err
+	}
+	return parseScancodeArchive(content, source)
+}
+
+func downloadScancodeArchive(ctx context.Context, client *http.Client, url string, maxZipBytes int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -188,6 +216,10 @@ func loadScancodeBySpdx(ctx context.Context, client *http.Client, source scancod
 	if int64(len(content)) > maxZipBytes {
 		return nil, fmt.Errorf("zip response exceeds maximum size of %d bytes", maxZipBytes)
 	}
+	return content, nil
+}
+
+func parseScancodeArchive(content []byte, source scancodeSource) (map[string]licenseMetadata, error) {
 	if err := verifySHA256(content, source.zipSHA256); err != nil {
 		return nil, err
 	}

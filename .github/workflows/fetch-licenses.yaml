@@ -4,11 +4,16 @@ on:
     workflow_dispatch:
         inputs:
             force_run:
-                description: 'Force run license extraction'
+                description: 'Force SPDX extraction and license category regeneration'
+                type: boolean
                 required: false
-                default: 'false'
+                default: false
     schedule:
         - cron: '5 4 * * *' # Runs at 0405 UTC (0605 CET, 0005 ET, 2105 PT)
+
+concurrency:
+    group: fetch-licenses
+    cancel-in-progress: false
 
 jobs:
     fetch-licenses:
@@ -17,6 +22,7 @@ jobs:
           DT_STAMP: ''
           GENFILES_CHANGED: 'false'
           SRC_CHANGED: 'false'
+          FORCE_RUN: ${{ github.event.inputs.force_run || 'false' }}
         permissions:
           contents: write
           pull-requests: write
@@ -29,6 +35,11 @@ jobs:
 
             - name: Checkout this repository
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - name: Set up Go
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version-file: go.mod
 
             - name: Checkout official SPDX Repository
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,17 +63,16 @@ jobs:
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
                   git diff --quiet -- cmd/licenses.json cmd/exceptions.json && src_changed=false
                   if [ $src_changed != 'true' ]; then
-                    if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
+                    if [ "$FORCE_RUN" == 'true' ]; then
                       echo -e '***************\nNo changes in spdx json, but skipping abort due to force run\n***************'
                     else
-                      echo -e '***************\nABORTING: No changes to spdx json data\n***************'
-                      exit 0
+                      echo 'No SPDX source changes; still checking ScanCode.'
                     fi
                   fi
                   echo "SRC_CHANGED=$src_changed" >> $GITHUB_ENV
 
             - name: Run license extraction
-              if: ${{ env.SRC_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.SRC_CHANGED == 'true' || env.FORCE_RUN == 'true' }}
               run: |
                   cd cmd
                   echo "Current branch: $(git branch)"
@@ -70,14 +80,17 @@ jobs:
                   cd ..
                   git log --oneline -n 5
 
+            - name: Update ScanCode pin and generate npm license categories
+              run: go run ./cmd/license-categories -update-scancode -out packages/license-categories/src/generated.ts
+
             - name: Check for changes in generated files
               id: genfiles-changes
               run: |
                   genfiles_changed=true
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
-                  git diff --quiet -- spdxexp/spdxlicenses/*.go && genfiles_changed=false
+                  git diff --quiet -- spdxexp/spdxlicenses/*.go cmd/license-categories/main.go packages/license-categories/src/generated.ts && genfiles_changed=false
                   if [ $genfiles_changed != 'true' ]; then
-                    if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
+                    if [ "$FORCE_RUN" == 'true' ]; then
                       echo -e '***************\nNo changes to generated files, but skipping abort due to force run\n***************'
                     else
                       # This happens when the generated files are already up to date 
@@ -88,18 +101,40 @@ jobs:
                   fi
                   echo "GENFILES_CHANGED=$genfiles_changed" >> $GITHUB_ENV
 
+            - name: Set up Node
+              if: ${{ env.GENFILES_CHANGED == 'true' || env.FORCE_RUN == 'true' }}
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+              with:
+                  node-version: 24
+                  cache: npm
+                  cache-dependency-path: packages/license-categories/package-lock.json
+
+            - name: Validate update before opening PR
+              if: ${{ env.GENFILES_CHANGED == 'true' || env.FORCE_RUN == 'true' }}
+              run: |
+                  go test ./...
+                  make verify-license-categories
+                  npm ci --prefix packages/license-categories
+                  npm test --prefix packages/license-categories
+
             - name: Generate Pull Request description
-              if: ${{ env.GENFILES_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.GENFILES_CHANGED == 'true' || env.FORCE_RUN == 'true' }}
               run: go run ./cmd pr-body -o "${RUNNER_TEMP}/license-pr-body.md"
 
             - name: Create Pull Request
-              if: ${{ env.GENFILES_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
+              if: ${{ env.GENFILES_CHANGED == 'true' || env.FORCE_RUN == 'true' }}
               uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  commit-message: Add updated license files
+                  commit-message: Update SPDX and ScanCode license data
                   branch: auto-update-licenses
                   base: main
-                  title: "Update SPDX license files (${{ env.DT_STAMP }})"
+                  title: "Update SPDX and ScanCode license data (${{ env.DT_STAMP }})"
                   body-path: ${{ runner.temp }}/license-pr-body.md
                   labels: 'auto-update,licenses'
+                  add-paths: |
+                      cmd/*.json
+                      cmd/*.txt
+                      cmd/license-categories/main.go
+                      spdxexp/spdxlicenses/*.go
+                      packages/license-categories/src/generated.ts

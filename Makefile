@@ -70,9 +70,26 @@ help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Targets:"
+	@echo "  help       - this help message"
 	@echo "  tidy       - clean up the go modules files"
 	@echo "  format     - go format this project"
 	@echo "  test       - run some go test"
 	@echo "  lint-all   - runs linter for all files (optional pass in LINT_FILES=path_to_dir_or_file_to_check)"
 	@echo "  lint       - runs linter for only files with diffs from origin/main (useful for PRs)"
-	@echo "  help       - this help message"
+	@echo "  license-categories.       - regenerate npm license category data"
+	@echo "  verify-license-categories - verify checked-in npm data is current"
+	@echo "  test-license-categories   - runs npm tests for license-categories package"
+
+.PHONY: license-categories
+license-categories:
+	go run ./cmd/license-categories -out packages/license-categories/src/generated.ts
+
+.PHONY: verify-license-categories
+verify-license-categories:
+	@set -e; output="$$(mktemp)"; trap 'rm -f "$$output"' EXIT; \
+		go run ./cmd/license-categories -out "$$output"; \
+		diff -u packages/license-categories/src/generated.ts "$$output"
+
+.PHONY: test-license-categories
+test-license-categories:
+	cd packages/license-categories && npm test

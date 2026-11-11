@@ -70,12 +70,16 @@ jobs:
                   cd ..
                   git log --oneline -n 5
 
+            - name: Generate npm license categories
+              if: ${{ env.SRC_CHANGED == 'true' || github.event.inputs.force_run == 'true' }}
+              run: make license-categories
+
             - name: Check for changes in generated files
               id: genfiles-changes
               run: |
                   genfiles_changed=true
                   # --quiet: Exits with 1 if there are changes; otherwise, exits with 0
-                  git diff --quiet -- spdxexp/spdxlicenses/*.go && genfiles_changed=false
+                  git diff --quiet -- spdxexp/spdxlicenses/*.go packages/license-categories/src/generated.ts && genfiles_changed=false
                   if [ $genfiles_changed != 'true' ]; then
                     if [ ${{ github.event.inputs.force_run }} == 'true' ]; then
                       echo -e '***************\nNo changes to generated files, but skipping abort due to force run\n***************'

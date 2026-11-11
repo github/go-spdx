@@ -1,0 +1,69 @@
+name: Publish License Categories
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-license-categories
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish
+    # ! release allows dispatch; prerelease == false prevents publishing prereleases
+    if: >-
+      vars.LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true' &&
+      (github.event_name != 'release' || github.event.release.prerelease == false)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'release' && format('refs/tags/{0}', github.event.release.tag_name) || github.ref }}
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Verify committed generated data
+        run: make verify-license-categories
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          scope: '@github'
+          cache: npm
+          cache-dependency-path: packages/license-categories/package-lock.json
+
+      - name: Install OIDC-capable npm
+        run: npm install -g npm@11.20.0
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/license-categories
+
+      - name: Build and test committed package source
+        run: npm test
+        working-directory: packages/license-categories
+
+      - name: Compare published contents and validate version
+        id: prepare
+        run: node script/prepare-publication.mjs "$RUNNER_TEMP/license-categories.tgz"
+        working-directory: packages/license-categories
+
+      - name: Publish compared tarball using trusted publishing
+        if: steps.prepare.outputs.changed == 'true'
+        run: npm publish "$RUNNER_TEMP/license-categories.tgz" --ignore-scripts --access public --provenance --registry=https://registry.npmjs.org
+        working-directory: packages/license-categories

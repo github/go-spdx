@@ -23,7 +23,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc",
     "prepack": "npm run build",
-    "test": "npm run build && node --test",
+    "test": "npm run build && node --test --test-concurrency=1",
     "test:tarball": "npm run build && node --test test/tarball.test.mjs"
   },
   "engines": {

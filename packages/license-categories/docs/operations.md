@@ -112,16 +112,3 @@ Before the first publication, a maintainer must:
    npm trusted publisher.
 5. Verify anonymous installation from npmjs, the MIT software license, and
    upstream data attribution.
-
-## Migration and cutover
-
-`@github/license-categories` is a new package identity, distinct from the
-historical `@github-ui/license-categories` package. Consumers must update their
-dependency name and imports to adopt it; the exported API and literal data are
-unchanged. Publishing the new package does not rename, change the visibility
-of, or replace the trusted-publisher settings of the historical package.
-
-Keep historical generation and publication intact until the go-spdx addition
-is reviewed and ready. Do not change the historical publisher as part of this
-addition. After verifying the new public package, coordinate consumer migration
-and any separately approved old-generation cleanup.

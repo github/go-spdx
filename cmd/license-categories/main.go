@@ -104,7 +104,7 @@ func run(args []string, stdout, stderr io.Writer, client *http.Client) error {
 	fs.SetOutput(stderr)
 
 	outPath := fs.String("out", "-", "Output file path, or '-' for stdout")
-	verifyPath := fs.String("verify", "", "Verify an existing file, ignoring only its leading go-spdx provenance value")
+	verifyPath := fs.String("verify", "", "Verify an existing file, ignoring its leading go-spdx, SPDX list version, and ScanCode provenance values")
 	err := fs.Parse(args)
 	if err != nil {
 		return err
@@ -315,8 +315,8 @@ func verifyGeneratedData(expected, actual []byte) error {
 				len(bytes.TrimSpace(lines[i+1][len(prefix):])) == 0 {
 				return nil, fmt.Errorf("generated data must have a nonempty %q provenance header on line %d", prefix, i+2)
 			}
+			lines[i+1] = []byte(prefix + "<provenance>")
 		}
-		lines[1] = []byte("// go-spdx: <provenance>")
 		return bytes.Join(lines, []byte("\n")), nil
 	}
 	normalizedExpected, err := normalize(expected)
@@ -328,7 +328,7 @@ func verifyGeneratedData(expected, actual []byte) error {
 		return err
 	}
 	if !bytes.Equal(normalizedExpected, normalizedActual) {
-		return errors.New("generated license categories differ outside the leading go-spdx provenance value; run make license-categories and review the changes")
+		return errors.New("generated license categories differ outside the leading provenance values; run make license-categories and review the data and non-provenance changes")
 	}
 	return nil
 }

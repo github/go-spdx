@@ -6,6 +6,7 @@ import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import semver from 'semver'
 import {list} from 'tar'
+import ts from 'typescript'
 
 const packageName = '@github/license-categories'
 const registry = 'https://registry.npmjs.org'
@@ -62,23 +63,76 @@ export async function packedFiles(path) {
   return new Map([...files].map(([path, chunks]) => [path, Buffer.concat(chunks)]))
 }
 
-export function samePackageContents(candidate, published) {
-  const normalize = files => {
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]))
+  }
+  return value
+}
+
+export function sameLicenseData(candidate, published) {
+  for (const files of [candidate, published]) {
     const manifestBytes = files.get('package.json')
     if (!manifestBytes) throw new Error('Package is missing package.json; cannot compare package contents.')
     const manifest = JSON.parse(manifestBytes.toString('utf8'))
     if (manifest.name !== packageName) throw new Error('Unexpected packaged manifest name.')
-    // npm may add bookkeeping to the registry tarball. Consumer metadata stays significant.
-    for (const key of Object.keys(manifest)) {
-      if (key === 'version' || key === 'gitHead' || key.startsWith('_')) delete manifest[key]
-    }
-    // Nested key order can affect exports, imports, and typesVersions resolution.
-    const ordered = Object.fromEntries(Object.keys(manifest).sort().map(key => [key, manifest[key]]))
-    return new Map([...files, ['package.json', Buffer.from(JSON.stringify(ordered))]])
   }
-  const left = normalize(candidate)
-  const right = normalize(published)
-  return left.size === right.size && [...left].every(([path, bytes]) => right.has(path) && bytes.equals(right.get(path)))
+  return JSON.stringify(canonical(generatedLicenseData(candidate))) === JSON.stringify(canonical(generatedLicenseData(published)))
+}
+
+export function generatedLicenseData(files) {
+  const bytes = files.get('dist/generated.js')
+  if (!bytes) throw new Error('Package is missing dist/generated.js; cannot compare generated license data.')
+  const source = ts.createSourceFile('generated.js', bytes.toString('utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const unsupported = () => { throw new Error('Unsupported generated license data: expected literal categoryDescriptions and licensesById exports.') }
+  if (source.parseDiagnostics.length) unsupported()
+
+  const stringValue = node => {
+    if (!ts.isStringLiteral(node)) unsupported()
+    return node.text
+  }
+  const objectValue = (node, readValue) => {
+    if (!ts.isObjectLiteralExpression(node)) unsupported()
+    const entries = new Map()
+    for (const property of node.properties) {
+      if (!ts.isPropertyAssignment(property) || property.questionToken || property.exclamationToken
+          || !(ts.isStringLiteral(property.name) || ts.isIdentifier(property.name))) unsupported()
+      const key = property.name.text
+      if (key === '__proto__' || entries.has(key)) unsupported()
+      entries.set(key, readValue(property.initializer))
+    }
+    return Object.fromEntries(entries)
+  }
+
+  // Parse literals only. Never import or evaluate JavaScript from an npm tarball.
+  const data = new Map()
+  for (const statement of source.statements) {
+    if (!ts.isVariableStatement(statement)
+        || statement.modifiers?.length !== 1 || statement.modifiers[0].kind !== ts.SyntaxKind.ExportKeyword
+        || !(statement.declarationList.flags & ts.NodeFlags.Const)
+        || statement.declarationList.declarations.length !== 1) unsupported()
+    const declaration = statement.declarationList.declarations[0]
+    if (!ts.isIdentifier(declaration.name) || !declaration.initializer
+        || declaration.type || declaration.exclamationToken) unsupported()
+    const name = declaration.name.text
+    if (data.has(name)) unsupported()
+    if (name === 'categoryDescriptions') {
+      data.set(name, objectValue(declaration.initializer, stringValue))
+    } else if (name === 'licensesById') {
+      data.set(name, objectValue(declaration.initializer, node => {
+        const record = objectValue(node, stringValue)
+        if (Object.keys(record).sort().join(',') !== 'category,name') unsupported()
+        return record
+      }))
+    } else unsupported()
+  }
+  const categoryDescriptions = data.get('categoryDescriptions')
+  const licensesById = data.get('licensesById')
+  if (!categoryDescriptions || !Object.keys(categoryDescriptions).length
+      || !licensesById || !Object.keys(licensesById).length
+      || Object.values(licensesById).some(record => !Object.hasOwn(categoryDescriptions, record.category))) unsupported()
+  return {categoryDescriptions, licensesById}
 }
 
 export function latestPublication(metadata) {
@@ -170,7 +224,7 @@ export async function publishedTarball(dist, destination, fetcher = fetch) {
   writeFileSync(destination, bytes)
 }
 
-export async function preparePublication(directory, destination, fetcher = fetch) {
+export async function preparePublication(directory, destination, fetcher = fetch, {force = false} = {}) {
   const temporary = mkdtempSync(join(tmpdir(), 'license-categories-publication-'))
   try {
     const manifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
@@ -182,18 +236,20 @@ export async function preparePublication(directory, destination, fetcher = fetch
     const [{filename}] = JSON.parse(output)
     const candidatePath = join(temporary, filename)
     const candidate = await packedFiles(candidatePath)
+    generatedLicenseData(candidate)
     const metadata = await registryMetadata(fetcher)
     if (metadata) {
       const latest = latestPublication(metadata)
       const publishedPath = join(temporary, 'published.tgz')
       await publishedTarball(metadata.versions[latest].dist, publishedPath, fetcher)
-      if (samePackageContents(candidate, await packedFiles(publishedPath))) {
-        return {changed: false, message: `Skipping publication: package contents are unchanged from ${packageName}@${latest}.`}
+      const unchanged = sameLicenseData(candidate, await packedFiles(publishedPath))
+      if (unchanged && !force) {
+        return {changed: false, message: `Skipping publication: generated license category data is unchanged from ${packageName}@${latest}. Use workflow_dispatch with a new version to publish non-data changes.`}
       }
     }
     validateVersion(manifest, lock, metadata)
     writeFileSync(destination, readFileSync(candidatePath))
-    const reason = metadata ? 'Package contents changed' : 'First publication'
+    const reason = force ? 'Manual dispatch requested publication' : metadata ? 'Generated license category data changed' : 'First publication'
     return {changed: true, message: `${reason}; ${packageName}@${manifest.version} is eligible for publication.`}
   } finally {
     rmSync(temporary, {recursive: true, force: true})
@@ -204,14 +260,16 @@ async function main() {
   const destination = process.argv[2]
   if (!destination) throw new Error('Usage: node script/prepare-publication.mjs /absolute/path/candidate.tgz')
   const directory = fileURLToPath(new URL('../', import.meta.url))
+  let force = false
   if (process.env.GITHUB_ACTIONS === 'true') {
     const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
     const ref = publicationRef(process.env.GITHUB_EVENT_NAME, event, process.env.GITHUB_REF)
     const expected = execFileSync('git', ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`], {cwd: directory, encoding: 'utf8'}).trim()
     const actual = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: directory, encoding: 'utf8'}).trim()
     if (expected !== actual) throw new Error('Checked-out commit does not match the release tag or selected dispatch ref.')
+    force = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
   }
-  const result = await preparePublication(directory, resolve(destination))
+  const result = await preparePublication(directory, resolve(destination), fetch, {force})
   console.log(result.message)
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `changed=${result.changed}\n`)
 }

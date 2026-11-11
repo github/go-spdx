@@ -86,10 +86,7 @@ license-categories:
 
 .PHONY: verify-license-categories
 verify-license-categories:
-	@tmp=$$(mktemp); \
-	trap 'rm -f "$$tmp"' 0; \
-	go run ./cmd/license-categories -out "$$tmp" && \
-	diff -u packages/license-categories/src/generated.ts "$$tmp"
+	go run ./cmd/license-categories -verify packages/license-categories/src/generated.ts
 
 .PHONY: test-license-categories
 test-license-categories:

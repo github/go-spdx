@@ -17,7 +17,7 @@ go get github.com/github/go-spdx@latest
 
 - [spdxexp](https://pkg.go.dev/github.com/github/go-spdx/v2/spdxexp) - Expression package validates licenses and determines if a license expression is satisfied by a list of licenses. Validity of a license is determined by the SPDX license list.
 - [spdxlicenses](https://pkg.go.dev/github.com/github/go-spdx/v2/spdxexp/spdxlicenses) - License data package provides generated SPDX license IDs, exceptions, ranges, and the SPDX License List version used to generate them.
-- [@github/license-categories](./packages/license-categories/README.md) - Public ESM npm package with SPDX license names and compliance risk categories.
+- [@github/license-categories](./packages/license-categories/README.md) - MIT-licensed npm package of SPDX license names and categories, generated from go-spdx and pinned ScanCode metadata.
 
 ## CLI: spdx-validate
 

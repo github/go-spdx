@@ -1,6 +1,6 @@
 {
   "name": "@github/license-categories",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "SPDX license names and compliance risk categories used by GitHub",
   "repository": {
     "type": "git",

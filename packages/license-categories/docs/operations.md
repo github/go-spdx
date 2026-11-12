@@ -96,8 +96,8 @@ No local-build detection is performed.
 After testing, both triggers compare `dist/generated.js`, compiled from
 `src/generated.ts`, with that same file from the most recently published npm
 version, selected by publication timestamp rather than a dist-tag or version
-ordering. The comparison ignores only the leading `go-spdx`, SPDX list version,
-and ScanCode commit provenance comments. All remaining text must match.
+ordering. The comparison ignores the entire leading comment header, including
+the generated-file warning and all provenance lines. All remaining text must match.
 TypeScript-only or source formatting changes that compile identically do not
 trigger publication. No other package files affect this decision.
 

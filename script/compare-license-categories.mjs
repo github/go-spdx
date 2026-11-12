@@ -4,9 +4,7 @@ import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 function withoutProvenance(source) {
-  return source.replace(/^(?:\/\/[^\n]*\n)+/, header =>
-    header.replace(/^\/\/ (?:go-spdx|spdx-license-list-version|scancode-licensedb commit):[^\n]*\n/gm, ''),
-  )
+  return source.replace(/^(?:\/\/[^\n]*\n)+/, '')
 }
 
 export async function generatedDataChanged(

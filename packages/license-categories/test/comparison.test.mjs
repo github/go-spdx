@@ -75,8 +75,19 @@ test('compares only compiled generated data against the last publication', async
     writeFileSync(join(root, 'package.json'), '{"name":"@github/license-categories","version":"9.0.0","description":"changed"}')
     assert.equal(await compare(generated), false)
   })
-  await t.test('comments outside provenance remain significant', async () => {
-    assert.equal(await compare(generated.replace('DO NOT EDIT.', 'Changed warning.')), true)
+  await t.test('the entire leading comment header is ignored on both files', async () => {
+    assert.equal(await compare(generated.replace('DO NOT EDIT.', 'Changed warning.')), false)
+    assert.equal(await compare(generated.replace(/^(?:\/\/[^\n]*\n)+/, '// Completely different provenance\n// Additional metadata\n')), false)
+    assert.equal(await compare(generated.replace(/^(?:\/\/[^\n]*\n)+/, '')), false)
+    writeFileSync(local, generated.replace(/^(?:\/\/[^\n]*\n)+/, '// Local provenance\n'))
+    try {
+      assert.equal(await compare(generated), false)
+      assert.equal(await compare(generated.replace('Safe for most', 'Changed category')), true)
+    } finally {
+      writeFileSync(local, generated)
+    }
+  })
+  await t.test('comments after the leading header remain significant', async () => {
     assert.equal(await compare(`${generated}// go-spdx: not a leading provenance header\n`), true)
   })
   await t.test('registry failures are not treated as first publication', async () => {

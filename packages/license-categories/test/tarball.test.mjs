@@ -116,6 +116,14 @@ test('generation verification ignores only go-spdx provenance changes', () => {
 
     writeFileSync(generated, source.replace(/^\/\/ go-spdx: .+$/m, '// go-spdx: v2.0.1'))
     verify()
+    const expanded = execFileSync('make', ['--no-print-directory', '-n', '-f', '-', 'verify'], {
+      cwd: root, env: {...process.env, tmp}, input: `verify:\n${command}\n`, encoding: 'utf8',
+    })
+    try {
+      execFileSync('bash', ['-e', '-c', expanded], {cwd: root, env: {...process.env, tmp}, stdio: 'pipe'})
+    } finally {
+      rmSync(`${tmp}.checked`, {force: true})
+    }
     for (const [from, to] of [
       ['// spdx-license-list-version:', '// changed-spdx-license-list-version:'],
       ['// scancode-licensedb commit:', '// changed-scancode-licensedb commit:'],

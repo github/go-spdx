@@ -69,6 +69,30 @@ for (const event of ['release', 'workflow_dispatch']) {
   })
 }
 
+test('rejects release tags containing JavaScript line terminators before writing', () => {
+  const root = mkdtempSync(join(tmpdir(), 'license-categories-release-tag-'))
+  try {
+    mkdirSync(join(root, 'packages/license-categories/src'), {recursive: true})
+    const generated = join(root, 'packages/license-categories/src/generated.ts')
+    const source = readFileSync(new URL('../src/generated.ts', import.meta.url), 'utf8')
+    writeFileSync(generated, source)
+    const workflow = readFileSync(new URL('../../../.github/workflows/publish-license-categories.yaml', import.meta.url), 'utf8')
+    const script = workflow.split('      - name: Stamp go-spdx provenance\n')[1]
+      .split('        run: |\n')[1].split('\n      - name:')[0].replace(/^          /gm, '')
+
+    for (const separator of ['\n', '\r', '\u2028', '\u2029']) {
+      assert.throws(() => execFileSync('bash', ['-e', '-c', script], {
+        cwd: root,
+        env: {...process.env, EVENT_NAME: 'release', RELEASE_TAG: `v2.0.1${separator}throw new Error('injected')`},
+        stdio: 'pipe',
+      }), error => error.status !== 0 && /provenance must not contain line terminators/.test(error.stderr.toString()))
+      assert.equal(readFileSync(generated, 'utf8'), source)
+    }
+  } finally {
+    rmSync(root, {recursive: true, force: true})
+  }
+})
+
 test('generation verification ignores only go-spdx provenance changes', () => {
   const root = mkdtempSync(join(tmpdir(), 'license-categories-verify-'))
   try {

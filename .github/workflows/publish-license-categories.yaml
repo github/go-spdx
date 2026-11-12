@@ -62,6 +62,7 @@ jobs:
           const provenance = process.env.EVENT_NAME === 'release'
             ? process.env.RELEASE_TAG
             : `${execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim()} (dispatch)`
+          if (/[\r\n\u2028\u2029]/u.test(provenance)) throw new Error('go-spdx provenance must not contain line terminators')
           const path = 'packages/license-categories/src/generated.ts'
           const source = readFileSync(path, 'utf8')
           if (!/^\/\/ go-spdx: .+$/m.test(source)) throw new Error('Missing go-spdx provenance header')

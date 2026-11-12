@@ -67,11 +67,10 @@ there is no separate npm pull-request validation workflow.
 ## Publication workflow
 
 [Publish License Categories](../../../.github/workflows/publish-license-categories.yaml)
-runs on pushes to `main` that change `packages/license-categories/**`, or through
-`workflow_dispatch`. The workflow rejects refs other than the repository's
-default branch. Changes only to the generator or Makefile do not trigger it;
-regenerate and commit package output with relevant source changes, or dispatch
-the workflow on the default branch.
+runs on `release: released` for stable releases, including prereleases promoted
+to stable, or through `workflow_dispatch`. GitHub-marked prereleases are skipped.
+Release runs check out the release tag's commit; manual dispatches must use the
+repository's default branch. Pushes do not trigger publication.
 
 The single publication job is disabled unless the repository variable
 `LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED` is exactly `true`. Publications are
@@ -84,7 +83,7 @@ long-lived npm token.
 The workflow retains the original OLC publication behavior: npm provenance is
 explicitly disabled, no publication header is stamped, and every enabled run
 attempts to publish the version in the manifest. There is no registry comparison,
-unchanged-data skip, version bump, or release-event trigger. npm rejects a version
+unchanged-data skip, or version bump. npm rejects a version
 that has already been published. Bump both `package.json` and `package-lock.json`
 before subsequent publication attempts.
 
@@ -106,8 +105,8 @@ Before the first publication, a maintainer must:
    `publish-license-categories.yaml`, with no environment restriction (the
    workflow does not use an environment). If first-publication setup requires
    a separate bootstrap, arrange that with an authorized npm maintainer.
-4. After publication approval, set the repository variable to `true` and push
-   an approved package change to `main` or dispatch the workflow on the default
+4. After publication approval, set the repository variable to `true` and create
+   a stable release or dispatch the workflow on the default
    branch. A workflow filename or environment change requires updating the
    npm trusted publisher.
 5. Verify anonymous installation from npmjs, the MIT software license, and

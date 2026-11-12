@@ -4,10 +4,8 @@ run-name: Publish License Categories - ${{ github.sha }}
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - packages/license-categories/**
+  release:
+    types: [released]
 
 concurrency:
   group: publish-license-categories
@@ -16,7 +14,7 @@ concurrency:
 jobs:
   publish:
     name: Publish
-    if: vars.LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true'
+    if: vars.LICENSE_CATEGORIES_NPM_PUBLISH_ENABLED == 'true' && (github.event_name != 'release' || !github.event.release.prerelease)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -24,7 +22,7 @@ jobs:
 
     steps:
       - name: Validate default branch
-        if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+        if: github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
         run: |
           echo "::error::This workflow should only be run on the main branch."
           exit 1

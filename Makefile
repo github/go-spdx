@@ -100,7 +100,7 @@ verify-license-categories:
 	    return lines.join("\n"); \
 	  }; \
 	  const [source, tmp] = process.argv.slice(1); \
-	  fs.writeFileSync(tmp + ".checked", normalize(source)); \
+	  fs.writeFileSync(tmp + ".checked", normalize(source), {flag: "wx"}); \
 	  fs.writeFileSync(tmp, normalize(tmp)); \
 	' packages/license-categories/src/generated.ts "$$tmp" && \
 	diff -u "$$tmp.checked" "$$tmp"

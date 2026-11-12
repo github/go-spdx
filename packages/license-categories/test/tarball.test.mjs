@@ -104,9 +104,15 @@ test('generation verification ignores only go-spdx provenance changes', () => {
     const makefile = readFileSync(new URL('../../../Makefile', import.meta.url), 'utf8')
     const recipe = makefile.split('verify-license-categories:\n')[1].split('\n\n')[0]
     const command = recipe.slice(recipe.indexOf('\tnode -e'))
-    const verify = () => execFileSync('make', ['--no-print-directory', '-f', '-', 'verify'], {
-      cwd: root, env: {...process.env, tmp}, input: `verify:\n${command}\n`, stdio: 'pipe',
-    })
+    const verify = () => {
+      try {
+        return execFileSync('make', ['--no-print-directory', '-f', '-', 'verify'], {
+          cwd: root, env: {...process.env, tmp}, input: `verify:\n${command}\n`, stdio: 'pipe',
+        })
+      } finally {
+        rmSync(`${tmp}.checked`, {force: true})
+      }
+    }
 
     writeFileSync(generated, source.replace(/^\/\/ go-spdx: .+$/m, '// go-spdx: v2.0.1'))
     verify()
@@ -129,6 +135,12 @@ test('generation verification ignores only go-spdx provenance changes', () => {
       assert.throws(verify, error => error.status !== 0 && /expected exactly one go-spdx provenance header/.test(error.stderr.toString()))
       assert.equal(readFileSync(generated, 'utf8'), invalid)
     }
+    writeFileSync(generated, source)
+    const target = join(root, 'symlink-target')
+    writeFileSync(target, 'must not be overwritten')
+    symlinkSync(target, `${tmp}.checked`)
+    assert.throws(verify, error => error.status !== 0 && /EEXIST/.test(error.stderr.toString()))
+    assert.equal(readFileSync(target, 'utf8'), 'must not be overwritten')
   } finally {
     rmSync(root, {recursive: true, force: true})
   }

@@ -81,7 +81,19 @@ jobs:
         run: npm run test:tarball
         working-directory: packages/license-categories
 
+      - name: Compare published generated data
+        id: comparison
+        run: |
+          node --input-type=module <<'NODE'
+          import {appendFileSync} from 'node:fs'
+          import {generatedDataChanged} from './script/compare-license-categories.mjs'
+
+          const changed = await generatedDataChanged()
+          appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed}\n`)
+          NODE
+
       - name: Publish to npm using OIDC
+        if: steps.comparison.outputs.changed == 'true'
         run: npm publish --access public --registry=https://registry.npmjs.org
         working-directory: packages/license-categories
         env:

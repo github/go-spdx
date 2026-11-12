@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import test from 'node:test'
+import {generatedDataChanged} from '../../../script/compare-license-categories.mjs'
 
 test('targets public npm distribution under MIT', () => {
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
@@ -30,7 +31,7 @@ test('publishes only compiled JavaScript, declarations, and package metadata', (
 })
 
 for (const event of ['release', 'workflow_dispatch']) {
-  test(`preserves exact ${event} provenance when packing`, () => {
+  test(`preserves exact ${event} provenance when packing`, async () => {
     const root = mkdtempSync(join(tmpdir(), 'license-categories-provenance-'))
     try {
       const packageDir = join(root, 'packages/license-categories')
@@ -63,6 +64,15 @@ for (const event of ['release', 'workflow_dispatch']) {
       assert.ok(files.some(({path}) => path === 'dist/generated.js'))
       const packed = execFileSync('tar', ['-xOf', join(packageDir, filename), 'package/dist/generated.js'], {encoding: 'utf8'})
       assert.equal(packed.split('\n')[1], header)
+      const metadata = {
+        versions: {'0.1.2': {dist: {tarball: 'https://registry.npmjs.org/stamped.tgz'}}},
+        time: {'0.1.2': '2026-01-01T00:00:00Z'},
+      }
+      assert.equal(await generatedDataChanged(undefined, async url =>
+        url.endsWith('.tgz')
+          ? new Response(readFileSync(join(packageDir, filename)))
+          : Response.json(metadata),
+      ), false)
     } finally {
       rmSync(root, {recursive: true, force: true})
     }

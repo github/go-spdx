@@ -93,12 +93,24 @@ For an initial local bootstrap publication, manually set this provenance line to
 the source revision before packing; subsequent dispatches stamp it automatically.
 No local-build detection is performed.
 
+After testing, both triggers compare `dist/generated.js`, compiled from
+`src/generated.ts`, with that same file from the most recently published npm
+version, selected by publication timestamp rather than a dist-tag or version
+ordering. The comparison ignores only the leading `go-spdx`, SPDX list version,
+and ScanCode commit provenance comments. All remaining text must match.
+TypeScript-only or source formatting changes that compile identically do not
+trigger publication. No other package files affect this decision.
+
+Unchanged generated data skips publication with a log message. A package not
+found in npm is eligible for its initial publication; other registry or tarball
+errors fail the workflow. Downloaded JavaScript is read, never executed, and the
+package contents are unchanged.
+
 npm provenance attestations remain explicitly disabled, independently of this
-source header, and every enabled run attempts to publish the version in the
-manifest. There is no registry comparison,
-unchanged-data skip, or version bump. npm rejects a version
-that has already been published. Bump both `package.json` and `package-lock.json`
-before subsequent publication attempts.
+source header. When generated data changes, the workflow publishes the version
+in the manifest without automatically bumping it. npm rejects a version that
+has already been published. Bump both `package.json` and `package-lock.json`
+before subsequent publication attempts that change generated data.
 
 ## Publishing permissions and versioning
 

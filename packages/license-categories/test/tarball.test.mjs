@@ -122,7 +122,7 @@ test('generation verification ignores only go-spdx provenance changes', () => {
     for (const invalid of [
       `${source}// go-spdx: extra\n`,
       ...['\r', '\u2028', '\u2029'].map(separator => `${source}// go-spdx: extra${separator}throw new Error('injected')\n`),
-      ...['\r', '\u2028', '\u2029'].map(separator => source.replace('// go-spdx: (devel)', `// go-spdx: v2.0.1${separator}throw new Error('injected')`)),
+      ...['\r', '\u2028', '\u2029'].map(separator => source.replace(/^\/\/ go-spdx: [^\n]*$/m, `// go-spdx: v2.0.1${separator}throw new Error('injected')`)),
       source.replace(/^\/\/ go-spdx: .+\n/m, ''),
     ]) {
       writeFileSync(generated, invalid)

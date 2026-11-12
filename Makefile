@@ -75,4 +75,36 @@ help:
 	@echo "  test       - run some go test"
 	@echo "  lint-all   - runs linter for all files (optional pass in LINT_FILES=path_to_dir_or_file_to_check)"
 	@echo "  lint       - runs linter for only files with diffs from origin/main (useful for PRs)"
+	@echo "  license-categories        - regenerate npm license category data"
+	@echo "  verify-license-categories - verify checked-in npm data is current"
+	@echo "  test-license-categories   - run npm tests for the license-categories package"
 	@echo "  help       - this help message"
+
+.PHONY: license-categories
+license-categories:
+	go run ./cmd/license-categories -out packages/license-categories/src/generated.ts
+
+.PHONY: verify-license-categories
+verify-license-categories:
+	@tmp=$$(mktemp); \
+	trap 'rm -f "$$tmp" "$$tmp.checked"' 0; \
+	go run ./cmd/license-categories -out "$$tmp" && \
+	node -e " \
+	  const fs = require('node:fs'); \
+	  const normalize = path => { \
+	    const lines = fs.readFileSync(path, 'utf8').split('\n'); \
+	    const headers = lines.filter(line => line.startsWith('// go-spdx: ')); \
+	    if (headers.length !== 1 || /[\r\u2028\u2029]/u.test(headers[0])) \
+	      throw new Error(path + ': expected exactly one go-spdx provenance header without line terminators'); \
+	    lines[lines.indexOf(headers[0])] = '// go-spdx: '; \
+	    return lines.join('\n'); \
+	  }; \
+	  const [source, tmp] = process.argv.slice(1); \
+	  fs.writeFileSync(tmp + '.checked', normalize(source), {flag: 'wx'}); \
+	  fs.writeFileSync(tmp, normalize(tmp)); \
+	" packages/license-categories/src/generated.ts "$$tmp" && \
+	diff -u "$$tmp.checked" "$$tmp"
+
+.PHONY: test-license-categories
+test-license-categories:
+	cd packages/license-categories && npm test

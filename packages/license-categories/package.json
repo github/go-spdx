@@ -1,0 +1,40 @@
+{
+  "name": "@github/license-categories",
+  "version": "0.1.2",
+  "description": "SPDX license names and compliance risk categories used by GitHub",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/github/go-spdx.git",
+    "directory": "packages/license-categories"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICE.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test --test-concurrency=1",
+    "test:tarball": "npm run build && node --test test/tarball.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

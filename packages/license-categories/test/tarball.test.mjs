@@ -102,8 +102,11 @@ test('generation verification ignores only go-spdx provenance changes', () => {
     const tmp = join(root, 'regenerated.ts')
     writeFileSync(tmp, source)
     const makefile = readFileSync(new URL('../../../Makefile', import.meta.url), 'utf8')
-    const command = makefile.match(/^\tdiff .+$/m)[0].trim().replaceAll('$$', '$')
-    const verify = () => execFileSync('bash', ['-e', '-c', command], {cwd: root, env: {...process.env, tmp}, stdio: 'pipe'})
+    const recipe = makefile.split('verify-license-categories:\n')[1].split('\n\n')[0]
+    const command = recipe.slice(recipe.indexOf('\tnode -e'))
+    const verify = () => execFileSync('make', ['--no-print-directory', '-f', '-', 'verify'], {
+      cwd: root, env: {...process.env, tmp}, input: `verify:\n${command}\n`, stdio: 'pipe',
+    })
 
     writeFileSync(generated, source.replace(/^\/\/ go-spdx: .+$/m, '// go-spdx: v2.0.1'))
     verify()
@@ -114,7 +117,17 @@ test('generation verification ignores only go-spdx provenance changes', () => {
     ]) {
       assert.ok(source.includes(from))
       writeFileSync(generated, source.replace(from, to))
-      assert.throws(verify, {status: 1})
+      assert.throws(verify, {status: 2})
+    }
+    for (const invalid of [
+      `${source}// go-spdx: extra\n`,
+      ...['\r', '\u2028', '\u2029'].map(separator => `${source}// go-spdx: extra${separator}throw new Error('injected')\n`),
+      ...['\r', '\u2028', '\u2029'].map(separator => source.replace('// go-spdx: (devel)', `// go-spdx: v2.0.1${separator}throw new Error('injected')`)),
+      source.replace(/^\/\/ go-spdx: .+\n/m, ''),
+    ]) {
+      writeFileSync(generated, invalid)
+      assert.throws(verify, error => error.status !== 0 && /expected exactly one go-spdx provenance header/.test(error.stderr.toString()))
+      assert.equal(readFileSync(generated, 'utf8'), invalid)
     }
   } finally {
     rmSync(root, {recursive: true, force: true})

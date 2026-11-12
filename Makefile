@@ -87,9 +87,23 @@ license-categories:
 .PHONY: verify-license-categories
 verify-license-categories:
 	@tmp=$$(mktemp); \
-	trap 'rm -f "$$tmp"' 0; \
+	trap 'rm -f "$$tmp" "$$tmp.checked"' 0; \
 	go run ./cmd/license-categories -out "$$tmp" && \
-	diff -I '^// go-spdx: ' -u packages/license-categories/src/generated.ts "$$tmp"
+	node -e ' \
+	  const fs = require("node:fs"); \
+	  const normalize = path => { \
+	    const lines = fs.readFileSync(path, "utf8").split("\n"); \
+	    const headers = lines.filter(line => line.startsWith("// go-spdx: ")); \
+	    if (headers.length !== 1 || /[\r\u2028\u2029]/u.test(headers[0])) \
+	      throw new Error(path + ": expected exactly one go-spdx provenance header without line terminators"); \
+	    lines[lines.indexOf(headers[0])] = "// go-spdx: "; \
+	    return lines.join("\n"); \
+	  }; \
+	  const [source, tmp] = process.argv.slice(1); \
+	  fs.writeFileSync(tmp + ".checked", normalize(source)); \
+	  fs.writeFileSync(tmp, normalize(tmp)); \
+	' packages/license-categories/src/generated.ts "$$tmp" && \
+	diff -u "$$tmp.checked" "$$tmp"
 
 .PHONY: test-license-categories
 test-license-categories:

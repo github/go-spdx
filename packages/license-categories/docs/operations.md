@@ -25,6 +25,9 @@ access to the pinned public ScanCode archive. `make verify-license-categories`
 generates a temporary file and compares it byte for byte with the checked-in
 file, except for the `go-spdx` provenance line, without overwriting it. The SPDX
 list version, ScanCode commit, and all generated data must still match.
+Verification requires exactly one `go-spdx` header without embedded JavaScript
+line terminators and normalizes only that header in temporary comparison files.
+It requires Node.js as well as Go.
 
 For a build without tests, run:
 

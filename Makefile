@@ -89,7 +89,7 @@ verify-license-categories:
 	@tmp=$$(mktemp); \
 	trap 'rm -f "$$tmp"' 0; \
 	go run ./cmd/license-categories -out "$$tmp" && \
-	diff -u packages/license-categories/src/generated.ts "$$tmp"
+	diff -I '^// go-spdx: ' -u packages/license-categories/src/generated.ts "$$tmp"
 
 .PHONY: test-license-categories
 test-license-categories:

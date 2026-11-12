@@ -50,6 +50,24 @@ jobs:
       - name: Verify generated license categories
         run: make verify-license-categories
 
+      - name: Stamp go-spdx provenance
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process'
+          import {readFileSync, writeFileSync} from 'node:fs'
+
+          const provenance = process.env.EVENT_NAME === 'release'
+            ? process.env.RELEASE_TAG
+            : `${execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim()} (dispatch)`
+          const path = 'packages/license-categories/src/generated.ts'
+          const source = readFileSync(path, 'utf8')
+          if (!/^\/\/ go-spdx: .+$/m.test(source)) throw new Error('Missing go-spdx provenance header')
+          writeFileSync(path, source.replace(/^\/\/ go-spdx: .+$/m, () => `// go-spdx: ${provenance}`))
+          NODE
+
       - name: Install dependencies
         run: npm ci
         working-directory: packages/license-categories

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import {execFileSync} from 'node:child_process'
-import {readFileSync} from 'node:fs'
+import {cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import test from 'node:test'
 
 test('targets public npm distribution under MIT', () => {
@@ -24,4 +27,72 @@ test('publishes only compiled JavaScript, declarations, and package metadata', (
     files.map(({path}) => path).sort(),
     ['LICENSE', 'README.md', 'THIRD_PARTY_NOTICE.md', 'dist/generated.d.ts', 'dist/generated.js', 'dist/index.d.ts', 'dist/index.js', 'package.json'],
   )
+})
+
+for (const event of ['release', 'workflow_dispatch']) {
+  test(`preserves exact ${event} provenance when packing`, () => {
+    const root = mkdtempSync(join(tmpdir(), 'license-categories-provenance-'))
+    try {
+      const packageDir = join(root, 'packages/license-categories')
+      mkdirSync(packageDir, {recursive: true})
+      for (const path of ['src', 'package.json', 'tsconfig.json']) {
+        cpSync(new URL(`../${path}`, import.meta.url), join(packageDir, path), {recursive: true})
+      }
+      symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), join(packageDir, 'node_modules'), 'dir')
+      execFileSync('git', ['init', '--quiet', root])
+      execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', 'commit', '--quiet', '--allow-empty', '-m', 'Fixture'], {cwd: root})
+      const sha = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim()
+      assert.match(sha, /^[0-9a-f]{40}$/)
+
+      const workflow = readFileSync(new URL('../../../.github/workflows/publish-license-categories.yaml', import.meta.url), 'utf8')
+      assert.ok(workflow.indexOf('name: Verify generated license categories') < workflow.indexOf('name: Stamp go-spdx provenance'))
+      assert.ok(workflow.indexOf('name: Stamp go-spdx provenance') < workflow.indexOf('name: Test package'))
+      const script = workflow.split('      - name: Stamp go-spdx provenance\n')[1]
+        .split('        run: |\n')[1].split('\n      - name:')[0].replace(/^          /gm, '')
+      const generated = join(packageDir, 'src/generated.ts')
+      const before = readFileSync(generated, 'utf8')
+      execFileSync('bash', ['-e', '-c', script], {
+        cwd: root,
+        env: {...process.env, EVENT_NAME: event, RELEASE_TAG: 'v2.0.1', GITHUB_SHA: '0'.repeat(40)},
+      })
+      const header = `// go-spdx: ${event === 'release' ? 'v2.0.1' : `${sha} (dispatch)`}`
+      const expected = before.replace(/^\/\/ go-spdx: .+$/m, header)
+      assert.equal(readFileSync(generated, 'utf8'), expected)
+
+      const [{filename, files}] = JSON.parse(execFileSync('npm', ['pack', '--json'], {cwd: packageDir, encoding: 'utf8'}))
+      assert.ok(files.some(({path}) => path === 'dist/generated.js'))
+      const packed = execFileSync('tar', ['-xOf', join(packageDir, filename), 'package/dist/generated.js'], {encoding: 'utf8'})
+      assert.equal(packed.split('\n')[1], header)
+    } finally {
+      rmSync(root, {recursive: true, force: true})
+    }
+  })
+}
+
+test('generation verification ignores only go-spdx provenance changes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'license-categories-verify-'))
+  try {
+    mkdirSync(join(root, 'packages/license-categories/src'), {recursive: true})
+    const source = readFileSync(new URL('../src/generated.ts', import.meta.url), 'utf8')
+    const generated = join(root, 'packages/license-categories/src/generated.ts')
+    const tmp = join(root, 'regenerated.ts')
+    writeFileSync(tmp, source)
+    const makefile = readFileSync(new URL('../../../Makefile', import.meta.url), 'utf8')
+    const command = makefile.match(/^\tdiff .+$/m)[0].trim().replaceAll('$$', '$')
+    const verify = () => execFileSync('bash', ['-e', '-c', command], {cwd: root, env: {...process.env, tmp}, stdio: 'pipe'})
+
+    writeFileSync(generated, source.replace(/^\/\/ go-spdx: .+$/m, '// go-spdx: v2.0.1'))
+    verify()
+    for (const [from, to] of [
+      ['// spdx-license-list-version:', '// changed-spdx-license-list-version:'],
+      ['// scancode-licensedb commit:', '// changed-scancode-licensedb commit:'],
+      ["'Safe for most'", "'Changed category'"],
+    ]) {
+      assert.ok(source.includes(from))
+      writeFileSync(generated, source.replace(from, to))
+      assert.throws(verify, {status: 1})
+    }
+  } finally {
+    rmSync(root, {recursive: true, force: true})
+  }
 })

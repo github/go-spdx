@@ -23,7 +23,8 @@ make test-license-categories
 `packages/license-categories/src/generated.ts`. Generation requires network
 access to the pinned public ScanCode archive. `make verify-license-categories`
 generates a temporary file and compares it byte for byte with the checked-in
-file, including all provenance comments, without overwriting it.
+file, except for the `go-spdx` provenance line, without overwriting it. The SPDX
+list version, ScanCode commit, and all generated data must still match.
 
 For a build without tests, run:
 
@@ -49,8 +50,9 @@ Unrecognized category mappings are errors; do not infer categories from SPDX IDs
 
 `src/generated.ts` records the Go main module version, SPDX list version, and
 ScanCode commit. Running the generator from this checkout with `go run` records
-`go-spdx: (devel)`, not the checkout's SHA or a release tag. No timestamps are
-generated, and output is deterministic for the same inputs.
+`go-spdx: (devel)`, not the checkout's SHA or a release tag. Publication stamps
+that line as described below. No timestamps are generated, and output is
+deterministic for the same inputs.
 
 Review data changes and any warnings, and include regenerated output with its
 source changes. Do not edit generated data by hand. When updating the ScanCode
@@ -80,9 +82,17 @@ and tarball tests before publishing with public access through npm trusted
 publishing. It uses Node.js 24 and npm 11.20.0 for OIDC authentication, with no
 long-lived npm token.
 
-The workflow retains the original OLC publication behavior: npm provenance is
-explicitly disabled, no publication header is stamped, and every enabled run
-attempts to publish the version in the manifest. There is no registry comparison,
+After verification and before compilation or packing, the workflow stamps
+`src/generated.ts` with the exact release tag (for example,
+`// go-spdx: v2.0.1`) or the full checked-out commit SHA followed by ` (dispatch)`.
+The compiled JavaScript included in the published package preserves this header.
+For an initial local bootstrap publication, manually set this provenance line to
+the source revision before packing; subsequent dispatches stamp it automatically.
+No local-build detection is performed.
+
+npm provenance attestations remain explicitly disabled, independently of this
+source header, and every enabled run attempts to publish the version in the
+manifest. There is no registry comparison,
 unchanged-data skip, or version bump. npm rejects a version
 that has already been published. Bump both `package.json` and `package-lock.json`
 before subsequent publication attempts.

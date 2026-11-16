@@ -6,14 +6,16 @@ import {join} from 'node:path'
 import test from 'node:test'
 import {generatedDataChanged} from '../../../script/compare-license-categories.mjs'
 
-test('publication uses the comparison output after testing for either trigger', () => {
+test('publication compares after testing unless a manual dispatch forces publishing', () => {
   const workflow = readFileSync(new URL('../../../.github/workflows/publish-license-categories.yaml', import.meta.url), 'utf8')
   const comparison = workflow.indexOf('      - name: Compare published generated data\n')
   const publish = workflow.indexOf('      - name: Publish to npm using OIDC\n')
+  assert.match(workflow, /workflow_dispatch:\n    inputs:\n      force_publish:\n        description: .+\n        type: boolean\n        default: false\n/)
   assert.ok(comparison > workflow.indexOf('      - name: Test package tarball\n'))
   assert.ok(publish > comparison)
+  assert.match(workflow.slice(comparison, publish), /if: github\.event_name != 'workflow_dispatch' \|\| !inputs\.force_publish/)
   assert.match(workflow.slice(comparison, publish), /appendFileSync\(process\.env\.GITHUB_OUTPUT, `changed=\$\{changed\}\\n`\)/)
-  assert.match(workflow.slice(publish), /if: steps\.comparison\.outputs\.changed == 'true'/)
+  assert.match(workflow.slice(publish), /if: steps\.comparison\.outputs\.changed == 'true' \|\| \(github\.event_name == 'workflow_dispatch' && inputs\.force_publish\)/)
 })
 
 test('compares only compiled generated data against the last publication', async t => {

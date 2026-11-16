@@ -93,7 +93,7 @@ For an initial local bootstrap publication, manually set this provenance line to
 the source revision before packing; subsequent dispatches stamp it automatically.
 No local-build detection is performed.
 
-After testing, both triggers compare `dist/generated.js`, compiled from
+After testing, both triggers normally compare `dist/generated.js`, compiled from
 `src/generated.ts`, with that same file from the most recently published npm
 version, selected by publication timestamp rather than a dist-tag or version
 ordering. The comparison ignores the entire leading comment header, including
@@ -101,16 +101,21 @@ the generated-file warning and all provenance lines. All remaining text must mat
 TypeScript-only or source formatting changes that compile identically do not
 trigger publication. No other package files affect this decision.
 
+Manual dispatches can select `force_publish` to skip this comparison and
+publish even when the generated data is unchanged. The option defaults to
+false and does not bypass the publication enablement variable, default branch
+requirement, verification, or tests.
+
 Unchanged generated data skips publication with a log message. A package not
 found in npm is eligible for its initial publication; other registry or tarball
 errors fail the workflow. Downloaded JavaScript is read, never executed, and the
 package contents are unchanged.
 
 npm provenance attestations remain explicitly disabled, independently of this
-source header. When generated data changes, the workflow publishes the version
-in the manifest without automatically bumping it. npm rejects a version that
-has already been published. Bump both `package.json` and `package-lock.json`
-before subsequent publication attempts that change generated data.
+source header. When publishing, the workflow uses the version in the manifest
+without automatically bumping it. npm rejects a version that has already been
+published, even when `force_publish` is selected. Bump both `package.json` and
+`package-lock.json` before subsequent publication attempts.
 
 ## Publishing permissions and versioning
 

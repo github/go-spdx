@@ -26,12 +26,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Validate default branch
-        if: github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
-        run: |
-          echo "::error::This workflow should only be run on the main branch."
-          exit 1
-
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -100,7 +94,7 @@ jobs:
 
       - name: Publish to npm using OIDC
         if: steps.comparison.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_publish)
-        run: npm publish --access public --registry=https://registry.npmjs.org
+        run: npm publish --access public --registry=https://registry.npmjs.org --loglevel=verbose
         working-directory: packages/license-categories
         env:
           NPM_CONFIG_PROVENANCE: 'false'

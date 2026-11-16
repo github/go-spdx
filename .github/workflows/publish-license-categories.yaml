@@ -4,6 +4,11 @@ run-name: Publish License Categories - ${{ github.sha }}
 
 on:
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: Publish without comparing generated data
+        type: boolean
+        default: false
   release:
     types: [released]
 
@@ -83,6 +88,7 @@ jobs:
 
       - name: Compare published generated data
         id: comparison
+        if: github.event_name != 'workflow_dispatch' || !inputs.force_publish
         run: |
           node --input-type=module <<'NODE'
           import {appendFileSync} from 'node:fs'
@@ -93,7 +99,7 @@ jobs:
           NODE
 
       - name: Publish to npm using OIDC
-        if: steps.comparison.outputs.changed == 'true'
+        if: steps.comparison.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_publish)
         run: npm publish --access public --registry=https://registry.npmjs.org
         working-directory: packages/license-categories
         env:

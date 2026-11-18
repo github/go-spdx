@@ -8,7 +8,7 @@ import "strings"
 // LicenseListVersion returns the SPDX License List version from which the
 // generated license IDs were sourced.
 func LicenseListVersion() string {
-	return "8791eda"
+	return "ddf7382"
 }
 
 // IsActiveLicense does a case-insensitive lookup for the license id in the active licenses map.
@@ -87,6 +87,7 @@ func GetLicenses() []string {
 		"atc-game",
 		"Baekmuk",
 		"Bahyph",
+		"BaKoMa",
 		"Barr",
 		"bcrypt-Solar-Designer",
 		"Beerware",
@@ -384,6 +385,7 @@ func GetLicenses() []string {
 		"HPND-SMC",
 		"HPND-UC",
 		"HPND-UC-export-US",
+		"HPND-X11",
 		"HTMLTIDY",
 		"hyphen-bulgarian",
 		"IBM-pibs",
@@ -474,6 +476,7 @@ func GetLicenses() []string {
 		"MIT-enna",
 		"MIT-feh",
 		"MIT-Festival",
+		"MIT-kdevelop-ideal",
 		"MIT-Khronos-old",
 		"MIT-Modern-Variant",
 		"MIT-open-group",
@@ -799,6 +802,7 @@ var licensesMap = map[string]string{
 	"ATC-GAME":                             "atc-game",
 	"BAEKMUK":                              "Baekmuk",
 	"BAHYPH":                               "Bahyph",
+	"BAKOMA":                               "BaKoMa",
 	"BARR":                                 "Barr",
 	"BCRYPT-SOLAR-DESIGNER":                "bcrypt-Solar-Designer",
 	"BEERWARE":                             "Beerware",
@@ -1096,6 +1100,7 @@ var licensesMap = map[string]string{
 	"HPND-SMC":                             "HPND-SMC",
 	"HPND-UC":                              "HPND-UC",
 	"HPND-UC-EXPORT-US":                    "HPND-UC-export-US",
+	"HPND-X11":                             "HPND-X11",
 	"HTMLTIDY":                             "HTMLTIDY",
 	"HYPHEN-BULGARIAN":                     "hyphen-bulgarian",
 	"IBM-PIBS":                             "IBM-pibs",
@@ -1186,6 +1191,7 @@ var licensesMap = map[string]string{
 	"MIT-ENNA":                             "MIT-enna",
 	"MIT-FEH":                              "MIT-feh",
 	"MIT-FESTIVAL":                         "MIT-Festival",
+	"MIT-KDEVELOP-IDEAL":                   "MIT-kdevelop-ideal",
 	"MIT-KHRONOS-OLD":                      "MIT-Khronos-old",
 	"MIT-MODERN-VARIANT":                   "MIT-Modern-Variant",
 	"MIT-OPEN-GROUP":                       "MIT-open-group",

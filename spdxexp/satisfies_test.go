@@ -462,6 +462,24 @@ func TestSatisfies_FastPathValidation(t *testing.T) {
 			satisfied:      true,
 		},
 		{
+			name:           "MIT matches allowed MIT+",
+			repoExpression: "MIT",
+			allowedList:    []string{"MIT+"},
+			satisfied:      true,
+		},
+		{
+			name:           "MIT matches allowed MIT+ among other licenses",
+			repoExpression: "MIT",
+			allowedList:    []string{"Apache-2.0", "MIT+"},
+			satisfied:      true,
+		},
+		{
+			name:           "MIT not in allowed list",
+			repoExpression: "MIT",
+			allowedList:    []string{"Apache-2.0", "ISC+"},
+			satisfied:      false,
+		},
+		{
 			name:           "Atomic deprecated license matches allowed list",
 			repoExpression: " eCos-2.0 ",
 			allowedList:    []string{"ECOS-2.0"},

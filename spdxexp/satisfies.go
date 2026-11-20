@@ -156,13 +156,13 @@ func Satisfies(testExpression string, allowedList []string) (bool, error) {
 	// Having it before trimming means that licenses with leading/trailing whitespace will not be validated
 	// as MIT by isMIT, but will still be correctly identified using activeLicense.  As this is uncommon, it
 	// is an acceptable tradeoff to avoid the overhead of trimming for the more common case.
+	// When no allowed entry is exactly MIT, fall through: an entry like "MIT+" can still allow it.
 	if isMIT(testExpression) {
 		for _, allowed := range allowedList {
 			if strings.EqualFold(allowed, "MIT") {
 				return true, nil
 			}
 		}
-		return false, nil
 	}
 
 	testExpression = strings.TrimSpace(testExpression)

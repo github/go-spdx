@@ -8,7 +8,7 @@ import "strings"
 // LicenseListVersion returns the SPDX License List version from which the
 // generated license IDs were sourced.
 func LicenseListVersion() string {
-	return "8791eda"
+	return "4103e93"
 }
 
 // IsActiveLicense does a case-insensitive lookup for the license id in the active licenses map.
@@ -87,6 +87,7 @@ func GetLicenses() []string {
 		"atc-game",
 		"Baekmuk",
 		"Bahyph",
+		"BaKoMa",
 		"Barr",
 		"bcrypt-Solar-Designer",
 		"Beerware",
@@ -125,6 +126,7 @@ func GetLicenses() []string {
 		"BSD-3-Clause-No-Nuclear-Warranty",
 		"BSD-3-Clause-Open-MPI",
 		"BSD-3-Clause-OpenWebUI",
+		"BSD-3-Clause-pos-unchanged",
 		"BSD-3-Clause-Sun",
 		"BSD-3-Clause-Tso",
 		"BSD-4-Clause",
@@ -384,6 +386,7 @@ func GetLicenses() []string {
 		"HPND-SMC",
 		"HPND-UC",
 		"HPND-UC-export-US",
+		"HPND-X11",
 		"HTMLTIDY",
 		"hyphen-bulgarian",
 		"IBM-pibs",
@@ -474,6 +477,7 @@ func GetLicenses() []string {
 		"MIT-enna",
 		"MIT-feh",
 		"MIT-Festival",
+		"MIT-kdevelop-ideal",
 		"MIT-Khronos-old",
 		"MIT-Modern-Variant",
 		"MIT-open-group",
@@ -590,6 +594,7 @@ func GetLicenses() []string {
 		"Parity-6.0.0",
 		"Parity-7.0.0",
 		"PDDL-1.0",
+		"PDL-Japan-1.0",
 		"PHP-3.0",
 		"PHP-3.01",
 		"Pixar",
@@ -799,6 +804,7 @@ var licensesMap = map[string]string{
 	"ATC-GAME":                             "atc-game",
 	"BAEKMUK":                              "Baekmuk",
 	"BAHYPH":                               "Bahyph",
+	"BAKOMA":                               "BaKoMa",
 	"BARR":                                 "Barr",
 	"BCRYPT-SOLAR-DESIGNER":                "bcrypt-Solar-Designer",
 	"BEERWARE":                             "Beerware",
@@ -837,6 +843,7 @@ var licensesMap = map[string]string{
 	"BSD-3-CLAUSE-NO-NUCLEAR-WARRANTY":     "BSD-3-Clause-No-Nuclear-Warranty",
 	"BSD-3-CLAUSE-OPEN-MPI":                "BSD-3-Clause-Open-MPI",
 	"BSD-3-CLAUSE-OPENWEBUI":               "BSD-3-Clause-OpenWebUI",
+	"BSD-3-CLAUSE-POS-UNCHANGED":           "BSD-3-Clause-pos-unchanged",
 	"BSD-3-CLAUSE-SUN":                     "BSD-3-Clause-Sun",
 	"BSD-3-CLAUSE-TSO":                     "BSD-3-Clause-Tso",
 	"BSD-4-CLAUSE":                         "BSD-4-Clause",
@@ -1096,6 +1103,7 @@ var licensesMap = map[string]string{
 	"HPND-SMC":                             "HPND-SMC",
 	"HPND-UC":                              "HPND-UC",
 	"HPND-UC-EXPORT-US":                    "HPND-UC-export-US",
+	"HPND-X11":                             "HPND-X11",
 	"HTMLTIDY":                             "HTMLTIDY",
 	"HYPHEN-BULGARIAN":                     "hyphen-bulgarian",
 	"IBM-PIBS":                             "IBM-pibs",
@@ -1186,6 +1194,7 @@ var licensesMap = map[string]string{
 	"MIT-ENNA":                             "MIT-enna",
 	"MIT-FEH":                              "MIT-feh",
 	"MIT-FESTIVAL":                         "MIT-Festival",
+	"MIT-KDEVELOP-IDEAL":                   "MIT-kdevelop-ideal",
 	"MIT-KHRONOS-OLD":                      "MIT-Khronos-old",
 	"MIT-MODERN-VARIANT":                   "MIT-Modern-Variant",
 	"MIT-OPEN-GROUP":                       "MIT-open-group",
@@ -1302,6 +1311,7 @@ var licensesMap = map[string]string{
 	"PARITY-6.0.0":                         "Parity-6.0.0",
 	"PARITY-7.0.0":                         "Parity-7.0.0",
 	"PDDL-1.0":                             "PDDL-1.0",
+	"PDL-JAPAN-1.0":                        "PDL-Japan-1.0",
 	"PHP-3.0":                              "PHP-3.0",
 	"PHP-3.01":                             "PHP-3.01",
 	"PIXAR":                                "Pixar",
